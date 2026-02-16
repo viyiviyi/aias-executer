@@ -1,0 +1,89 @@
+import { ToolRegistry } from '../core/tool-registry';
+
+// 文件工具
+import { readFileTool } from './file/read-file';
+import { writeFileTool } from './file/write-file';
+import { listDirectoryTool } from './file/list-directory';
+import { updateFileTool } from './file/update-file';
+
+// 系统工具
+import { executeCommandTool } from './system/command';
+import { createTerminalTool, terminalInputTool, closeTerminalTool, listTerminalsTool } from './system/terminal';
+
+// 网络工具
+import { httpRequestTool } from './network/http-request';
+
+// MCP工具
+import {
+  mcpDiscoverServersTool,
+  mcpScanServerTool,
+  mcpAddServerTool,
+  mcpCallToolTool,
+  mcpListToolsTool,
+  mcpListServersTool,
+  mcpStartServerTool,
+  mcpStopServerTool,
+  mcpRemoveServerTool
+} from './mcp/mcp-tools';
+
+// 注册所有工具
+export function registerAllTools(): void {
+  const toolRegistry = ToolRegistry.getInstance();
+
+  // 文件工具
+  toolRegistry.registerTool('read_file', readFileTool);
+  toolRegistry.registerTool('write_file', writeFileTool);
+  toolRegistry.registerTool('list_directory', listDirectoryTool);
+  toolRegistry.registerTool('update_file', updateFileTool);
+
+  // 系统工具
+  toolRegistry.registerTool('execute_command', executeCommandTool);
+  toolRegistry.registerTool('create_terminal', createTerminalTool);
+  toolRegistry.registerTool('terminal_input', terminalInputTool);
+  toolRegistry.registerTool('close_terminal', closeTerminalTool);
+  toolRegistry.registerTool('list_terminals', listTerminalsTool);
+
+  // 网络工具
+  toolRegistry.registerTool('http_request', httpRequestTool);
+
+  // MCP工具
+  toolRegistry.registerTool('mcp_discover_servers', mcpDiscoverServersTool);
+  toolRegistry.registerTool('mcp_scan_server', mcpScanServerTool);
+  toolRegistry.registerTool('mcp_add_server', mcpAddServerTool);
+  toolRegistry.registerTool('mcp_call_tool', mcpCallToolTool);
+  toolRegistry.registerTool('mcp_list_tools', mcpListToolsTool);
+  toolRegistry.registerTool('mcp_list_servers', mcpListServersTool);
+  toolRegistry.registerTool('mcp_start_server', mcpStartServerTool);
+  toolRegistry.registerTool('mcp_stop_server', mcpStopServerTool);
+  toolRegistry.registerTool('mcp_remove_server', mcpRemoveServerTool);
+}
+
+// 导出所有工具定义
+export const allTools = {
+  // 文件工具
+  read_file: readFileTool,
+  write_file: writeFileTool,
+  list_directory: listDirectoryTool,
+  update_file: updateFileTool,
+  
+  // 系统工具
+  execute_command: executeCommandTool,
+  create_terminal: createTerminalTool,
+  terminal_input: terminalInputTool,
+  close_terminal: closeTerminalTool,
+  list_terminals: listTerminalsTool,
+  
+  // 网络工具
+  http_request: httpRequestTool,
+  
+  // MCP工具
+  mcp_discover_servers: mcpDiscoverServersTool,
+  mcp_scan_server: mcpScanServerTool,
+  mcp_add_server: mcpAddServerTool,
+  mcp_call_tool: mcpCallToolTool,
+  mcp_list_tools: mcpListToolsTool,
+  mcp_list_servers: mcpListServersTool,
+  mcp_start_server: mcpStartServerTool,
+  mcp_stop_server: mcpStopServerTool,
+  mcp_remove_server: mcpRemoveServerTool
+};
