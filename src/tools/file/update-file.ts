@@ -14,7 +14,7 @@ interface FileUpdateItem {
 export const updateFileTool: Tool = {
   definition: {
     name: 'update_file',
-    description: '部分更新文件内容，支持批量操作：插入内容、删除行。使用更直观的参数名：start_line_index（起始行索引，1-based）、insert_content（插入内容字符串）、del_line_count（删除行数）',
+    description: '部分更新文件内容，支持批量操作：插入内容到指定行、删除行。',
     parameters: {
       type: 'object',
       properties: {
