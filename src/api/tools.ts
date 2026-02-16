@@ -6,7 +6,7 @@ const router = Router();
 const toolExecutor = new ToolExecutor();
 
 // 获取工具列表 - 符合OpenAI funcall格式
-router.get('/', (_req, res) => {
+router.get('/tools', (_req, res) => {
   try {
     const tools = toolExecutor.getToolDefinitions();
     res.json(tools);

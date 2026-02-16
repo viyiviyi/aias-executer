@@ -29,7 +29,7 @@ app.get('/health', (_req, res) => {
 });
 
 // API路由 - 简化接口
-app.use('/tools', toolsRouter);
+app.use('/api', toolsRouter);
 
 // 根路径
 app.get('/', (_req, res) => {
@@ -39,7 +39,7 @@ app.get('/', (_req, res) => {
     version: '1.0.0',
     endpoints: {
       tools: '/tools',
-      execute: '/tools/execute',
+      execute: '/execute',
       health: '/health'
     }
   });
