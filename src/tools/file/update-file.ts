@@ -5,18 +5,17 @@ import { Tool } from '../../core/tool-registry';
 
 const configManager = ConfigManager.getInstance();
 
-interface FileUpdate {
-  operation: 'delete_lines' | 'insert_lines';
-  start_line?: number;      // 用于delete_lines
-  line_count?: number;      // 用于delete_lines
-  line_number?: number;     // 用于insert_lines
-  lines?: string[];         // 用于insert_lines
+interface FileUpdateItem {
+  operation: 'insert' | 'delete';
+  start_line_index: number;      // 起始行索引（1-based）
+  insert_content?: string;       // 要插入的内容（用于insert操作）
+  del_line_count?: number;       // 要删除的行数（用于delete操作）
 }
 
 export const updateFileTool: Tool = {
   definition: {
     name: 'update_file',
-    description: '部分更新文件内容，支持批量操作：删除行、插入行',
+    description: '部分更新文件内容，支持批量操作：插入内容、删除行。使用更直观的参数名：start_line_index（起始行索引，1-based）、insert_content（插入内容字符串）、del_line_count（删除行数）',
     parameters: {
       type: 'object',
       properties: {
@@ -31,33 +30,27 @@ export const updateFileTool: Tool = {
             properties: {
               operation: {
                 type: 'string',
-                enum: ['delete_lines', 'insert_lines'],
-                description: '操作类型'
+                enum: ['insert', 'delete'],
+                description: '操作类型：insert（插入内容）或 delete（删除行）'
               },
-              start_line: {
+              start_line_index: {
                 type: 'integer',
-                description: '起始行号（用于delete_lines）',
+                description: '起始行索引（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除',
                 minimum: 1
               },
-              line_count: {
-                type: 'integer',
-                description: '行数（用于delete_lines）',
-                minimum: 1
+              insert_content: {
+                type: 'string',
+                description: '要插入的内容字符串（用于insert操作）'
               },
-              line_number: {
+              del_line_count: {
                 type: 'integer',
-                description: '行号（用于insert_lines）',
+                description: '要删除的行数（用于delete操作）',
                 minimum: 1
-              },
-              lines: {
-                type: 'array',
-                items: { type: 'string' },
-                description: '要插入的行（用于insert_lines）'
               }
             },
-            required: ['operation']
+            required: ['operation', 'start_line_index']
           },
-          description: '更新操作列表'
+          description: '更新操作列表，按顺序执行'
         }
       },
       required: ['path', 'updates']
@@ -66,7 +59,7 @@ export const updateFileTool: Tool = {
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const filePath = parameters.path;
-    const updates = parameters.updates as FileUpdate[];
+    const updates = parameters.updates as FileUpdateItem[];
 
     if (!updates || updates.length === 0) {
       throw new Error('updates参数不能为空');
@@ -87,14 +80,11 @@ export const updateFileTool: Tool = {
       const lines = content.split('\n');
       const originalLineCount = lines.length;
 
-      // 应用更新操作（从后往前，避免行号变化影响）
-      const sortedUpdates = [...updates]
-        .map((update, index) => ({ update, index }))
-        .sort((a, b) => this.getUpdateLineNumber(b.update) - this.getUpdateLineNumber(a.update));
-
+      // 按顺序应用更新操作
       const appliedUpdates: Array<{
         index: number;
         operation: string;
+        start_line_index: number;
         success: boolean;
         details?: any;
         error?: string;
@@ -103,32 +93,32 @@ export const updateFileTool: Tool = {
       let currentLines = [...lines];
       let currentLineCount = originalLineCount;
 
-      for (const { update, index } of sortedUpdates) {
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
         try {
           const result = this.applyUpdate(currentLines, update, currentLineCount);
           currentLines = result.lines;
           currentLineCount = currentLines.length;
 
           appliedUpdates.push({
-            index,
+            index: i,
             operation: update.operation,
+            start_line_index: update.start_line_index,
             success: true,
             details: result.details
           });
         } catch (error: any) {
           appliedUpdates.push({
-            index,
+            index: i,
             operation: update.operation,
+            start_line_index: update.start_line_index,
             success: false,
             error: error.message
           });
+          
+          // 如果有错误，停止执行后续更新
+          throw new Error(`第 ${i + 1} 个更新操作失败: ${error.message}`);
         }
-      }
-
-      // 检查是否有失败的更新
-      const failedUpdates = appliedUpdates.filter(u => !u.success);
-      if (failedUpdates.length > 0) {
-        throw new Error(`部分更新操作失败: ${JSON.stringify(failedUpdates)}`);
       }
 
       // 写入更新后的文件
@@ -140,7 +130,12 @@ export const updateFileTool: Tool = {
         path: filePath,
         updates_applied: appliedUpdates.length,
         original_lines: originalLineCount,
-        new_lines: currentLineCount
+        new_lines: currentLineCount,
+        applied_updates: appliedUpdates.filter(u => u.success).map(u => ({
+          operation: u.operation,
+          start_line_index: u.start_line_index,
+          details: u.details
+        }))
       };
     } catch (error: any) {
       if (error.code === 'EACCES') {
@@ -150,62 +145,94 @@ export const updateFileTool: Tool = {
     }
   },
 
-  validateUpdates(updates: FileUpdate[]): void {
-    for (const update of updates) {
-      if (update.operation === 'delete_lines') {
-        if (!update.start_line || update.start_line < 1) {
-          throw new Error('delete_lines操作需要有效的start_line参数');
+  validateUpdates(updates: FileUpdateItem[]): void {
+    for (let i = 0; i < updates.length; i++) {
+      const update = updates[i];
+      
+      if (update.operation === 'insert') {
+        if (!update.insert_content && update.insert_content !== '') {
+          throw new Error(`第 ${i + 1} 个更新操作：insert操作需要insert_content参数`);
         }
-        if (!update.line_count || update.line_count < 1) {
-          throw new Error('delete_lines操作需要有效的line_count参数');
+        if (update.del_line_count !== undefined) {
+          throw new Error(`第 ${i + 1} 个更新操作：insert操作不应包含del_line_count参数`);
         }
-      } else if (update.operation === 'insert_lines') {
-        if (!update.line_number || update.line_number < 1) {
-          throw new Error('insert_lines操作需要有效的line_number参数');
+      } else if (update.operation === 'delete') {
+        if (!update.del_line_count || update.del_line_count < 1) {
+          throw new Error(`第 ${i + 1} 个更新操作：delete操作需要有效的del_line_count参数（>=1）`);
         }
-        if (!update.lines || update.lines.length === 0) {
-          throw new Error('insert_lines操作需要非空的lines参数');
+        if (update.insert_content !== undefined) {
+          throw new Error(`第 ${i + 1} 个更新操作：delete操作不应包含insert_content参数`);
         }
       } else {
-        throw new Error(`不支持的更新操作: ${update.operation}`);
+        throw new Error(`第 ${i + 1} 个更新操作：不支持的更新操作: ${update.operation}`);
+      }
+
+      // 验证行索引
+      if (update.start_line_index < 1) {
+        throw new Error(`第 ${i + 1} 个更新操作：start_line_index必须大于等于1`);
       }
     }
   },
 
-  getUpdateLineNumber(update: FileUpdate): number {
-    if (update.operation === 'delete_lines') {
-      return update.start_line || 1;
-    } else if (update.operation === 'insert_lines') {
-      return update.line_number || 1;
-    }
-    return 1;
-  },
-
-  applyUpdate(lines: string[], update: FileUpdate, totalLines: number): { lines: string[]; details?: any } {
-    if (update.operation === 'delete_lines') {
+  applyUpdate(lines: string[], update: FileUpdateItem, totalLines: number): { lines: string[]; details: any } {
+    if (update.operation === 'insert') {
+      return this.insertContent(lines, update, totalLines);
+    } else if (update.operation === 'delete') {
       return this.deleteLines(lines, update, totalLines);
-    } else if (update.operation === 'insert_lines') {
-      return this.insertLines(lines, update, totalLines);
     }
     throw new Error(`不支持的更新操作: ${update.operation}`);
   },
 
-  deleteLines(lines: string[], update: FileUpdate, totalLines: number): { lines: string[]; details: any } {
-    const startLine = update.start_line!;
-    const lineCount = update.line_count!;
+  insertContent(lines: string[], update: FileUpdateItem, totalLines: number): { lines: string[]; details: any } {
+    const startLineIndex = update.start_line_index;
+    const insertContent = update.insert_content || '';
 
-    // 验证行号
-    if (startLine < 1 || startLine > totalLines) {
-      throw new Error(`起始行号无效: ${startLine} (总行数: ${totalLines})`);
+    // 验证行索引
+    if (startLineIndex < 1) {
+      throw new Error(`插入位置无效: ${startLineIndex}（必须大于等于1）`);
+    }
+
+    // 如果插入位置超过总行数+1，允许在文件末尾插入
+    const insertIdx = Math.min(startLineIndex - 1, totalLines);
+
+    // 将插入内容分割为行
+    const insertLines = insertContent.split('\n');
+    if (insertLines[insertLines.length - 1] === '') {
+      insertLines.pop(); // 移除最后的空行（如果内容以换行符结尾）
+    }
+
+    // 执行插入
+    const newLines = [...lines];
+    newLines.splice(insertIdx, 0, ...insertLines);
+
+    return {
+      lines: newLines,
+      details: {
+        operation: 'insert',
+        start_line_index: startLineIndex,
+        inserted_lines: insertLines,
+        inserted_line_count: insertLines.length,
+        actual_insert_position: insertIdx + 1 // 转换为1-based
+      }
+    };
+  },
+
+  deleteLines(lines: string[], update: FileUpdateItem, totalLines: number): { lines: string[]; details: any } {
+    const startLineIndex = update.start_line_index;
+    const delLineCount = update.del_line_count!;
+
+    // 验证行索引
+    if (startLineIndex < 1 || startLineIndex > totalLines) {
+      throw new Error(`起始行索引无效: ${startLineIndex}（总行数: ${totalLines}）`);
     }
 
     // 计算实际删除范围
-    const endLine = Math.min(startLine + lineCount - 1, totalLines);
-    const actualCount = endLine - startLine + 1;
+    const endLineIndex = Math.min(startLineIndex + delLineCount - 1, totalLines);
+    const actualCount = endLineIndex - startLineIndex + 1;
 
     // 转换为0-based索引
-    const startIdx = startLine - 1;
-    const endIdx = endLine;
+    const startIdx = startLineIndex - 1;
+    const endIdx = endLineIndex;
 
     // 保存被删除的内容
     const deletedContent = lines.slice(startIdx, endIdx);
@@ -217,44 +244,12 @@ export const updateFileTool: Tool = {
     return {
       lines: newLines,
       details: {
-        start_line: startLine,
-        end_line: endLine,
-        line_count: actualCount,
+        operation: 'delete',
+        start_line_index: startLineIndex,
+        end_line_index: endLineIndex,
+        deleted_line_count: actualCount,
+        requested_delete_count: delLineCount,
         deleted_lines: deletedContent.map(line => line.replace(/\n$/, ''))
-      }
-    };
-  },
-
-  insertLines(lines: string[], update: FileUpdate, totalLines: number): { lines: string[]; details: any } {
-    const lineNumber = update.line_number!;
-    const newLines = update.lines!;
-
-    // 验证行号
-    if (lineNumber < 1) {
-      throw new Error(`行号必须大于等于1: ${lineNumber}`);
-    }
-
-    // 如果行号超过总行数+1，抛出错误而不是填充空行
-    if (lineNumber > totalLines + 1) {
-      throw new Error(`行号 ${lineNumber} 超出范围，文件只有 ${totalLines} 行`);
-    }
-
-    // 转换为0-based索引
-    const insertIdx = lineNumber - 1;
-
-    // 确保每行都有换行符（在join时处理）
-    const formattedLines = newLines.map(line => line);
-
-    // 执行插入
-    const newLinesArray = [...lines];
-    newLinesArray.splice(insertIdx, 0, ...formattedLines);
-
-    return {
-      lines: newLinesArray,
-      details: {
-        line_number: lineNumber,
-        inserted_lines: formattedLines,
-        line_count: formattedLines.length
       }
     };
   }

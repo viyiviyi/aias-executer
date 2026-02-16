@@ -144,7 +144,7 @@ GET /api/tools/available
 - `read_file`: 读取文本文件内容
 - `write_file`: 写入文件内容
 - `list_directory`: 列出目录内容
-- `update_file`: 部分更新文件内容（删除行、插入行）
+- `update_file`: 部分更新文件内容（使用直观的参数：start_line_index, insert_content, del_line_count）
 
 ### 系统工具
 - `execute_command`: 执行命令行命令（即时执行）
@@ -182,9 +182,15 @@ GET /api/tools/available
 - 需要保持会话状态
 
 ### 文件更新工具 (`update_file`)
-用于部分修改文件内容，支持两种操作：
-1. **删除行** (`delete_lines`): 删除指定范围的行
-2. **插入行** (`insert_lines`): 在指定位置插入新行
+用于部分修改文件内容，使用直观的参数：
+- **插入内容** (`insert`): 在指定位置插入字符串内容（支持多行）
+- **删除行** (`delete`): 从指定位置开始删除指定行数
+
+**参数说明**:
+- `start_line_index`: 起始行索引（1-based）
+- `insert_content`: 要插入的内容字符串
+- `del_line_count`: 要删除的行数
+- `operation`: 'insert' 或 'delete'
 
 ### MCP工具
 用于与Model Context Protocol服务器交互：
@@ -218,7 +224,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
   }'
 ```
 
-### 更新文件（删除行）
+### 更新文件（删除行）- 新参数格式
 ```bash
 curl -X POST http://localhost:23769/api/tools/execute \
   -H "Content-Type: application/json" \
@@ -228,16 +234,16 @@ curl -X POST http://localhost:23769/api/tools/execute \
       "path": "test.txt",
       "updates": [
         {
-          "operation": "delete_lines",
-          "start_line": 5,
-          "line_count": 2
+          "operation": "delete",
+          "start_line_index": 5,
+          "del_line_count": 2
         }
       ]
     }
   }'
 ```
 
-### 更新文件（插入行）
+### 更新文件（插入内容）- 新参数格式
 ```bash
 curl -X POST http://localhost:23769/api/tools/execute \
   -H "Content-Type: application/json" \
@@ -247,9 +253,33 @@ curl -X POST http://localhost:23769/api/tools/execute \
       "path": "test.txt",
       "updates": [
         {
-          "operation": "insert_lines",
-          "line_number": 3,
-          "lines": ["新插入的第一行", "新插入的第二行"]
+          "operation": "insert",
+          "start_line_index": 3,
+          "insert_content": "新插入的第一行\n新插入的第二行\n新插入的第三行"
+        }
+      ]
+    }
+  }'
+```
+
+### 更新文件（批量操作）- 新参数格式
+```bash
+curl -X POST http://localhost:23769/api/tools/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "update_file",
+    "parameters": {
+      "path": "config.txt",
+      "updates": [
+        {
+          "operation": "delete",
+          "start_line_index": 10,
+          "del_line_count": 3
+        },
+        {
+          "operation": "insert",
+          "start_line_index": 5,
+          "insert_content": "配置项1\n配置项2"
         }
       ]
     }
