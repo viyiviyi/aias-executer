@@ -48,15 +48,16 @@ app.get('/', (_req, res) => {
 // 错误处理中间件
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Error:', err);
-  res.status(500).json({
+  // 出错时http需要是200
+  res.status(200).json({
     success: false,
     error: 'Internal server error'
   });
 });
 
-// 404处理
+// 404处理 http状态码固定200
 app.use((_req, res) => {
-  res.status(404).json({
+  res.status(200).json({
     success: false,
     error: 'Endpoint not found'
   });

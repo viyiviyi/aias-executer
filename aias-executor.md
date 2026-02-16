@@ -2,17 +2,10 @@
 
 ## 项目概述
 
-AIAS Executor 是一个用Node.js和TypeScript重写的OpenAI函数调用工具执行器，旨在解决原`openai-funcall-executor`项目的问题，提供更清晰、更高效的AI工具执行环境。
+AIAS Executor 是一个用Node.js和TypeScript重写的OpenAI函数调用工具执行器，旨在提供更清晰、更高效的AI工具执行环境。
 
 ## 解决的问题
 
-### 1. 原项目问题分析
-- **执行接口返回结构冗余**: 返回数据包含过多元信息，污染AI上下文
-- **终端和命令行混淆**: 工具说明不清晰，容易用错
-- **工具返回数据杂乱**: 包含不相关的执行细节
-- **不符合OpenAI标准**: 需要额外转换才能与OpenAI Function Calling集成
-
-### 2. 解决方案
 - **简洁的返回结构**: 只返回执行结果或错误信息
 - **清晰的工具说明**: 明确区分即时命令和交互式终端
 - **优化的数据流**: 减少不必要的信息传递
@@ -72,11 +65,11 @@ ALLOWED_EXTENSIONS=.txt,.md,.py,.js,.ts,.java,.cs,.dart,.json
 
 ### 基础端点
 - `GET /` - 服务信息
-- `GET /health` - 健康检查
-- `GET /tools` - 获取工具列表
+- `GET /api/health` - 健康检查
+- `GET /apu/tools` - 获取工具列表
 
 ### 工具执行
-- `POST /tools/execute` - 执行工具
+- `POST /ali/execute` - 执行工具
 
 ### 请求格式
 
