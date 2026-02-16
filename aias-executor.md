@@ -47,7 +47,7 @@ AIAS Executor 是一个用Node.js和TypeScript重写的OpenAI函数调用工具�
 ```bash
 # 基础配置
 WORKSPACE_DIR=./workspace  # 工作目录
-PORT=23769                 # 服务端口
+PORT=23777                 # 服务端口
 HOST=0.0.0.0              # 绑定地址
 
 # 安全配置
@@ -275,18 +275,18 @@ npm test
 ### API测试
 ```bash
 # 使用curl测试API
-curl http://localhost:23769/health
-curl http://localhost:23769/api/tools
+curl http://localhost:23777/health
+curl http://localhost:23777/api/tools
 ```
 
 ### 工具测试
 ```bash
 # 测试文件读取
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -d '{"tool":"read_file","parameters":{"path":"README.md"}}'
 
 # 测试命令执行
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -d '{"tool":"execute_command","parameters":{"command":"pwd"}}'
 ```
 
@@ -299,7 +299,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY dist/ ./dist/
-EXPOSE 23769
+EXPOSE 23777
 CMD ["node", "dist/index.js"]
 ```
 

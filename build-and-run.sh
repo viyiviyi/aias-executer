@@ -26,7 +26,7 @@ fi
 # 设置环境变量
 echo "3. 设置环境变量..."
 export WORKSPACE_DIR=$(pwd)/workspace
-export PORT=23769
+export PORT=23777
 export HOST=0.0.0.0
 export MAX_FILE_SIZE=10485760
 export COMMAND_TIMEOUT=30

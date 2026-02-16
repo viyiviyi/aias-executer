@@ -32,7 +32,7 @@ export class ConfigManager {
       allowedCommands: (process.env.ALLOWED_COMMANDS || 'ls,cat,grep,find,pwd,echo,cd,mkdir,rm,cp,mv').split(','),
       allowedExtensions: (process.env.ALLOWED_EXTENSIONS || '.txt,.md,.py,.js,.ts,.java,.cs,.dart,.json,.tsx,.jsx,.html,.css').split(','),
       pathValidation: process.env.PATH_VALIDATION !== 'false',
-      port: parseInt(process.env.PORT || '23769'),
+      port: parseInt(process.env.PORT || '23777'),
       host: process.env.HOST || '0.0.0.0'
     };
   }

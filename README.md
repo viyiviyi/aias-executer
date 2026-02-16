@@ -54,7 +54,7 @@ npm start
 WORKSPACE_DIR=./workspace
 
 # 服务器配置
-PORT=23769
+PORT=23777
 HOST=0.0.0.0
 
 # 安全配置
@@ -202,7 +202,7 @@ GET /api/tools/available
 
 ### 读取文件
 ```bash
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "read_file",
@@ -214,7 +214,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
 
 ### 执行命令
 ```bash
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "execute_command",
@@ -226,7 +226,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
 
 ### 更新文件（删除行）- 新参数格式
 ```bash
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "update_file",
@@ -245,7 +245,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
 
 ### 更新文件（插入内容）- 新参数格式
 ```bash
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "update_file",
@@ -264,7 +264,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
 
 ### 更新文件（批量操作）- 新参数格式
 ```bash
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "update_file",
@@ -289,7 +289,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
 ### MCP工具使用
 ```bash
 # 添加MCP服务器
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "mcp_add_server",
@@ -301,7 +301,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
   }'
 
 # 启动MCP服务器
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "mcp_start_server",
@@ -311,7 +311,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
   }'
 
 # 调用MCP工具
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "mcp_call_tool",
@@ -325,7 +325,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
 ### 创建终端并运行命令
 ```bash
 # 创建终端
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "create_terminal",
@@ -335,7 +335,7 @@ curl -X POST http://localhost:23769/api/tools/execute \
   }'
 
 # 向终端输入命令（使用返回的terminal_id）
-curl -X POST http://localhost:23769/api/tools/execute \
+curl -X POST http://localhost:23777/api/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "terminal_input",
