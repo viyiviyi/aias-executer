@@ -1,13 +1,10 @@
 import { ToolDefinition, ToolExecutionResult, OpenAIFunctionCall, ToolCallRequest } from '../types';
-import { ConfigManager } from './config';
 import { ToolRegistry } from './tool-registry';
 
 export class ToolExecutor {
-  private configManager: ConfigManager;
   private toolRegistry: ToolRegistry;
 
   constructor() {
-    this.configManager = ConfigManager.getInstance();
     this.toolRegistry = ToolRegistry.getInstance();
   }
 

@@ -20,7 +20,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // 健康检查
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -32,7 +32,7 @@ app.get('/health', (req, res) => {
 app.use('/api/tools', toolsRouter);
 
 // 根路径
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     name: 'AIAS Executor',
     description: 'AI Agent System Executor - A clean and efficient tool executor for OpenAI function calling',
@@ -45,7 +45,7 @@ app.get('/', (req, res) => {
 });
 
 // 错误处理中间件
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Error:', err);
   res.status(500).json({
     success: false,
@@ -54,7 +54,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // 404处理
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     success: false,
     error: 'Endpoint not found'

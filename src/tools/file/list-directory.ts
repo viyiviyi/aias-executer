@@ -5,6 +5,15 @@ import { Tool } from '../../core/tool-registry';
 
 const configManager = ConfigManager.getInstance();
 
+interface DirectoryItem {
+  name: string;
+  type: 'directory' | 'file';
+  size: number;
+  modified: string;
+  path?: string;
+  depth?: number;
+}
+
 export const listDirectoryTool: Tool = {
   definition: {
     name: 'list_directory',
@@ -52,21 +61,66 @@ export const listDirectoryTool: Tool = {
     if (!stats.isDirectory()) {
       throw new Error(`路径不是目录: ${dirPath}`);
     }
-
     if (recursive) {
-      return await this.listDirectoryRecursive(resolvedPath, skipHidden, skipDirs);
+      return await listDirectoryRecursive(resolvedPath, skipHidden, skipDirs);
     } else {
-      return await this.listDirectorySimple(resolvedPath, skipHidden, skipDirs);
+      return await listDirectorySimple(resolvedPath, skipHidden, skipDirs);
     }
-  },
+    }
+  }
 
-  async listDirectorySimple(dirPath: string, skipHidden: boolean, skipDirs: string[]): Promise<any> {
-    const items = await fs.readdir(dirPath, { withFileTypes: true });
-    const result = [];
+// 辅助函数 - 简单列表
+async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDirs: string[]): Promise<any> {
+  const items = await fs.readdir(dirPath, { withFileTypes: true });
+  const result: DirectoryItem[] = [];
+
+  for (const item of items) {
+    const itemName = item.name;
+    
+    // 跳过隐藏文件/目录
+    if (skipHidden && itemName.startsWith('.')) {
+      continue;
+    }
+
+    // 跳过特定目录
+    if (item.isDirectory() && skipDirs.includes(itemName)) {
+      continue;
+    }
+
+    const fullPath = path.join(dirPath, itemName);
+    const stats = await fs.stat(fullPath);
+
+    result.push({
+      name: itemName,
+      type: item.isDirectory() ? 'directory' : 'file',
+      size: stats.size,
+      modified: stats.mtime.toISOString()
+    });
+  }
+
+  return {
+    path: dirPath,
+    items: result,
+    count: result.length
+  };
+}
+
+// 辅助函数 - 递归列表
+async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skipDirs: string[]): Promise<any> {
+  const result = {
+    path: dirPath,
+    items: [] as DirectoryItem[],
+    directories: [] as string[]
+  };
+
+  const walk = async (currentPath: string, depth: number) => {
+    const items = await fs.readdir(currentPath, { withFileTypes: true });
 
     for (const item of items) {
       const itemName = item.name;
-      
+      const fullPath = path.join(currentPath, itemName);
+      const relativePath = path.relative(dirPath, fullPath);
+
       // 跳过隐藏文件/目录
       if (skipHidden && itemName.startsWith('.')) {
         continue;
@@ -77,69 +131,31 @@ export const listDirectoryTool: Tool = {
         continue;
       }
 
-      const fullPath = path.join(dirPath, itemName);
       const stats = await fs.stat(fullPath);
-
-      result.push({
+      const itemInfo: DirectoryItem = {
         name: itemName,
+        path: relativePath,
         type: item.isDirectory() ? 'directory' : 'file',
         size: stats.size,
-        modified: stats.mtime.toISOString()
-      });
-    }
+        modified: stats.mtime.toISOString(),
+        depth
+      };
 
-    return {
-      path: dirPath,
-      items: result,
-      count: result.length
-    };
-  },
+      result.items.push(itemInfo);
 
-  async listDirectoryRecursive(dirPath: string, skipHidden: boolean, skipDirs: string[]): Promise<any> {
-    const result = {
-      path: dirPath,
-      items: [] as any[],
-      directories: [] as string[]
-    };
-
-    const walk = async (currentPath: string, depth: number) => {
-      const items = await fs.readdir(currentPath, { withFileTypes: true });
-
-      for (const item of items) {
-        const itemName = item.name;
-        const fullPath = path.join(currentPath, itemName);
-        const relativePath = path.relative(dirPath, fullPath);
-
-        // 跳过隐藏文件/目录
-        if (skipHidden && itemName.startsWith('.')) {
-          continue;
-        }
-
-        // 跳过特定目录
-        if (item.isDirectory() && skipDirs.includes(itemName)) {
-          continue;
-        }
-
-        const stats = await fs.stat(fullPath);
-        const itemInfo = {
-          name: itemName,
-          path: relativePath,
-          type: item.isDirectory() ? 'directory' : 'file',
-          size: stats.size,
-          modified: stats.mtime.toISOString(),
-          depth
-        };
-
-        result.items.push(itemInfo);
-
-        if (item.isDirectory()) {
-          result.directories.push(relativePath);
-          await walk(fullPath, depth + 1);
-        }
+      if (item.isDirectory()) {
+        result.directories.push(relativePath);
+        await walk(fullPath, depth + 1);
       }
-    };
+    }
+  };
 
-    await walk(dirPath, 0);
-    return result;
-  }
-};
+  await walk(dirPath, 0);
+  return result;
+}
+
+// 将辅助函数附加到工具对象
+Object.assign(listDirectoryTool, {
+  listDirectorySimple,
+  listDirectoryRecursive
+});

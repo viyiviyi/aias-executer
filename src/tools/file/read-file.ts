@@ -1,5 +1,4 @@
 import fs from 'fs/promises';
-import path from 'path';
 import { ConfigManager } from '../../core/config';
 import { Tool } from '../../core/tool-registry';
 
@@ -63,7 +62,7 @@ export const readFileTool: Tool = {
     }
 
     // 读取文件内容
-    const content = await fs.readFile(resolvedPath, encoding);
+    const content = await fs.readFile(resolvedPath, { encoding: encoding as BufferEncoding });
     const lines = content.split('\n');
     const totalLines = lines.length;
 

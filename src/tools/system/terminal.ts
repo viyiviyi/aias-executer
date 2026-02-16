@@ -1,6 +1,5 @@
 import { spawn } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
 import { ConfigManager } from '../../core/config';
 import { Tool } from '../../core/tool-registry';
 import { TerminalInfo } from '../../types';
@@ -47,7 +46,7 @@ class TerminalManager {
       const fullEnv = { ...process.env, ...env };
 
       // 创建子进程
-      const process = spawn(shell, [], {
+      const childProcess = spawn(shell, [], {
         cwd: workdirPath,
         env: fullEnv,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -57,7 +56,7 @@ class TerminalManager {
       // 保存终端信息
       this.terminals.set(terminalId, {
         id: terminalId,
-        process,
+        process: childProcess,
         workdir: workdirPath,
         shell,
         createdAt: Date.now(),
@@ -67,8 +66,8 @@ class TerminalManager {
 
       // 如果有初始命令，执行它
       if (initialCommand) {
-        process.stdin.write(initialCommand + '\n');
-        process.stdin.end();
+        childProcess.stdin.write(initialCommand + '\n');
+        childProcess.stdin.end();
       }
 
       return { terminal_id: terminalId };
@@ -147,7 +146,7 @@ class TerminalManager {
       process.stdin.write(input + '\n');
 
       // 监听进程结束
-      process.on('close', (code) => {
+      process.on('close', (code: number) => {
         clearTimeout(timeoutId);
         this.cleanupTerminal(terminalId);
         resolve({

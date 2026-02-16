@@ -6,7 +6,7 @@ const router = Router();
 const toolExecutor = new ToolExecutor();
 
 // 获取工具列表
-router.get('/', (req, res) => {
+router.get('/', (_req, res) => {
   try {
     const tools = toolExecutor.getToolDefinitions();
     res.json({
@@ -93,7 +93,7 @@ router.post('/execute/batch', async (req, res) => {
 });
 
 // 获取可用工具名称
-router.get('/available', (req, res) => {
+router.get('/available', (_req, res) => {
   try {
     const tools = toolExecutor.getAvailableTools();
     res.json({

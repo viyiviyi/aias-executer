@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { ConfigManager } from './config';
@@ -30,8 +31,8 @@ export class MCPClient {
 
   private loadConfig(): MCPConfig {
     try {
-      if (fs.existsSync(this.configPath)) {
-        const content = fs.readFileSync(this.configPath, 'utf-8');
+      if (fsSync.existsSync(this.configPath)) {
+        const content = fsSync.readFileSync(this.configPath, 'utf-8');
         return JSON.parse(content);
       }
     } catch (error) {
@@ -85,7 +86,7 @@ export class MCPClient {
     return { servers };
   }
 
-  public async scanServer(serverPath: string, serverType: 'executable' | 'npm' | 'pip' = 'executable'): Promise<MCPScanResult> {
+  public async scanServer(serverPath: string, _serverType: 'executable' | 'npm' | 'pip' = 'executable'): Promise<MCPScanResult> {
     try {
       // 这里应该实现实际的MCP服务器扫描逻辑
       // 由于MCP协议复杂，这里返回模拟数据
@@ -179,17 +180,17 @@ export class MCPClient {
     }
 
     try {
-      const env = { ...process.env, ...server.env };
-      const process = spawn(server.command[0], [...(server.command.slice(1) || []), ...(server.args || [])], {
-        env,
+      const fullEnv = { ...process.env, ...server.env };
+      const childProcess = spawn(server.command[0], [...(server.command.slice(1) || []), ...(server.args || [])], {
+        env: fullEnv,
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
-      this.processes.set(serverName, process);
+      this.processes.set(serverName, childProcess);
       server.is_running = true;
 
       // 监听进程退出
-      process.on('exit', () => {
+      childProcess.on('exit', () => {
         this.processes.delete(serverName);
         server.is_running = false;
       });
@@ -199,7 +200,7 @@ export class MCPClient {
       return {
         success: true,
         server_name: serverName,
-        pid: process.pid
+        pid: childProcess.pid
       };
     } catch (error: any) {
       throw new Error(`启动服务器失败: ${error.message}`);
@@ -244,13 +245,13 @@ export class MCPClient {
   }
 
   public async stopServer(serverName: string): Promise<{ success: boolean }> {
-    const process = this.processes.get(serverName);
-    if (!process) {
+    const childProcess = this.processes.get(serverName);
+    if (!childProcess) {
       throw new Error(`服务器未运行: ${serverName}`);
     }
 
     try {
-      process.kill();
+      childProcess.kill();
       this.processes.delete(serverName);
       
       const server = this.servers.get(serverName);
