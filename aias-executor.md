@@ -73,14 +73,14 @@ ALLOWED_EXTENSIONS=.txt,.md,.py,.js,.ts,.java,.cs,.dart,.json
 ### 基础端点
 - `GET /` - 服务信息
 - `GET /health` - 健康检查
-- `GET /api/tools` - 获取工具列表
-- `GET /api/tools/available` - 获取可用工具名称
+- `GET /tools` - 获取工具列表
 
 ### 工具执行
-- `POST /api/tools/execute` - 执行单个工具
-- `POST /api/tools/execute/batch` - 批量执行工具
+- `POST /tools/execute` - 执行工具
 
 ### 请求格式
+
+#### OpenAI标准格式
 
 #### OpenAI标准格式
 ```json
@@ -276,17 +276,17 @@ npm test
 ```bash
 # 使用curl测试API
 curl http://localhost:23777/health
-curl http://localhost:23777/api/tools
+curl http://localhost:23777/tools
 ```
 
 ### 工具测试
 ```bash
 # 测试文件读取
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -d '{"tool":"read_file","parameters":{"path":"README.md"}}'
 
 # 测试命令执行
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -d '{"tool":"execute_command","parameters":{"command":"pwd"}}'
 ```
 

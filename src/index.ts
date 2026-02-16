@@ -28,8 +28,8 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// API路由
-app.use('/api/tools', toolsRouter);
+// API路由 - 简化接口
+app.use('/tools', toolsRouter);
 
 // 根路径
 app.get('/', (_req, res) => {
@@ -38,7 +38,8 @@ app.get('/', (_req, res) => {
     description: 'AI Agent System Executor - A clean and efficient tool executor for OpenAI function calling',
     version: '1.0.0',
     endpoints: {
-      tools: '/api/tools',
+      tools: '/tools',
+      execute: '/tools/execute',
       health: '/health'
     }
   });
@@ -68,7 +69,6 @@ const HOST = config.host;
 app.listen(PORT, HOST, () => {
   console.log(`AIAS Executor 服务器启动在 http://${HOST}:${PORT}`);
   console.log(`工作目录: ${config.workspaceDir}`);
-  console.log(`可用工具数量: ${new (require('./core/executor')).ToolExecutor().getAvailableTools().length}`);
 });
 
 export default app;

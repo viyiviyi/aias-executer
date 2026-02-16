@@ -47,41 +47,18 @@ npm run dev
 npm run build
 npm start
 ```
-
-### 环境变量配置
-```bash
-# 工作目录（默认：当前目录）
-WORKSPACE_DIR=./workspace
-
-# 服务器配置
-PORT=23777
-HOST=0.0.0.0
-
-# 安全配置
-MAX_FILE_SIZE=10485760  # 10MB
-COMMAND_TIMEOUT=30
-MAX_TERMINALS=10
-PATH_VALIDATION=true
-
-# 允许的命令（用逗号分隔）
-ALLOWED_COMMANDS=ls,cat,grep,find,pwd,echo,cd,mkdir,rm,cp,mv
-
-# 允许的文件扩展名
-ALLOWED_EXTENSIONS=.txt,.md,.py,.js,.ts,.java,.cs,.dart,.json
-```
-
 ## API接口
 
 ### 1. 获取工具列表
 ```
-GET /api/tools
+GET /tools
 ```
 
 返回符合OpenAI Function Calling格式的tools列表。
 
 ### 2. 执行工具
 ```
-POST /api/tools/execute
+POST /tools/execute
 ```
 
 支持两种请求格式：
@@ -107,42 +84,35 @@ POST /api/tools/execute
 }
 ```
 
-### 3. 批量执行工具
+### 3. 健康检查
 ```
-POST /api/tools/execute/batch
+GET /health
 ```
 
+返回服务健康状态。
+
+#### 原有格式（向后兼容）
 ```json
 {
-  "requests": [
-    {
-      "type": "function",
-      "function": {
-        "name": "read_file",
-        "arguments": "{\"path\": \"file1.txt\"}"
-      }
-    },
-    {
-      "tool": "write_file",
-      "parameters": {
-        "path": "output.txt",
-        "content": "Hello World"
-      }
-    }
-  ]
-}
+  "tool": "read_file",
+  "parameters": {
+    "path": "README.md"
 ```
 
-### 4. 获取可用工具名称
+### 3. 健康检查
 ```
-GET /api/tools/available
+GET /health
 ```
+
+返回服务健康状态。
 
 ## 可用工具
 
 ### 文件工具
 - `read_file`: 读取文本文件内容
 - `write_file`: 写入文件内容
+- `list_directory`: 列出目录内容
+
 - `list_directory`: 列出目录内容
 - `update_file`: 部分更新文件内容（使用直观的参数：start_line_index, insert_content, del_line_count）
 
@@ -202,7 +172,7 @@ GET /api/tools/available
 
 ### 读取文件
 ```bash
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "read_file",
@@ -214,7 +184,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
 
 ### 执行命令
 ```bash
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "execute_command",
@@ -226,7 +196,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
 
 ### 更新文件（删除行）- 新参数格式
 ```bash
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "update_file",
@@ -245,7 +215,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
 
 ### 更新文件（插入内容）- 新参数格式
 ```bash
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "update_file",
@@ -264,7 +234,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
 
 ### 更新文件（批量操作）- 新参数格式
 ```bash
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "update_file",
@@ -289,7 +259,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
 ### MCP工具使用
 ```bash
 # 添加MCP服务器
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "mcp_add_server",
@@ -301,7 +271,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
   }'
 
 # 启动MCP服务器
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "mcp_start_server",
@@ -311,7 +281,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
   }'
 
 # 调用MCP工具
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "mcp_call_tool",
@@ -325,7 +295,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
 ### 创建终端并运行命令
 ```bash
 # 创建终端
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "create_terminal",
@@ -335,7 +305,7 @@ curl -X POST http://localhost:23777/api/tools/execute \
   }'
 
 # 向终端输入命令（使用返回的terminal_id）
-curl -X POST http://localhost:23777/api/tools/execute \
+curl -X POST http://localhost:23777/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "terminal_input",
