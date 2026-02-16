@@ -11,7 +11,7 @@ router.get('/tools', (_req, res) => {
     const tools = toolExecutor.getToolDefinitions();
     res.json(tools);
   } catch (error: any) {
-    res.status(500).json({
+    res.status(200).json({
       success: false,
       error: error.message
     });
@@ -28,13 +28,13 @@ router.post('/execute', async (req, res) => {
     if (result.success) {
       res.json(result.result);
     } else {
-      res.status(400).json({
+      res.status(200).json({
         success: false,
         error: result.error
       });
     }
   } catch (error: any) {
-    res.status(500).json({
+    res.status(200).json({
       success: false,
       error: error.message
     });

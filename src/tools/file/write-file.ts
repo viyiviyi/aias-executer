@@ -27,7 +27,7 @@ export const writeFileTool: Tool = {
         },
         append: {
           type: 'boolean',
-          description: '是否追加到文件末尾（可选）',
+          description: '是否追加到文件末尾（可选，不自动换行）',
           default: false
         }
       },
