@@ -33,13 +33,11 @@ export function registerAllTools(): void {
   const toolRegistry = ToolRegistry.getInstance();
 
   // 文件工具
-  // 文档工具
   toolRegistry.registerTool('get_tools_documentation', getToolsDocumentationTool);
+  toolRegistry.registerTool('read_file', readFileTool);
+  toolRegistry.registerTool('write_file', writeFileTool);
   toolRegistry.registerTool('list_directory', listDirectoryTool);
   toolRegistry.registerTool('update_file', updateFileTool);
-  // 文档工具
-  toolRegistry.registerTool('get_tools_documentation', getToolsDocumentationTool);
-
 
   // 系统工具
   toolRegistry.registerTool('execute_command', executeCommandTool);
@@ -74,6 +72,9 @@ export const allTools = {
   get_tools_documentation: getToolsDocumentationTool,
   
   // 系统工具
+  execute_command: executeCommandTool,
+  create_terminal: createTerminalTool,
+  terminal_input: terminalInputTool,
   close_terminal: closeTerminalTool,
   list_terminals: listTerminalsTool,
   
