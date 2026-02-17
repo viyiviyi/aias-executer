@@ -10,6 +10,7 @@ class TerminalManager {
   private static instance: TerminalManager;
   private terminals: Map<string, TerminalInfo> = new Map();
   private maxTerminals: number;
+  private readonly MAX_BUFFER_SIZE = 1000; // 最大缓冲区大小，防止内存溢出
 
   private constructor() {
     const config = configManager.getConfig();
@@ -53,6 +54,27 @@ class TerminalManager {
         shell: true
       });
 
+      // 初始化输出缓冲区
+      const outputBuffer: string[] = [];
+      
+      // 收集所有输出到缓冲区，并限制缓冲区大小
+      const collectOutput = (data: Buffer) => {
+        const output = data.toString();
+        const lines = output.split('\n').filter(line => line.trim() !== '');
+        
+        // 添加新行到缓冲区
+        outputBuffer.push(...lines);
+        
+        // 限制缓冲区大小，移除最旧的行
+        if (outputBuffer.length > this.MAX_BUFFER_SIZE) {
+          const excess = outputBuffer.length - this.MAX_BUFFER_SIZE;
+          outputBuffer.splice(0, excess);
+        }
+      };
+
+      childProcess.stdout.on('data', collectOutput);
+      childProcess.stderr.on('data', collectOutput);
+
       // 保存终端信息
       this.terminals.set(terminalId, {
         id: terminalId,
@@ -61,13 +83,15 @@ class TerminalManager {
         shell,
         createdAt: Date.now(),
         lastActivity: Date.now(),
-        description
+        description,
+        lastReadPosition: 0, // 上次读取的位置，保存在后台
+        outputBuffer,
+        isReading: false
       });
 
       // 如果有初始命令，执行它
       if (initialCommand) {
         childProcess.stdin.write(initialCommand + '\n');
-        childProcess.stdin.end();
       }
 
       return { terminal_id: terminalId };
@@ -76,87 +100,151 @@ class TerminalManager {
     }
   }
 
-  public sendInput(
+  public async readTerminalOutput(
+    terminalId: string,
+    waitTimeout: number = 30,
+    maxLines: number = 30
+  ): Promise<any> {
+    const terminal = this.terminals.get(terminalId);
+    if (!terminal) {
+      throw new Error(`终端不存在: ${terminalId}`);
+    }
+
+    // 检查进程是否还在运行
+    if (terminal.process.exitCode !== null) {
+      this.cleanupTerminal(terminalId);
+      throw new Error('终端进程已结束');
+    }
+
+    // 更新活动时间
+    terminal.lastActivity = Date.now();
+
+    // 如果正在读取，等待
+    if (terminal.isReading) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    terminal.isReading = true;
+
+    try {
+      return await new Promise((resolve) => {
+        const startTime = Date.now();
+        let lastOutputTime = Date.now();
+        const newLines: string[] = [];
+        let timeoutId: NodeJS.Timeout = setTimeout(() => {},0)
+
+        // 检查是否有新输出
+        const checkOutput = () => {
+          const currentBuffer = terminal.outputBuffer;
+          if (currentBuffer.length > terminal.lastReadPosition) {
+            // 有新输出
+            const newOutput = currentBuffer.slice(terminal.lastReadPosition);
+            newLines.push(...newOutput);
+            terminal.lastReadPosition = currentBuffer.length;
+            lastOutputTime = Date.now();
+          }
+
+          // 检查是否达到最大行数
+          if (newLines.length >= maxLines) {
+            clearTimeout(timeoutId);
+            const output = newLines.slice(0, maxLines).join('\n');
+            resolve({
+              output,
+              line_count: Math.min(newLines.length, maxLines),
+              truncated: newLines.length > maxLines,
+              has_new_output: true
+            });
+            return;
+          }
+
+          // 检查超时条件
+          const elapsedTime = Date.now() - startTime;
+          const timeSinceLastOutput = Date.now() - lastOutputTime;
+          
+          if (elapsedTime >= waitTimeout * 1000) {
+            // 总超时
+            clearTimeout(timeoutId);
+            const output = newLines.length > 0 
+              ? newLines.join('\n')
+              : terminal.outputBuffer.slice(-5).join('\n'); // 返回最后5行
+            resolve({
+              output,
+              line_count: newLines.length || Math.min(5, terminal.outputBuffer.length),
+              timeout: true,
+              has_new_output: newLines.length > 0
+            });
+          } else if (timeSinceLastOutput >= 3000 && newLines.length > 0) {
+            // 3秒无新输出且有输出
+            clearTimeout(timeoutId);
+            const output = newLines.join('\n');
+            resolve({
+              output,
+              line_count: newLines.length,
+              no_new_output_timeout: true,
+              has_new_output: true
+            });
+          } else if (timeSinceLastOutput >= 3000 && newLines.length === 0) {
+            // 3秒无新输出且无输出
+            clearTimeout(timeoutId);
+            const output = terminal.outputBuffer.slice(-5).join('\n'); // 返回最后5行
+            resolve({
+              output,
+              line_count: Math.min(5, terminal.outputBuffer.length),
+              no_new_output: true,
+              has_new_output: false
+            });
+          } else {
+            // 继续等待
+            setTimeout(checkOutput, 100);
+          }
+        };
+
+        // 设置总超时
+        timeoutId = setTimeout(() => {
+          const output = newLines.length > 0 
+            ? newLines.join('\n')
+            : terminal.outputBuffer.slice(-5).join('\n');
+          resolve({
+            output,
+            line_count: newLines.length || Math.min(5, terminal.outputBuffer.length),
+            timeout: true,
+            has_new_output: newLines.length > 0
+          });
+        }, waitTimeout * 1000);
+
+        // 开始检查输出
+        checkOutput();
+      });
+    } finally {
+      terminal.isReading = false;
+    }
+  }
+
+  public async sendInput(
     terminalId: string,
     input: string,
     waitTimeout: number = 30,
     maxLines: number = 30
   ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const terminal = this.terminals.get(terminalId);
-      if (!terminal) {
-        reject(new Error(`终端不存在: ${terminalId}`));
-        return;
-      }
+    const terminal = this.terminals.get(terminalId);
+    if (!terminal) {
+      throw new Error(`终端不存在: ${terminalId}`);
+    }
 
-      const { process } = terminal;
-      
-      // 检查进程是否还在运行
-      if (process.exitCode !== null) {
-        this.cleanupTerminal(terminalId);
-        reject(new Error('终端进程已结束'));
-        return;
-      }
+    // 检查进程是否还在运行
+    if (terminal.process.exitCode !== null) {
+      this.cleanupTerminal(terminalId);
+      throw new Error('终端进程已结束');
+    }
 
-      // 更新活动时间
-      terminal.lastActivity = Date.now();
+    // 更新活动时间
+    terminal.lastActivity = Date.now();
 
-      let output = '';
-      let lineCount = 0;
-      let timeoutId: NodeJS.Timeout;
+    // 发送输入
+    terminal.process.stdin.write(input + '\n');
 
-      // 设置超时
-      timeoutId = setTimeout(() => {
-        process.stdout.removeAllListeners();
-        process.stderr.removeAllListeners();
-        resolve({
-          output: output.trim(),
-          line_count: lineCount,
-          timeout: true
-        });
-      }, waitTimeout * 1000);
-
-      // 收集输出
-      const collectOutput = (data: Buffer) => {
-        const lines = data.toString().split('\n');
-        for (const line of lines) {
-          if (line.trim()) {
-            output += line + '\n';
-            lineCount++;
-            
-            if (lineCount >= maxLines) {
-              clearTimeout(timeoutId);
-              process.stdout.removeAllListeners();
-              process.stderr.removeAllListeners();
-              resolve({
-                output: output.trim(),
-                line_count: lineCount,
-                truncated: true
-              });
-              return;
-            }
-          }
-        }
-      };
-
-      process.stdout.on('data', collectOutput);
-      process.stderr.on('data', collectOutput);
-
-      // 发送输入
-      process.stdin.write(input + '\n');
-
-      // 监听进程结束
-      process.on('close', (code: number) => {
-        clearTimeout(timeoutId);
-        this.cleanupTerminal(terminalId);
-        resolve({
-          output: output.trim(),
-          line_count: lineCount,
-          exit_code: code,
-          process_ended: true
-        });
-      });
-    });
+    // 等待并读取输出
+    return await this.readTerminalOutput(terminalId, waitTimeout, maxLines);
   }
 
   public closeTerminal(terminalId: string): { success: boolean } {
@@ -224,6 +312,10 @@ export const createTerminalTool: Tool = {
           additionalProperties: { type: 'string' },
           description: '环境变量（可选）'
         },
+        description: {
+          type: 'string',
+          description: '终端描述（可选）'
+        },
         initial_command: {
           type: 'string',
           description: '初始命令（可选），创建终端后立即执行的命令'
@@ -237,9 +329,10 @@ export const createTerminalTool: Tool = {
     const shell = parameters.shell || 'bash';
     const workdir = parameters.workdir || '.';
     const env = parameters.env || {};
+    const description = parameters.description;
     const initialCommand = parameters.initial_command;
 
-    return terminalManager.createTerminal(shell, workdir, env, undefined, initialCommand);
+    return terminalManager.createTerminal(shell, workdir, env, description, initialCommand);
   }
 };
 
@@ -288,6 +381,49 @@ export const terminalInputTool: Tool = {
     }
 
     return await terminalManager.sendInput(terminalId, input, waitTimeout, maxLines);
+  }
+};
+
+export const readTerminalOutputTool: Tool = {
+  definition: {
+    name: 'read_terminal_output',
+    description: '主动读取终端输出',
+    parameters: {
+      type: 'object',
+      properties: {
+        terminal_id: {
+          type: 'string',
+          description: '终端ID'
+        },
+        wait_timeout: {
+          type: 'integer',
+          description: '等待输出的超时时间（秒）',
+          default: 30,
+          minimum: 1,
+          maximum: 60
+        },
+        max_lines: {
+          type: 'integer',
+          description: '返回的最大行数',
+          default: 30,
+          minimum: 1,
+          maximum: 100
+        }
+      },
+      required: ['terminal_id']
+    }
+  },
+
+  async execute(parameters: Record<string, any>): Promise<any> {
+    const terminalId = parameters.terminal_id;
+    const waitTimeout = parameters.wait_timeout || 30;
+    const maxLines = parameters.max_lines || 30;
+
+    if (!terminalId) {
+      throw new Error('terminal_id参数不能为空');
+    }
+
+    return await terminalManager.readTerminalOutput(terminalId, waitTimeout, maxLines);
   }
 };
 

@@ -9,7 +9,7 @@ import { readCodeTool } from './file/read-code';
 
 // 系统工具
 import { executeCommandTool } from './system/command';
-import { createTerminalTool, terminalInputTool, closeTerminalTool, listTerminalsTool } from './system/terminal';
+import { createTerminalTool, terminalInputTool, readTerminalOutputTool, closeTerminalTool, listTerminalsTool } from './system/terminal';
 
 // 文档工具
 import { getToolsDocumentationTool } from './system/get-tools-documentation';
@@ -45,6 +45,7 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('execute_command', executeCommandTool);
   toolRegistry.registerTool('create_terminal', createTerminalTool);
   toolRegistry.registerTool('terminal_input', terminalInputTool);
+  toolRegistry.registerTool('read_terminal_output', readTerminalOutputTool);
   toolRegistry.registerTool('close_terminal', closeTerminalTool);
   toolRegistry.registerTool('list_terminals', listTerminalsTool);
 
@@ -75,11 +76,12 @@ export const allTools = {
   get_tools_documentation: getToolsDocumentationTool,
   
   // 系统工具
-  execute_command: executeCommandTool,
-  create_terminal: createTerminalTool,
   terminal_input: terminalInputTool,
+  read_terminal_output: readTerminalOutputTool,
   close_terminal: closeTerminalTool,
   list_terminals: listTerminalsTool,
+  execute_command: executeCommandTool,
+  create_terminal: createTerminalTool,
   
   // 网络工具
   http_request: httpRequestTool,

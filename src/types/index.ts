@@ -59,6 +59,9 @@ export interface TerminalInfo {
   createdAt: number;
   lastActivity: number;
   description?: string;
+  lastReadPosition: number; // 上次读取的位置
+  outputBuffer: string[]; // 输出缓冲区
+  isReading: boolean; // 是否正在读取
 }
 
 // 导出MCP相关类型

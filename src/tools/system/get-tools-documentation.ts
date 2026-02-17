@@ -176,11 +176,12 @@ export const getToolsDocumentationTool = {
 - 设置合适的超时时间
 - 指定工作目录和环境变量
 
-### 7. 终端工具组（create_terminal, terminal_input, close_terminal, list_terminals）
+### 7. 终端工具组（create_terminal, terminal_input, read_terminal_output, close_terminal, list_terminals）
 **适应情况**:
 - 交互式命令行会话
 - 长时间运行的任务
 - 需要用户输入的命令
+- 需要持续监控输出的任务
 
 **限制**:
 - 需要管理终端会话生命周期
@@ -189,8 +190,16 @@ export const getToolsDocumentationTool = {
 
 **最佳实践**:
 - 使用 create_terminal 创建交互式会话
+- 使用 terminal_input 向终端发送命令并等待输出
+- 使用 read_terminal_output 主动读取终端输出
 - 及时使用 close_terminal 关闭不再需要的终端
 - 使用 list_terminals 管理多个会话
+
+**终端输出处理逻辑**:
+1. 最多等待30秒或超过3秒无新输出时返回
+2. 返回的输出最多包含最近30行
+3. 读取时如果无新输出，返回最后5行并告知无新输出
+4. 不区分标准输出和错误输出，合并处理
 
 ## 网络操作工具
 
