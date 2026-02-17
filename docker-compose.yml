@@ -1,0 +1,51 @@
+version: '3.8'  
+  
+services:  
+  aias-executor:  
+    build:  
+      context: .  
+      dockerfile: Dockerfile  
+    container_name: aias-executor  
+    restart: unless-stopped  
+    ports:  
+      - "3000:3000"  
+    environment:  
+      - NODE_ENV=production  
+      - TZ=Asia/Shanghai  
+    volumes:  
+      # 配置文件目录  
+      - ./config:/app/config  
+      # 开发时挂载源代码，生产环境可以注释掉  
+      - ./src:/app/src  
+      - ./package.json:/app/package.json  
+      - ./yarn.lock:/app/yarn.lock  
+    working_dir: /app  
+    # 健康检查  
+    healthcheck:  
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]  
+      interval: 30s  
+      timeout: 10s  
+      retries: 3  
+      start_period: 40s  
+    # 资源限制  
+    deploy:  
+      resources:  
+        limits:  
+          cpus: '1'  
+          memory: 1G  
+        reservations:  
+          cpus: '0.5'  
+          memory: 512M  
+    # 日志配置  
+    logging:  
+      driver: "json-file"  
+      options:  
+        max-size: "10m"  
+        max-file: "3"  
+    # 网络配置  
+    networks:  
+      - aias-network  
+  
+networks:  
+  aias-network:  
+    driver: bridge 

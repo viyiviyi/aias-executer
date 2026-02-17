@@ -49,6 +49,7 @@ export interface Config {
   pathValidation: boolean;
   port: number;
   host: string;
+  configPath?: string;
 }
 
 export interface TerminalInfo {

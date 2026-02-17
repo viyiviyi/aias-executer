@@ -7,6 +7,12 @@ AI Agent System Executor - 一个简洁高效的OpenAI函数调用工具执行�
 AIAS Executor 是一个用Node.js和TypeScript重写的工具执行器，旨在解决原`openai-funcall-executor`项目的问题，提供更清晰、更高效的OpenAI函数调用支持。
 
 ## 主要改进
+### 5. 配置文件支持
+- 支持从YAML/JSON配置文件读取配置
+- 环境变量优先级高于配置文件
+- 支持热重载配置
+- Docker容器映射config目录
+
 
 ### 1. 简洁的返回结构
 - 执行接口只返回必要的结果数据，避免冗余信息污染AI上下文
@@ -359,3 +365,174 @@ aias-executor/
 ## 许可证
 
 MIT
+
+## 配置
+
+### 配置文件
+
+支持YAML和JSON格式的配置文件，配置文件按以下顺序查找：
+
+1. `./config.yaml` 或 `./config.yml`
+2. `./config.json`
+3. `./config/config.yaml` 或 `./config/config.yml`
+4. `./config/config.json`
+5. `/app/config/config.yaml` 或 `/app/config/config.yml`
+6. `/app/config/config.json`
+
+### 配置优先级
+
+1. **环境变量** (最高优先级)
+2. **配置文件**
+3. **默认值** (最低优先级)
+
+### 配置示例
+
+#### YAML格式 (`config.yaml`)
+```yaml
+# 服务器配置
+server:
+  port: 3000
+  host: "0.0.0.0"
+
+# 工作空间配置
+workspace:
+  dir: "/app/workspace"
+  maxFileSize: 10485760  # 10MB
+  allowedExtensions:
+    - ".txt"
+    - ".md"
+    - ".py"
+    - ".js"
+    - ".ts"
+    - ".json"
+    - ".yaml"
+    - ".yml"
+  pathValidation: true
+
+# 命令执行配置
+command:
+  timeout: 30
+  allowedCommands:
+    - "*"  # 允许所有命令
+  maxTerminals: 10
+```
+
+#### JSON格式 (`config.json`)
+```json
+{
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0"
+  },
+  "workspace": {
+    "dir": "/app/workspace",
+    "maxFileSize": 10485760,
+    "allowedExtensions": [
+      ".txt",
+      ".md",
+      ".py",
+      ".js",
+      ".ts",
+      ".json",
+      ".yaml",
+      ".yml"
+    ],
+    "pathValidation": true
+  },
+  "command": {
+    "timeout": 30,
+    "allowedCommands": ["*"],
+    "maxTerminals": 10
+  }
+}
+```
+
+### 环境变量
+
+所有配置都可以通过环境变量覆盖：
+
+```bash
+# 服务器配置
+export PORT=3000
+export HOST="0.0.0.0"
+
+# 工作空间配置
+export WORKSPACE_DIR="/app/workspace"
+export MAX_FILE_SIZE=10485760
+export ALLOWED_EXTENSIONS=".txt,.md,.py,.js,.ts,.json,.yaml,.yml"
+export PATH_VALIDATION=true
+
+# 命令执行配置
+export COMMAND_TIMEOUT=30
+export ALLOWED_COMMANDS="*"
+export MAX_TERMINALS=10
+```
+
+### Docker配置
+
+在Docker Compose中，配置文件目录会自动映射到容器中：
+
+```yaml
+services:
+  aias-executor:
+    volumes:
+      # 配置文件目录
+      - ./config:/app/config
+      # 其他挂载...
+```
+
+### 配置验证
+
+配置管理器会自动验证：
+- 文件路径是否在工作空间内
+- 文件扩展名是否允许
+- 命令是否在白名单中
+- 文件大小是否超过限制
+
+### 热重载
+
+配置支持热重载，可以通过API重新加载配置：
+
+```bash
+# 重新加载配置
+curl -X POST http://localhost:3000/config/reload
+```
+
+## Docker部署
+
+### 使用Docker Compose
+
+1. 创建配置文件目录和配置文件：
+```bash
+mkdir config
+cp config.example.yaml config/config.yaml
+# 编辑配置文件
+vim config/config.yaml
+```
+
+2. 启动服务：
+```bash
+docker-compose up -d
+```
+
+3. 查看日志：
+```bash
+docker-compose logs -f
+```
+
+### 自定义配置
+
+可以通过环境变量或配置文件自定义配置：
+
+```yaml
+# docker-compose.yml
+services:
+  aias-executor:
+    environment:
+      - PORT=3001
+      - WORKSPACE_DIR=/data/workspace
+      - ALLOWED_COMMANDS=ls,cat,echo
+    volumes:
+      - ./config:/app/config
+      - ./data/workspace:/data/workspace
+```
