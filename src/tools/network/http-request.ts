@@ -89,7 +89,7 @@ export const httpRequestTool: Tool = {
       return {
         status: response.status,
         status_text: response.statusText,
-        headers: response.headers,
+        response_headers: response.headers,
         data: response.data,
         success: response.status >= 200 && response.status < 300
       };
@@ -99,7 +99,7 @@ export const httpRequestTool: Tool = {
         return {
           status: error.response.status,
           status_text: error.response.statusText,
-          headers: error.response.headers,
+          response_headers: error.response.headers,
           data: error.response.data,
           success: false,
           error: `HTTP错误: ${error.response.status}`
