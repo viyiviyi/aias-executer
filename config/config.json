@@ -1,7 +1,7 @@
 {
   "server": {
     "port": 23777,
-    "host": "127.0.0.1"
+    "host": "0.0.0.0"
   },
   "workspace": {
     "dir": "/app/workspace",

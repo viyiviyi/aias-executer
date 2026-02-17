@@ -15,7 +15,12 @@ const app = express();
 
 // 中间件
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: '*', // 允许所有域名
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

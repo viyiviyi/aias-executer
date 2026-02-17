@@ -5,6 +5,70 @@
 
 ## 最新更新（2026-02-17）
 
+### 跨域设置优化
+已为项目添加完整的跨域支持，默认允许所有域名访问。
+
+#### 主要改进：
+1. **完整的CORS配置**：
+   - `origin: '*'` - 允许所有域名
+   - `methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']` - 支持所有常用HTTP方法
+   - `allowedHeaders: ['Content-Type', 'Authorization']` - 允许必要的请求头
+   - `credentials: true` - 支持凭证（cookies、认证头等）
+
+2. **预检请求支持**：
+   - 正确处理OPTIONS预检请求
+   - 返回正确的CORS响应头
+   - 支持复杂请求的跨域访问
+
+3. **所有端点支持**：
+   - `/health` - 健康检查端点
+   - `/api/tools` - 工具列表端点
+   - `/api/execute` - 工具执行端点
+   - `/` - 根路径端点
+
+#### 测试验证：
+- ✅ GET请求返回 `access-control-allow-origin: *`
+- ✅ OPTIONS预检请求返回正确的CORS头
+- ✅ 支持来自任意域名的跨域访问
+- ✅ 支持带凭证的请求
+
+#### 配置位置：
+```typescript
+// 在 src/index.ts 中
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+```
+
+#### 使用示例：
+```javascript
+// 从任何域名都可以访问
+fetch('http://localhost:23777/api/tools', {
+  method: 'GET',
+  headers: {
+    'Origin': 'http://example.com',
+    'Content-Type': 'application/json'
+  }
+});
+
+// 带凭证的请求
+fetch('http://localhost:23777/api/execute', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    'Origin': 'http://another-domain.com',
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer token'
+  },
+  body: JSON.stringify({
+    tool: 'read_file',
+    parameters: { path: 'README.md' }
+  })
+});
+```
 ### 终端功能全面升级
 已对终端工具进行全面升级，新增 `read_terminal_output` 工具，并优化了终端输出处理逻辑。
 
@@ -273,7 +337,8 @@ npm start
 - 2026-02-17：优化 `read_code` 工具，移除 `lines_with_numbers` 数组，默认使用制表符 `│` 格式
 - 2026-02-17：添加 `read_code` 工具，支持带行号的代码文件读取
 - 2026-02-16：项目初始版本，包含基础文件操作、系统命令、网络请求等工具
+- 2026-02-17：添加完整的跨域支持，默认允许所有域名访问，支持预检请求和带凭证的请求
 
 ---
-*最后更新：2026-02-17*
+---
 *最后更新：2026-02-17*
