@@ -10,6 +10,8 @@ import { updateFileTool } from './file/update-file';
 import { executeCommandTool } from './system/command';
 import { createTerminalTool, terminalInputTool, closeTerminalTool, listTerminalsTool } from './system/terminal';
 
+// 文档工具
+import { getToolsDocumentationTool } from './system/get-tools-documentation';
 // 网络工具
 import { httpRequestTool } from './network/http-request';
 
@@ -31,10 +33,13 @@ export function registerAllTools(): void {
   const toolRegistry = ToolRegistry.getInstance();
 
   // 文件工具
-  toolRegistry.registerTool('read_file', readFileTool);
-  toolRegistry.registerTool('write_file', writeFileTool);
+  // 文档工具
+  toolRegistry.registerTool('get_tools_documentation', getToolsDocumentationTool);
   toolRegistry.registerTool('list_directory', listDirectoryTool);
   toolRegistry.registerTool('update_file', updateFileTool);
+  // 文档工具
+  toolRegistry.registerTool('get_tools_documentation', getToolsDocumentationTool);
+
 
   // 系统工具
   toolRegistry.registerTool('execute_command', executeCommandTool);
@@ -65,11 +70,10 @@ export const allTools = {
   write_file: writeFileTool,
   list_directory: listDirectoryTool,
   update_file: updateFileTool,
+  // 文档工具
+  get_tools_documentation: getToolsDocumentationTool,
   
   // 系统工具
-  execute_command: executeCommandTool,
-  create_terminal: createTerminalTool,
-  terminal_input: terminalInputTool,
   close_terminal: closeTerminalTool,
   list_terminals: listTerminalsTool,
   
