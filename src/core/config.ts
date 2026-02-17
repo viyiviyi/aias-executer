@@ -29,7 +29,7 @@ export class ConfigManager {
       maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760'), // 10MB
       commandTimeout: parseInt(process.env.COMMAND_TIMEOUT || '30'),
       maxTerminals: parseInt(process.env.MAX_TERMINALS || '10'),
-      allowedCommands: (process.env.ALLOWED_COMMANDS || 'ls,cat,grep,find,pwd,echo,cd,mkdir,rm,cp,mv').split(','),
+      allowedCommands: (process.env.ALLOWED_COMMANDS || '*').split(','),
       allowedExtensions: (process.env.ALLOWED_EXTENSIONS || '.txt,.md,.py,.js,.ts,.java,.cs,.dart,.json,.tsx,.jsx,.html,.css').split(','),
       pathValidation: process.env.PATH_VALIDATION !== 'false',
       port: parseInt(process.env.PORT || '23777'),
