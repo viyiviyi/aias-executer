@@ -77,16 +77,27 @@ export const getToolsDocumentationTool = {
 - 默认支持的文件扩展名有限制（可配置）
 
 **最佳实践**:
+**最佳实践**:
+- 使用 append 模式追加日志内容
+- 对于大文件，考虑分块写入
+
+### 3. read_code - 读取代码文件
+**适应情况**:
+- 读取代码文件内容，支持行号显示
+- 查看和分析源代码文件
+- 支持按行范围读取部分代码
+- 返回带行号的内容
+
+**限制**:
+- 不支持二进制文件读取
+- 默认支持的文件扩展名有限制（可配置）
+- 文件大小有限制
+
+**最佳实践**:
+- 使用 show_line_numbers 参数控制是否显示行号
+- 使用 line_number_format 自定义行号格式（默认：{line}│）
 - 对于大文件，使用 start_line 和 end_line 参数分块读取
 - 指定合适的文件编码（默认utf-8）
-- 使用 extensions 参数限制可读取的文件类型
-
-### 2. write_file - 写入文件
-**适应情况**:
-- 创建新文件或覆盖现有文件
-- 写入配置、日志、数据文件等
-- 支持追加模式（append=true）
-
 **限制**:
 - 一次性写入整个内容，不适合超大文件
 - 需要确保目录存在
@@ -96,7 +107,25 @@ export const getToolsDocumentationTool = {
 - 使用 append 模式追加日志内容
 - 对于大文件，考虑分块写入
 
-### 3. list_directory - 列出目录
+### 3. read_code - 读取代码文件
+**适应情况**:
+- 读取代码文件内容，支持行号显示
+- 查看和分析源代码文件
+- 支持按行范围读取部分代码
+- 返回带行号的内容和结构化数据
+
+**限制**:
+- 不支持二进制文件读取
+- 默认支持的文件扩展名有限制（可配置）
+- 文件大小有限制
+
+**最佳实践**:
+- 使用 show_line_numbers 参数控制是否显示行号
+- 使用 line_number_format 自定义行号格式
+- 对于大文件，使用 start_line 和 end_line 参数分块读取
+- 指定合适的文件编码（默认utf-8）
+
+### 4. list_directory - 列出目录
 **适应情况**:
 - 浏览文件系统结构
 - 查找特定文件或目录
@@ -113,7 +142,7 @@ export const getToolsDocumentationTool = {
 - 使用 skip_hidden 控制是否显示隐藏文件
 - 未知项目绝对不递归获取子目录
 
-### 4. update_file - 更新文件
+### 5. update_file - 更新文件
 **适应情况**:
 - 在文件中插入、删除或修改内容
 - 批量文件编辑操作
@@ -131,7 +160,7 @@ export const getToolsDocumentationTool = {
 
 ## 系统操作工具
 
-### 5. execute_command - 执行命令
+### 6. execute_command - 执行命令
 **适应情况**:
 - 执行系统命令和脚本
 - 运行编译、构建、测试等任务
@@ -147,7 +176,7 @@ export const getToolsDocumentationTool = {
 - 设置合适的超时时间
 - 指定工作目录和环境变量
 
-### 6. 终端工具组（create_terminal, terminal_input, close_terminal, list_terminals）
+### 7. 终端工具组（create_terminal, terminal_input, close_terminal, list_terminals）
 **适应情况**:
 - 交互式命令行会话
 - 长时间运行的任务
@@ -165,7 +194,7 @@ export const getToolsDocumentationTool = {
 
 ## 网络操作工具
 
-### 7. http_request - HTTP请求
+### 8. http_request - HTTP请求
 **适应情况**:
 - 调用REST API接口
 - 获取网页内容
@@ -183,7 +212,7 @@ export const getToolsDocumentationTool = {
 
 ## MCP工具
 
-### 8. MCP工具组（mcp_discover_servers, mcp_scan_server等）
+### 9. MCP工具组（mcp_discover_servers, mcp_scan_server等）
 **适应情况**:
 - 管理和调用MCP（Model Context Protocol）服务器
 - 扩展工具能力
