@@ -4,7 +4,7 @@
     "host": "127.0.0.1"
   },
   "workspace": {
-    "dir": "/test/workspace",
+    "dir": "/app/workspace",
     "maxFileSize": 5242880,
     "allowedExtensions": [
       ".txt",
@@ -14,7 +14,7 @@
       ".yaml",
       ".yml"
     ],
-    "pathValidation": true
+    "pathValidation": false
   },
   "command": {
     "timeout": 60,

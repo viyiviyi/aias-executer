@@ -8,26 +8,18 @@ services:
     container_name: aias-executor  
     restart: unless-stopped  
     ports:  
-      - "3000:3000"  
+      - "23777:23777"  
     environment:  
       - NODE_ENV=production  
       - TZ=Asia/Shanghai  
     volumes:  
-      # ÅäÖÃÎÄ¼şÄ¿Â¼  
+      # é…ç½®æ–‡ä»¶ç›®å½•  
       - ./config:/app/config  
-      # ¿ª·¢Ê±¹ÒÔØÔ´´úÂë£¬Éú²ú»·¾³¿ÉÒÔ×¢ÊÍµô  
-      - ./src:/app/src  
-      - ./package.json:/app/package.json  
-      - ./yarn.lock:/app/yarn.lock  
+      - ./workspace:/app/workspace
+      # å¼€å‘æ—¶æŒ‚è½½æºä»£ç ï¼Œç”Ÿäº§ç¯å¢ƒå¯ä»¥æ³¨é‡Šæ‰  
+      - ./:/workspace
     working_dir: /app  
-    # ½¡¿µ¼ì²é  
-    healthcheck:  
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]  
-      interval: 30s  
-      timeout: 10s  
-      retries: 3  
-      start_period: 40s  
-    # ×ÊÔ´ÏŞÖÆ  
+    # èµ„æºé™åˆ¶  
     deploy:  
       resources:  
         limits:  
@@ -36,13 +28,13 @@ services:
         reservations:  
           cpus: '0.5'  
           memory: 512M  
-    # ÈÕÖ¾ÅäÖÃ  
+    # æ—¥å¿—é…ç½®  
     logging:  
       driver: "json-file"  
       options:  
         max-size: "10m"  
         max-file: "3"  
-    # ÍøÂçÅäÖÃ  
+    # ç½‘ç»œé…ç½®  
     networks:  
       - aias-network  
   

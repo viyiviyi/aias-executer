@@ -64,7 +64,7 @@ COPY . .
 RUN yarn build
 
 # 暴露端口（根据您的应用配置）
-EXPOSE 3000
+EXPOSE 23777
 
 # 启动命令
 CMD ["yarn", "start"]
