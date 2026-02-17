@@ -7,6 +7,7 @@
     "dir": "/app/workspace",
     "maxFileSize": 5242880,
     "allowedExtensions": [
+      ".ts",
       ".txt",
       ".md",
       ".js",

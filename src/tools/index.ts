@@ -6,6 +6,9 @@ import { writeFileTool } from './file/write-file';
 import { listDirectoryTool } from './file/list-directory';
 import { updateFileTool } from './file/update-file';
 import { readCodeTool } from './file/read-code';
+import { deleteFileTool } from './file/delete-file';
+import { moveFileTool } from './file/move-file';
+import { copyFileTool } from './file/copy-file';
 
 // 系统工具
 import { executeCommandTool } from './system/command';
@@ -40,6 +43,9 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('list_directory', listDirectoryTool);
   toolRegistry.registerTool('update_file', updateFileTool);
   toolRegistry.registerTool('read_code', readCodeTool);
+  toolRegistry.registerTool('delete_file', deleteFileTool);
+  toolRegistry.registerTool('move_file', moveFileTool);
+  toolRegistry.registerTool('copy_file', copyFileTool);
 
   // 系统工具
   toolRegistry.registerTool('execute_command', executeCommandTool);
@@ -72,6 +78,9 @@ export const allTools = {
   list_directory: listDirectoryTool,
   read_code: readCodeTool,
   update_file: updateFileTool,
+  delete_file: deleteFileTool,
+  move_file: moveFileTool,
+  copy_file: copyFileTool,
   // 文档工具
   get_tools_documentation: getToolsDocumentationTool,
   
