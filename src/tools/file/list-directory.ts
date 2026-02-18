@@ -12,6 +12,8 @@ interface DirectoryItem {
   modified: string;
   path?: string;
   depth?: number;
+  wordCount?: number; // 新增：字数统计
+  lineCount?: number; // 新增：行数统计
 }
 
 export const listDirectoryTool: Tool = {
@@ -41,6 +43,11 @@ export const listDirectoryTool: Tool = {
           items: { type: 'string' },
           description: '要跳过的目录名列表（可选）',
           default: ['venv', 'node_modules', '.git', '__pycache__', '.idea', '.vscode']
+        },
+        count_stats: {
+          type: 'boolean',
+          description: '是否统计文件字数和行数（可选，默认false，打开时会影响性能）',
+          default: false
         }
       },
       required: []
@@ -52,6 +59,7 @@ export const listDirectoryTool: Tool = {
     const recursive = parameters.recursive || false;
     const skipHidden = parameters.skip_hidden !== false;
     const skipDirs = parameters.skip_dirs || ['venv', 'node_modules', '.git', '__pycache__', '.idea', '.vscode'];
+    const countStats = parameters.count_stats || false;
 
     // 验证路径
     const resolvedPath = configManager.validatePath(dirPath, true);
@@ -62,15 +70,29 @@ export const listDirectoryTool: Tool = {
       throw new Error(`路径不是目录: ${dirPath}`);
     }
     if (recursive) {
-      return await listDirectoryRecursive(resolvedPath, skipHidden, skipDirs);
+      return await listDirectoryRecursive(resolvedPath, skipHidden, skipDirs, countStats);
     } else {
-      return await listDirectorySimple(resolvedPath, skipHidden, skipDirs);
-    }
+      return await listDirectorySimple(resolvedPath, skipHidden, skipDirs, countStats);
     }
   }
+};
+
+// 辅助函数 - 计算文件字数和行数
+async function calculateFileStats(filePath: string): Promise<{wordCount: number, lineCount: number}> {
+  try {
+    const content = await fs.readFile(filePath, 'utf-8');
+    const lineCount = content.split('\n').length;
+    // 字数统计：去除空白字符后的字符数
+    const wordCount = content.replace(/\s+/g, '').length;
+    return { wordCount, lineCount };
+  } catch (error) {
+    // 如果无法读取文件（如二进制文件），返回0
+    return { wordCount: 0, lineCount: 0 };
+  }
+}
 
 // 辅助函数 - 简单列表
-async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDirs: string[]): Promise<any> {
+async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDirs: string[], countStats: boolean): Promise<any> {
   const items = await fs.readdir(dirPath, { withFileTypes: true });
   const result: DirectoryItem[] = [];
 
@@ -90,12 +112,21 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
     const fullPath = path.join(dirPath, itemName);
     const stats = await fs.stat(fullPath);
 
-    result.push({
+    const itemInfo: DirectoryItem = {
       name: itemName,
       type: item.isDirectory() ? 'directory' : 'file',
       size: stats.size,
       modified: stats.mtime.toISOString()
-    });
+    };
+    
+    // 如果是文件且需要统计，计算字数和行数
+    if (item.isFile() && countStats) {
+      const { wordCount, lineCount } = await calculateFileStats(fullPath);
+      itemInfo.wordCount = wordCount;
+      itemInfo.lineCount = lineCount;
+    }
+    
+    result.push(itemInfo);
   }
 
   return {
@@ -106,7 +137,7 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
 }
 
 // 辅助函数 - 递归列表
-async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skipDirs: string[]): Promise<any> {
+async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skipDirs: string[], countStats: boolean): Promise<any> {
   const result = {
     path: dirPath,
     items: [] as DirectoryItem[],
@@ -140,7 +171,14 @@ async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skip
         modified: stats.mtime.toISOString(),
         depth
       };
-
+      
+      // 如果是文件且需要统计，计算字数和行数
+      if (item.isFile() && countStats) {
+        const { wordCount, lineCount } = await calculateFileStats(fullPath);
+        itemInfo.wordCount = wordCount;
+        itemInfo.lineCount = lineCount;
+      }
+      
       result.items.push(itemInfo);
 
       if (item.isDirectory()) {
