@@ -8,6 +8,7 @@ import { updateFileTool } from './file/update-file';
 import { readCodeTool } from './file/read-code';
 import { deleteFileTool } from './file/delete-file';
 import { moveFileTool } from './file/move-file';
+import { deleteFilesTool } from './file/delete-files';
 import { copyFileTool } from './file/copy-file';
 
 // 系统工具
@@ -45,6 +46,7 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('read_code', readCodeTool);
   toolRegistry.registerTool('delete_file', deleteFileTool);
   toolRegistry.registerTool('move_file', moveFileTool);
+  toolRegistry.registerTool('delete_files', deleteFilesTool);
   toolRegistry.registerTool('copy_file', copyFileTool);
 
   // 系统工具
@@ -80,6 +82,7 @@ export const allTools = {
   update_file: updateFileTool,
   delete_file: deleteFileTool,
   move_file: moveFileTool,
+  delete_files: deleteFilesTool,
   copy_file: copyFileTool,
   // 文档工具
   get_tools_documentation: getToolsDocumentationTool,
