@@ -10,7 +10,7 @@ interface DirectoryItem {
   type: 'directory' | 'file';
   size: number;
   modified: string;
-  path?: string;
+  fullPath?: string;
   depth?: number;
   wordCount?: number; // 新增：字数统计
   lineCount?: number; // 新增：行数统计
@@ -60,6 +60,8 @@ export const listDirectoryTool: Tool = {
     const skipHidden = parameters.skip_hidden !== false;
     const skipDirs = parameters.skip_dirs || ['venv', 'node_modules', '.git', '__pycache__', '.idea', '.vscode'];
     const countStats = parameters.count_stats || false;
+    // 保存原始路径用于相对路径计算
+    const originalPath = dirPath;
 
     // 验证路径
     const resolvedPath = configManager.validatePath(dirPath, true);
@@ -70,7 +72,7 @@ export const listDirectoryTool: Tool = {
       throw new Error(`路径不是目录: ${dirPath}`);
     }
     if (recursive) {
-      return await listDirectoryRecursive(resolvedPath, skipHidden, skipDirs, countStats);
+      return await listDirectoryRecursive(resolvedPath, originalPath, skipHidden, skipDirs, countStats);
     } else {
       return await listDirectorySimple(resolvedPath, skipHidden, skipDirs, countStats);
     }
@@ -95,7 +97,6 @@ async function calculateFileStats(filePath: string): Promise<{wordCount: number,
 async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDirs: string[], countStats: boolean): Promise<any> {
   const items = await fs.readdir(dirPath, { withFileTypes: true });
   const result: DirectoryItem[] = [];
-
   for (const item of items) {
     const itemName = item.name;
     
@@ -112,14 +113,18 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
     const fullPath = path.join(dirPath, itemName);
     const stats = await fs.stat(fullPath);
 
+    // 计算相对于原始路径的相对路径
+    const relativePath = path.relative(dirPath, fullPath);
+    // 如果相对路径为空（当前目录），使用文件名
+    const displayPath = relativePath === '' ? itemName : relativePath;
+    
     const itemInfo: DirectoryItem = {
       name: itemName,
+      fullPath: displayPath,
       type: item.isDirectory() ? 'directory' : 'file',
       size: stats.size,
       modified: stats.mtime.toISOString()
     };
-    
-    // 如果是文件且需要统计，计算字数和行数
     if (item.isFile() && countStats) {
       const { wordCount, lineCount } = await calculateFileStats(fullPath);
       itemInfo.wordCount = wordCount;
@@ -137,9 +142,10 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
 }
 
 // 辅助函数 - 递归列表
-async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skipDirs: string[], countStats: boolean): Promise<any> {
+async function listDirectoryRecursive(dirPath: string, originalPath: string, skipHidden: boolean, skipDirs: string[], countStats: boolean): Promise<any> {
   const result = {
-    path: dirPath,
+    absolute_path: dirPath,
+    originalPath,
     items: [] as DirectoryItem[],
     directories: [] as string[]
   };
@@ -150,7 +156,6 @@ async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skip
     for (const item of items) {
       const itemName = item.name;
       const fullPath = path.join(currentPath, itemName);
-      const relativePath = path.relative(dirPath, fullPath);
 
       // 跳过隐藏文件/目录
       if (skipHidden && itemName.startsWith('.')) {
@@ -163,16 +168,20 @@ async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skip
       }
 
       const stats = await fs.stat(fullPath);
+      // 计算相对于原始路径的相对路径
+      const relativePath = path.relative(dirPath, fullPath);
+      // 如果相对路径为空（当前目录），使用文件名
+      const displayPath = relativePath === '' ? itemName : relativePath;
+      
       const itemInfo: DirectoryItem = {
         name: itemName,
-        path: relativePath,
+        fullPath: displayPath,
         type: item.isDirectory() ? 'directory' : 'file',
         size: stats.size,
         modified: stats.mtime.toISOString(),
         depth
       };
       
-      // 如果是文件且需要统计，计算字数和行数
       if (item.isFile() && countStats) {
         const { wordCount, lineCount } = await calculateFileStats(fullPath);
         itemInfo.wordCount = wordCount;
@@ -182,7 +191,6 @@ async function listDirectoryRecursive(dirPath: string, skipHidden: boolean, skip
       result.items.push(itemInfo);
 
       if (item.isDirectory()) {
-        result.directories.push(relativePath);
         await walk(fullPath, depth + 1);
       }
     }
