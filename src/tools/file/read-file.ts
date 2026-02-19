@@ -15,12 +15,6 @@ export const readFileTool: Tool = {
           type: 'string',
           description: '文件路径（相对于工作目录）'
         },
-        extensions: {
-          type: 'array',
-          items: { type: 'string' },
-          description: '允许的文件扩展名列表（可选）',
-          default: ['.txt', '.md', '.py', '.js', '.ts', '.java', '.cs', '.dart', '.json']
-        },
         start_line: {
           type: 'integer',
           description: '起始行号（1-based，可选）',
@@ -43,16 +37,17 @@ export const readFileTool: Tool = {
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const filePath = parameters.path;
-    const extensions = parameters.extensions;
     const startLine = parameters.start_line;
     const endLine = parameters.end_line;
     const encoding = parameters.encoding || 'utf-8';
 
     // 验证路径
     const resolvedPath = configManager.validatePath(filePath, true);
-    
-    // 验证文件类型
-    configManager.validateFileExtension(resolvedPath, extensions);
+    // 检查文件是否为文本文件
+    if (!configManager.isTextFile(resolvedPath)) {
+      throw new Error(`不支持读取此类文件: ${filePath}，该文件可能不是文本文件`);
+    }
+
 
     // 检查文件大小
     const stats = await fs.stat(resolvedPath);
@@ -67,8 +62,8 @@ export const readFileTool: Tool = {
     const totalLines = lines.length;
 
     // 处理行范围
-    let start = startLine ? Math.max(1, startLine) : 1;
-    let end = endLine ? Math.min(totalLines, endLine) : totalLines;
+    const start = startLine ? Math.max(1, startLine) : 1;
+    const end = endLine ? Math.min(totalLines, endLine) : totalLines;
 
     if (start > end) {
       throw new Error('起始行号不能大于结束行号');

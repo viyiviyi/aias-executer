@@ -33,12 +33,6 @@ const readCodeTool = {
           type: 'string',
           description: '文件路径（相对于工作目录）'
         },
-        extensions: {
-          type: 'array',
-          items: { type: 'string' },
-          description: '允许的文件扩展名列表（可选）',
-          default: ['.txt', '.md', '.py', '.js', '.ts', '.java', '.cs', '.dart', '.json', '.html', '.css', '.xml', '.yaml', '.yml', '.toml', '.ini', '.sh', '.bash', '.ps1', '.sql', '.go', '.rs', '.cpp', '.c', '.h', '.hpp', '.php', '.rb', '.swift', '.kt', '.scala', '.lua', '.r', '.m', '.f', '.for', '.f90', '.f95']
-        },
         start_line: {
           type: 'integer',
           description: '起始行号（1-based，可选）',
@@ -72,7 +66,6 @@ const readCodeTool = {
   async execute(parameters: Record<string, any>): Promise<any> {
     const {
       path: filePath,
-      extensions,
       start_line: startLine,
       end_line: endLine,
       encoding = 'utf-8',
@@ -82,9 +75,11 @@ const readCodeTool = {
 
     // 验证路径
     const resolvedPath = configManager.validatePath(filePath, true);
-    
-    // 验证文件类型
-    configManager.validateFileExtension(resolvedPath, extensions);
+    // 检查文件是否为文本文件
+    if (!configManager.isTextFile(resolvedPath)) {
+      throw new Error(`不支持读取此类文件: ${filePath}，该文件可能不是文本文件`);
+    }
+
 
     // 检查文件大小
     const stats = await fs.stat(resolvedPath);
