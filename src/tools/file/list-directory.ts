@@ -30,7 +30,7 @@ export const listDirectoryTool: Tool = {
         },
         recursive: {
           type: 'boolean',
-          description: '是否递归获取目录树（可选）',
+          description: '是否递归获取目录树（可选,建议不递归获取）',
           default: false
         },
         skip_hidden: {
@@ -50,7 +50,7 @@ export const listDirectoryTool: Tool = {
           default: false
         }
       },
-      required: []
+      required: ['path']
     }
   },
 
