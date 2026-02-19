@@ -3,7 +3,7 @@ import fsSync from 'fs';
 import path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { ConfigManager } from './config';
-import { MCPConfig, MCPServerInfo, MCPTool, MCPTransportType, MCPDiscoveryResult, MCPScanResult } from '../types/mcp';
+import { MCPConfig, MCPServerInfo, MCPTool, MCPTransportType, MCPScanResult } from '../types/mcp';
 
 export class MCPClient {
   private static instance: MCPClient;
@@ -77,13 +77,17 @@ export class MCPClient {
     }
   }
 
-  public async discoverServers(): Promise<MCPDiscoveryResult> {
-    const servers: Array<{ name: string; path: string; type: 'executable' | 'npm' | 'pip' }> = [];
-    
-    // 这里可以添加自动发现逻辑
-    // 例如：检查常见MCP服务器路径、npm全局包、pip包等
-    
-    return { servers };
+  public async discoverServers(): Promise<{success: boolean; servers: Array<{ name: string; path: string; type: 'executable' | 'npm' | 'pip' }>}> {
+    try {
+      const servers: Array<{ name: string; path: string; type: 'executable' | 'npm' | 'pip' }> = [];
+      
+      // 这里可以添加自动发现逻辑
+      // 例如：检查常见MCP服务器路径、npm全局包、pip包等
+      
+      return { success: true, servers };
+    } catch (error: any) {
+      return { success: false, servers: [] };
+    }
   }
 
   public async scanServer(serverPath: string, _serverType: 'executable' | 'npm' | 'pip' = 'executable'): Promise<MCPScanResult> {
@@ -228,12 +232,38 @@ export class MCPClient {
     };
   }
 
-  public listTools(): MCPTool[] {
-    return Array.from(this.tools.values());
+  public listTools(): {success: boolean; tools: MCPTool[]; count: number} {
+    try {
+      const tools = Array.from(this.tools.values());
+      return {
+        success: true,
+        tools,
+        count: tools.length
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        tools: [],
+        count: 0
+      };
+    }
   }
 
-  public listServers(): MCPServerInfo[] {
-    return Array.from(this.servers.values());
+  public listServers(): {success: boolean; servers: MCPServerInfo[]; count: number} {
+    try {
+      const servers = Array.from(this.servers.values());
+      return {
+        success: true,
+        servers,
+        count: servers.length
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        servers: [],
+        count: 0
+      };
+    }
   }
 
   public getServer(serverName: string): MCPServerInfo | undefined {

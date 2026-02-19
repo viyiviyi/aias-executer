@@ -31,8 +31,7 @@ import {
   mcpStartServerTool,
   mcpStopServerTool,
   mcpRemoveServerTool
-} from './mcp/mcp-tools';
-
+} from './mcp/index';
 // 注册所有工具
 export function registerAllTools(): void {
   const toolRegistry = ToolRegistry.getInstance();

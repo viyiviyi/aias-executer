@@ -3,29 +3,35 @@
 ## 项目概述
 这是一个可以维护当前tools的项目，以自举的形式维护自身。项目目录在/workspace，运行在容器内部。
 
-## 最新更新 (2026-02-17)
+## 最新更新 (2026-02-19)
 
-### 新增功能
-已成功添加三个新的文件操作工具到正确的工作空间 `/workspace`：
+### MCP工具重构
+已成功将MCP工具拆分成多个文件，并通过index文件注册，同时统一了返回值格式：
 
-1. **delete_file** - 删除文件或目录
-2. **move_file** - 移动文件或目录  
-3. **copy_file** - 复制文件或目录
+1. **文件拆分**: 将 `mcp-tools.ts` 拆分成9个单独的文件
+2. **统一注册**: 创建 `mcp/index.ts` 统一导出所有MCP工具
+3. **标准返回值**: 所有MCP工具现在返回标准格式 `{success: boolean, result: any, error?: string}`
 
 ### 技术实现
-- **源代码位置**: `/workspace/src/tools/file/`
-  - `delete-file.ts` - 删除文件工具
-  - `move-file.ts` - 移动文件工具
-  - `copy-file.ts` - 复制文件工具
-- **编译输出**: `/workspace/dist/tools/file/`
-  - `delete-file.js` - 编译后的删除文件工具
-  - `move-file.js` - 编译后的移动文件工具
-  - `copy-file.js` - 编译后的复制文件工具
-- **工具注册**: `/workspace/src/tools/index.ts` 已更新并重新编译
+- **源代码位置**: `/workspace/src/tools/mcp/`
+  - `mcp-discover-servers.ts` - 发现MCP服务器
+  - `mcp-scan-server.ts` - 扫描MCP服务器
+  - `mcp-add-server.ts` - 添加MCP服务器
+  - `mcp-call-tool.ts` - 调用MCP工具
+  - `mcp-list-tools.ts` - 列出MCP工具
+  - `mcp-list-servers.ts` - 列出MCP服务器
+  - `mcp-start-server.ts` - 启动MCP服务器
+  - `mcp-stop-server.ts` - 停止MCP服务器
+  - `mcp-remove-server.ts` - 移除MCP服务器
+  - `index.ts` - MCP工具索引文件
+- **编译输出**: `/workspace/dist/tools/mcp/` 包含所有编译后的文件
+- **工具注册**: `/workspace/src/tools/index.ts` 已更新为从新的index文件导入
 
-### 配置文件
-- `/workspace/config/config.json` 已允许 `.ts` 文件扩展名
-- 工作空间目录配置正确：`/app/workspace`
+### MCP客户端更新
+- `discoverServers()`: 现在返回 `{success: boolean, servers: [...]}`
+- `listTools()`: 现在返回 `{success: boolean, tools: [...], count: number}`
+- `listServers()`: 现在返回 `{success: boolean, servers: [...], count: number}`
+- 所有方法都包含错误处理，返回统一的格式
 
 ## 项目结构
 
