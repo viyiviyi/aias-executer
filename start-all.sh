@@ -48,7 +48,7 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # 设置开发环境变量并启动
-NODE_ENV=development PORT=23769 yarn dev &
+NODE_ENV=development PORT=23769 yarn dev > dev.log &
 
 # 等待所有服务启动
 echo "等待所有服务启动..."
