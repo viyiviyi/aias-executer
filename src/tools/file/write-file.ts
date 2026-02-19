@@ -44,8 +44,7 @@ export const writeFileTool: Tool = {
     // 验证路径
     const resolvedPath = configManager.validatePath(filePath);
     
-    // 验证文件类型
-    configManager.validateFileExtension(resolvedPath);
+    // 注意：不验证文件扩展名，允许写入任何类型的文件
 
     // 确保目录存在
     const dir = path.dirname(resolvedPath);

@@ -68,8 +68,6 @@ export const updateFileTool: Tool = {
     // 验证路径
     const resolvedPath = configManager.validatePath(filePath, true);
     
-    // 验证文件类型
-    configManager.validateFileExtension(resolvedPath);
 
     // 验证更新操作
     validateUpdates(updates);

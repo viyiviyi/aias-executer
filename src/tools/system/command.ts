@@ -42,7 +42,7 @@ export const executeCommandTool: Tool = {
         timeout: {
           type: 'integer',
           description: '超时时间（秒，可选）',
-          default: 30,
+          default: 300,
           minimum: 1,
           maximum: 300,
         },
@@ -59,7 +59,7 @@ export const executeCommandTool: Tool = {
   async execute(parameters: Record<string, any>): Promise<any> {
     const command = parameters.command;
     const workdir = parameters.workdir || '.';
-    const timeout = parameters.timeout || 30;
+    const timeout = parameters.timeout || 300;
     const env = parameters.env || {};
 
     if (!command) {
