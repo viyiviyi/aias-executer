@@ -4,7 +4,7 @@ AI Agent System Executor - 一个简洁高效的OpenAI函数调用工具执行�
 
 ## 概述
 
-AIAS Executor 是一个用Node.js和TypeScript重写的工具执行器，旨在解决原`openai-funcall-executor`项目的问题，提供更清晰、更高效的OpenAI函数调用支持。
+AIAS Executor 是一个用Node.js和TypeScript重写的工具执行器，为[https://github.com/viyiviyi/AI-Assistant-ChatGPT](https://github.com/viyiviyi/AI-Assistant-ChatGPT)项目提供文件、执行命令、访问mcp服务的能力。
 
 ## 主要改进
 ### 5. 配置文件支持
@@ -57,14 +57,14 @@ npm start
 
 ### 1. 获取工具列表
 ```
-GET /tools
+GET /api/tools
 ```
 
 返回符合OpenAI Function Calling格式的tools列表。
 
 ### 2. 执行工具
 ```
-POST /tools/execute
+POST /api/execute
 ```
 
 支持两种请求格式：
@@ -90,27 +90,7 @@ POST /tools/execute
 }
 ```
 
-### 3. 健康检查
-```
-GET /health
-```
 
-返回服务健康状态。
-
-#### 原有格式（向后兼容）
-```json
-{
-  "tool": "read_file",
-  "parameters": {
-    "path": "README.md"
-```
-
-### 3. 健康检查
-```
-GET /health
-```
-
-返回服务健康状态。
 
 ## 可用工具
 
@@ -173,154 +153,6 @@ GET /health
 - **发现和扫描**: 自动发现和扫描MCP服务器
 - **服务器管理**: 添加、启动、停止、移除MCP服务器
 - **工具调用**: 调用MCP服务器提供的工具
-
-## 使用示例
-
-### 读取文件
-```bash
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "read_file",
-    "parameters": {
-      "path": "README.md"
-    }
-  }'
-```
-
-### 执行命令
-```bash
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "execute_command",
-    "parameters": {
-      "command": "ls -la"
-    }
-  }'
-```
-
-### 更新文件（删除行）- 新参数格式
-```bash
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "update_file",
-    "parameters": {
-      "path": "test.txt",
-      "updates": [
-        {
-          "operation": "delete",
-          "start_line_index": 5,
-          "del_line_count": 2
-        }
-      ]
-    }
-  }'
-```
-
-### 更新文件（插入内容）- 新参数格式
-```bash
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "update_file",
-    "parameters": {
-      "path": "test.txt",
-      "updates": [
-        {
-          "operation": "insert",
-          "start_line_index": 3,
-          "insert_content": "新插入的第一行\n新插入的第二行\n新插入的第三行"
-        }
-      ]
-    }
-  }'
-```
-
-### 更新文件（批量操作）- 新参数格式
-```bash
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "update_file",
-    "parameters": {
-      "path": "config.txt",
-      "updates": [
-        {
-          "operation": "delete",
-          "start_line_index": 10,
-          "del_line_count": 3
-        },
-        {
-          "operation": "insert",
-          "start_line_index": 5,
-          "insert_content": "配置项1\n配置项2"
-        }
-      ]
-    }
-  }'
-```
-
-### MCP工具使用
-```bash
-# 添加MCP服务器
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "mcp_add_server",
-    "parameters": {
-      "name": "example-server",
-      "description": "示例MCP服务器",
-      "command": ["node", "mcp-server.js"]
-    }
-  }'
-
-# 启动MCP服务器
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "mcp_start_server",
-    "parameters": {
-      "server_name": "example-server"
-    }
-  }'
-
-# 调用MCP工具
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "mcp_call_tool",
-    "parameters": {
-      "tool_name": "example_tool",
-      "arguments": {"param": "value"}
-    }
-  }'
-```
-
-### 创建终端并运行命令
-```bash
-# 创建终端
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "create_terminal",
-    "parameters": {
-      "workdir": "."
-    }
-  }'
-
-# 向终端输入命令（使用返回的terminal_id）
-curl -X POST http://localhost:23777/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "terminal_input",
-    "parameters": {
-      "terminal_id": "生成的ID",
-      "input": "npm start"
-    }
-  }'
-```
 
 ## 安全特性
 
@@ -480,24 +312,6 @@ services:
       - ./config:/app/config
       # 其他挂载...
 ```
-
-### 配置验证
-
-配置管理器会自动验证：
-- 文件路径是否在工作空间内
-- 文件扩展名是否允许
-- 命令是否在白名单中
-- 文件大小是否超过限制
-
-### 热重载
-
-配置支持热重载，可以通过API重新加载配置：
-
-```bash
-# 重新加载配置
-curl -X POST http://localhost:3000/config/reload
-```
-
 ## Docker部署
 
 ### 使用Docker Compose
