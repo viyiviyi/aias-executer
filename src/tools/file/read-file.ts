@@ -41,7 +41,7 @@ export const readFileTool: Tool = {
     }
   },
 
-  async execute(parameters: Record<string, any>): Promise<string> {
+  async execute(parameters: Record<string, any>): Promise<any> {
     const filePath = parameters.path;
     const extensions = parameters.extensions;
     const startLine = parameters.start_line;
@@ -76,6 +76,14 @@ export const readFileTool: Tool = {
 
     // 提取指定行的内容
     const selectedLines = lines.slice(start - 1, end);
-    return selectedLines.join('\n');
+    const result = selectedLines.join('\n');
+    
+    return {
+      success: true,
+      result: result,
+      total_lines: totalLines,
+      start_line: start,
+      end_line: end
+    };
   }
 };

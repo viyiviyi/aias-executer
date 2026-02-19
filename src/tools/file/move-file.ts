@@ -35,7 +35,7 @@ export const moveFileTool: Tool = {
     }
   },
 
-  async execute(parameters: Record<string, any>): Promise<string> {
+  async execute(parameters: Record<string, any>): Promise<any> {
     const sourcePath = parameters.source;
     const destinationPath = parameters.destination;
     const overwrite = parameters.overwrite || false;
@@ -76,6 +76,9 @@ export const moveFileTool: Tool = {
     // 执行移动操作
     await fs.rename(resolvedSource, resolvedDestination);
 
-    return `文件/目录从 ${sourcePath} 移动到 ${destinationPath} 成功`;
+    return {
+      success: true,
+      result: `文件/目录从 ${sourcePath} 移动到 ${destinationPath} 成功`,
+    };
   }
 };

@@ -40,7 +40,7 @@ export const copyFileTool: Tool = {
     }
   },
 
-  async execute(parameters: Record<string, any>): Promise<string> {
+  async execute(parameters: Record<string, any>): Promise<any> {
     const sourcePath = parameters.source;
     const destinationPath = parameters.destination;
     const overwrite = parameters.overwrite || false;
@@ -94,11 +94,17 @@ export const copyFileTool: Tool = {
       const execAsync = promisify(exec);
       
       await execAsync(`cp -r "${resolvedSource}" "${resolvedDestination}"`);
-      return `目录从 ${sourcePath} 复制到 ${destinationPath} 成功`;
+      return {
+        success: true,
+        result: `目录从 ${sourcePath} 复制到 ${destinationPath} 成功`,
+      };
     } else {
       // 复制文件
       await fs.copyFile(resolvedSource, resolvedDestination);
-      return `文件从 ${sourcePath} 复制到 ${destinationPath} 成功`;
+      return {
+        success: true,
+        result: `文件从 ${sourcePath} 复制到 ${destinationPath} 成功`,
+      };
     }
   }
 };

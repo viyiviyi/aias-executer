@@ -72,9 +72,17 @@ export const listDirectoryTool: Tool = {
       throw new Error(`路径不是目录: ${dirPath}`);
     }
     if (recursive) {
-      return await listDirectoryRecursive(resolvedPath, originalPath, skipHidden, skipDirs, countStats);
+      const result = await listDirectoryRecursive(resolvedPath, originalPath, skipHidden, skipDirs, countStats);
+      return {
+        success: true,
+        result: result
+      };
     } else {
-      return await listDirectorySimple(resolvedPath, skipHidden, skipDirs, countStats);
+      const result = await listDirectorySimple(resolvedPath, skipHidden, skipDirs, countStats);
+      return {
+        success: true,
+        result: result
+      };
     }
   }
 };

@@ -137,7 +137,10 @@ const readCodeTool = {
       end_line: end
     };
     
-    return result;
+    return {
+      success: true,
+      result: result
+    };
   }
 };
 

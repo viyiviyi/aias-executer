@@ -30,7 +30,7 @@ export const deleteFileTool: Tool = {
     }
   },
 
-  async execute(parameters: Record<string, any>): Promise<string> {
+  async execute(parameters: Record<string, any>): Promise<any> {
     const filePath = parameters.path;
     const recursive = parameters.recursive || false;
     const force = parameters.force || false;
@@ -44,7 +44,10 @@ export const deleteFileTool: Tool = {
         await fs.access(resolvedPath);
       } catch (error) {
         if (force) {
-          return `路径 ${filePath} 不存在，由于 force=true，操作成功完成`;
+          return {
+            success: true,
+            result: `路径 ${filePath} 不存在，由于 force=true，操作成功完成`
+          };
         }
         throw new Error(`路径不存在: ${filePath}`);
       }
@@ -61,15 +64,24 @@ export const deleteFileTool: Tool = {
           }
         }
         await fs.rm(resolvedPath, { recursive, force: true });
-        return `目录 ${filePath} 删除成功`;
+        return {
+          success: true,
+          result: `目录 ${filePath} 删除成功`
+        };
       } else {
         // 如果是文件，直接删除
         await fs.unlink(resolvedPath);
-        return `文件 ${filePath} 删除成功`;
+        return {
+          success: true,
+          result: `文件 ${filePath} 删除成功`
+        };
       }
     } catch (error: any) {
       if (error.code === 'ENOENT' && force) {
-        return `路径 ${filePath} 不存在，由于 force=true，操作成功完成`;
+        return {
+          success: true,
+          result: `路径 ${filePath} 不存在，由于 force=true，操作成功完成`
+        };
       }
       throw error;
     }

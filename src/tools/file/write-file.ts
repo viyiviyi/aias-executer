@@ -35,7 +35,7 @@ export const writeFileTool: Tool = {
     }
   },
 
-  async execute(parameters: Record<string, any>): Promise<string> {
+  async execute(parameters: Record<string, any>): Promise<any> {
     const filePath = parameters.path;
     const content = parameters.content;
     const encoding = parameters.encoding || 'utf-8';
@@ -58,6 +58,10 @@ export const writeFileTool: Tool = {
       await fs.writeFile(resolvedPath, content, encoding);
     }
 
-    return '文件写入成功';
+    return {
+      success: true,
+      result: '文件写入成功',
+      path: filePath
+    };
   }
 };
