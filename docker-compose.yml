@@ -9,7 +9,9 @@ services:
     container_name: aias-executor  
     restart: unless-stopped  
     ports:  
-      - "23777:23777"  
+      - "23777:23777"  # 生产版本API
+      # - "23769:23769"  # 开发版本API
+      - "8080:8080"    # FileBrowser文件浏览器
     environment:  
       - NODE_ENV=production  
       - TZ=Asia/Shanghai  
@@ -17,7 +19,7 @@ services:
       # 配置文件目录  
       - ./config:/app/config  
       - ./workspace:/app/workspace
-      # 开发时挂载源代码，生产环境可以注释掉  
+      # 挂载源代码到/workspace目录，用于开发版本
       - ./:/workspace
     working_dir: /app  
 

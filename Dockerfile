@@ -48,23 +48,30 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION} && \
     python${PYTHON_VERSION} -m pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
     python${PYTHON_VERSION} -m pip config set global.trusted-host mirrors.aliyun.com
 
+# 安装FileBrowser文件浏览器
+RUN curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
+
 # 创建应用目录
 WORKDIR /app
 
 # 复制package.json和yarn.lock文件
 COPY package.json yarn.lock ./
 
-# 安装依赖（使用缓存优化）
+# 使用yarn安装所有依赖（包括devDependencies，因为开发版本需要）
 RUN yarn install --frozen-lockfile --network-timeout 100000
 
 # 复制项目文件
 COPY . .
 
-# 构建TypeScript项目
+# 使用yarn构建TypeScript项目
 RUN yarn build
 
-# 暴露端口（根据您的应用配置）
-EXPOSE 23777
+# 复制启动脚本
+COPY start-all.sh /app/start-all.sh
+RUN chmod +x /app/start-all.sh
 
-# 启动命令
-CMD ["yarn", "start"]
+# 暴露端口
+EXPOSE 23777 23769 8080
+
+# 启动所有服务
+CMD ["/app/start-all.sh"]
