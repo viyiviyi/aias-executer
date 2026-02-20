@@ -58,3 +58,6 @@ build-and-run.sh
 Dockerfile
 docker-compose.yml
 .dockerignore
+
+dist/
+workspace/*/
