@@ -17,25 +17,13 @@ import { createTerminalTool, terminalInputTool, readTerminalOutputTool, closeTer
 
 // 文档工具
 import { getToolsDocumentationTool } from './system/get-tools-documentation';
+
 // 网络工具
 import { httpRequestTool } from './network/http-request';
 
-// MCP工具
-import {
-  mcpDiscoverServersTool,
-  mcpScanServerTool,
-  mcpAddServerTool,
-  mcpCallToolTool,
-  mcpListToolsTool,
-  mcpListServersTool,
-  mcpStartServerTool,
-  mcpStopServerTool,
-  mcpRemoveServerTool,
-  mcpGetServerHealthTool,
-  mcpGetConnectionsStatusTool,
-  mcpCleanupTool
-} from './mcp/index';
-// 注册所有工具
+// 注意：不再导入旧的MCP工具，MCP工具将由MCPToolManager自动注册
+
+// 注册所有基础工具
 export function registerAllTools(): void {
   const toolRegistry = ToolRegistry.getInstance();
 
@@ -62,22 +50,11 @@ export function registerAllTools(): void {
   // 网络工具
   toolRegistry.registerTool('http_request', httpRequestTool);
 
-  // MCP工具
-  toolRegistry.registerTool('mcp_discover_servers', mcpDiscoverServersTool);
-  toolRegistry.registerTool('mcp_scan_server', mcpScanServerTool);
-  toolRegistry.registerTool('mcp_add_server', mcpAddServerTool);
-  toolRegistry.registerTool('mcp_call_tool', mcpCallToolTool);
-  toolRegistry.registerTool('mcp_list_tools', mcpListToolsTool);
-  toolRegistry.registerTool('mcp_get_server_health', mcpGetServerHealthTool);
-  toolRegistry.registerTool('mcp_get_connections_status', mcpGetConnectionsStatusTool);
-  toolRegistry.registerTool('mcp_cleanup', mcpCleanupTool);
-  toolRegistry.registerTool('mcp_list_servers', mcpListServersTool);
-  toolRegistry.registerTool('mcp_start_server', mcpStartServerTool);
-  toolRegistry.registerTool('mcp_stop_server', mcpStopServerTool);
-  toolRegistry.registerTool('mcp_remove_server', mcpRemoveServerTool);
+  // 注意：MCP工具不再在这里手动注册
+  // 它们将由MCPToolManager在服务启动时自动注册
 }
 
-// 导出所有工具定义
+// 导出所有基础工具定义
 export const allTools = {
   // 文件工具
   read_file: readFileTool,
@@ -89,6 +66,7 @@ export const allTools = {
   move_file: moveFileTool,
   delete_files: deleteFilesTool,
   copy_file: copyFileTool,
+  
   // 文档工具
   get_tools_documentation: getToolsDocumentationTool,
   
@@ -101,19 +79,8 @@ export const allTools = {
   create_terminal: createTerminalTool,
   
   // 网络工具
-  http_request: httpRequestTool,
+  http_request: httpRequestTool
   
-  // MCP工具
-  mcp_discover_servers: mcpDiscoverServersTool,
-  mcp_scan_server: mcpScanServerTool,
-  mcp_add_server: mcpAddServerTool,
-  mcp_call_tool: mcpCallToolTool,
-  mcp_list_tools: mcpListToolsTool,
-  mcp_list_servers: mcpListServersTool,
-  mcp_start_server: mcpStartServerTool,
-  mcp_stop_server: mcpStopServerTool,
-  mcp_get_server_health: mcpGetServerHealthTool,
-  mcp_get_connections_status: mcpGetConnectionsStatusTool,
-  mcp_cleanup: mcpCleanupTool,
-  mcp_remove_server: mcpRemoveServerTool
+  // 注意：MCP工具不在这里导出
+  // 它们将由MCPToolManager动态管理
 };

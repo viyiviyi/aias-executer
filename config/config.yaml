@@ -1,0 +1,95 @@
+# AIAS Executor 配置文件
+
+# 服务器配置
+server:
+  port: 23777
+  host: "0.0.0.0"
+
+# 工作空间配置
+workspace:
+  dir: "/app/workspace"
+  maxFileSize: 5242880  # 5MB
+  allowedExtensions:
+    - ".txt"
+    - ".md"
+    - ".py"
+    - ".js"
+    - ".ts"
+    - ".json"
+    - ".yaml"
+    - ".yml"
+    - ".html"
+    - ".css"
+  pathValidation: false
+
+# 命令执行配置
+command:
+  timeout: 300
+  allowedCommands: []
+  maxTerminals: 5
+
+# MCP配置
+mcp:
+  # 自动启动的服务器列表
+  autoStartServers:
+    - "filesystem-workspace"
+    - "browser-server"
+    - "git-server"
+  
+  # 服务器配置
+  servers:
+    # 文件系统服务器
+    filesystem-workspace:
+      name: "filesystem-workspace"
+      description: "工作空间文件系统MCP服务器"
+      transport: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/app/workspace"]
+      autoStart: true
+    
+    # 浏览器自动化服务器
+    browser-server:
+      name: "browser-server"
+      description: "浏览器自动化MCP服务器"
+      transport: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-browser"]
+      autoStart: true
+    
+    # Git版本控制服务器
+    git-server:
+      name: "git-server"
+      description: "Git版本控制MCP服务器"
+      transport: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-git", "/app/workspace"]
+      autoStart: true
+    
+    # Chrome自动化服务器
+    chrome-automation:
+      name: "chrome-automation"
+      description: "Chrome浏览器自动化MCP服务器"
+      transport: "stdio"
+      command: ["chrome-automation-mcp-full"]
+      autoStart: false
+    
+    # Playwright浏览器服务器
+    playwright-browser:
+      name: "playwright-browser"
+      description: "Better Playwright浏览器自动化MCP服务器"
+      transport: "stdio"
+      command: ["better-playwright-mcp", "mcp"]
+      autoStart: false
+    
+    # SQLite数据库服务器
+    sqlite-server:
+      name: "sqlite-server"
+      description: "SQLite数据库MCP服务器"
+      transport: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-sqlite"]
+      autoStart: false
+    
+    # Redis缓存服务器
+    redis-server:
+      name: "redis-server"
+      description: "Redis缓存数据库MCP服务器"
+      transport: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-redis"]
+      autoStart: false

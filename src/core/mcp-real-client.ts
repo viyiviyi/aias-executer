@@ -7,7 +7,6 @@ import {
   MCPServerInfo, 
   MCPTool, 
   MCPConnectionInfo,
-  MCPToolCallResponse,
   MCPConnectionStatus
 } from '../types/mcp';
 
@@ -166,11 +165,7 @@ export class MCPRealClient {
     serverName: string,
     toolName: string,
     arguments_: Record<string, any>
-  ): Promise<{ 
-    success: boolean; 
-    result?: MCPToolCallResponse; 
-    error?: string 
-  }> {
+  ): Promise<{ success: boolean; result?: any; error?: string }> {
     try {
       const connection = this.connections.get(serverName);
       if (!connection || !connection.is_connected) {
@@ -202,59 +197,7 @@ export class MCPRealClient {
 
       return {
         success: false,
-        error: error.message || '调用工具失败'
-      };
-    }
-  }
-
-  /**
-   * 获取服务器状态
-   */
-  async getServerStatus(serverName: string): Promise<{ 
-    success: boolean; 
-    status?: MCPConnectionStatus; 
-    error?: string 
-  }> {
-    try {
-      const connection = this.connections.get(serverName);
-      const process = this.processes.get(serverName);
-
-      if (!connection) {
-        return {
-          success: true,
-          status: {
-            server_name: serverName,
-            is_connected: false,
-            is_running: false,
-            transport_type: 'stdio',
-            last_activity: undefined,
-            error: '未连接'
-          }
-        };
-      }
-
-      let is_running = false;
-      if (process) {
-        is_running = !process.killed;
-      }
-
-      return {
-        success: true,
-        status: {
-          server_name: serverName,
-          is_connected: connection.is_connected,
-          is_running,
-          transport_type: connection.transport?.constructor.name.includes('Stdio') ? 'stdio' : 
-                         connection.transport?.constructor.name.includes('StreamableHTTP') ? 'http' : 'websocket',
-          last_activity: connection.last_heartbeat,
-          error: connection.error_count > 0 ? `错误计数: ${connection.error_count}` : undefined,
-          pid: process?.pid
-        }
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message || '获取服务器状态失败'
+        error: error.message || '调用MCP工具失败'
       };
     }
   }
@@ -262,41 +205,30 @@ export class MCPRealClient {
   /**
    * 心跳检查
    */
-  async heartbeatCheck(serverName: string): Promise<{ 
-    success: boolean; 
-    is_alive?: boolean; 
-    error?: string 
-  }> {
+  async heartbeat(serverName: string): Promise<{ success: boolean; error?: string }> {
     try {
       const connection = this.connections.get(serverName);
-      if (!connection) {
+      if (!connection || !connection.is_connected) {
         return { success: false, error: `服务器未连接: ${serverName}` };
       }
 
-      // 尝试获取工具列表作为心跳检查
-      const toolsResult = await this.listServerTools(serverName);
-      
-      if (toolsResult.success) {
-        connection.last_heartbeat = new Date();
-        connection.error_count = 0;
-        return { success: true, is_alive: true };
-      } else {
-        connection.error_count++;
-        return { 
-          success: false, 
-          is_alive: false, 
-          error: toolsResult.error 
-        };
-      }
+      // 发送一个简单的请求检查连接
+      await connection.client.request('tools/list', {});
+      connection.last_heartbeat = new Date();
+      connection.error_count = 0;
+
+      return { success: true };
     } catch (error: any) {
       const connection = this.connections.get(serverName);
       if (connection) {
         connection.error_count++;
+        if (connection.error_count > 3) {
+          connection.is_connected = false;
+        }
       }
-      
+
       return {
         success: false,
-        is_alive: false,
         error: error.message || '心跳检查失败'
       };
     }
@@ -362,5 +294,44 @@ export class MCPRealClient {
     await Promise.all(disconnectPromises);
     this.connections.clear();
     this.processes.clear();
+  }
+
+  /**
+   * 简化方法：获取工具列表
+   */
+  async listTools(serverName: string): Promise<MCPTool[]> {
+    const result = await this.listServerTools(serverName);
+    if (result.success && result.tools) {
+      return result.tools;
+    }
+    return [];
+  }
+
+  /**
+   * 简化方法：获取服务器健康状态
+   */
+  async getServerHealth(serverName: string): Promise<{ is_healthy: boolean; error?: string }> {
+    try {
+      const connection = this.connections.get(serverName);
+      if (!connection || !connection.is_connected) {
+        return { is_healthy: false, error: '服务器未连接' };
+      }
+
+      // 尝试发送一个简单请求检查健康状态
+      await connection.client.request('tools/list', {});
+      return { is_healthy: true };
+    } catch (error: any) {
+      return { 
+        is_healthy: false, 
+        error: error.message || '服务器健康检查失败' 
+      };
+    }
+  }
+
+  /**
+   * 简化方法：获取连接状态
+   */
+  async getConnectionsStatus(): Promise<any[]> {
+    return this.getAllConnectionsStatus();
   }
 }

@@ -67,7 +67,10 @@ export const executeCommandTool: Tool = {
     }
 
     // 验证命令
-    const validatedCommand = configManager.validateCommand(command);
+    // 检查命令是否允许
+    if (!configManager.isCommandAllowed(command)) {
+      throw new Error(`命令不被允许: ${command}`);
+    }
 
     // 验证工作目录
     const workdirPath = configManager.validatePath(workdir, true);
@@ -81,7 +84,7 @@ export const executeCommandTool: Tool = {
     const fullEnv = { ...process.env, ...env };
 
     try {
-      const { stdout, stderr } = await execAsync(validatedCommand, {
+      const { stdout, stderr } = await execAsync(command, {
         cwd: workdirPath,
         env: fullEnv,
         timeout: timeout * 1000,

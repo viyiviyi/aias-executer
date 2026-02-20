@@ -50,6 +50,19 @@ export interface Config {
   port: number;
   host: string;
   configPath?: string;
+  mcp?: {
+    autoStartServers?: string[];
+    servers?: Record<string, {
+      name: string;
+      description: string;
+      transport: 'stdio' | 'http' | 'websocket';
+      command?: string[];
+      url?: string;
+      args?: string[];
+      env?: Record<string, string>;
+      autoStart?: boolean;
+    }>;
+  };
 }
 
 export interface TerminalInfo {
