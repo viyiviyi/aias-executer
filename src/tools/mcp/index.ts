@@ -8,6 +8,9 @@ import { mcpListServersTool } from './mcp-list-servers';
 import { mcpStartServerTool } from './mcp-start-server';
 import { mcpStopServerTool } from './mcp-stop-server';
 import { mcpRemoveServerTool } from './mcp-remove-server';
+import { mcpGetServerHealthTool } from './mcp-get-server-health';
+import { mcpGetConnectionsStatusTool } from './mcp-get-connections-status';
+import { mcpCleanupTool } from './mcp-cleanup';
 
 // 导出所有MCP工具
 export {
@@ -19,7 +22,10 @@ export {
   mcpListServersTool,
   mcpStartServerTool,
   mcpStopServerTool,
-  mcpRemoveServerTool
+  mcpRemoveServerTool,
+  mcpGetServerHealthTool,
+  mcpGetConnectionsStatusTool,
+  mcpCleanupTool
 };
 
 // 导出所有MCP工具定义
@@ -32,5 +38,8 @@ export const mcpTools = {
   mcp_list_servers: mcpListServersTool,
   mcp_start_server: mcpStartServerTool,
   mcp_stop_server: mcpStopServerTool,
-  mcp_remove_server: mcpRemoveServerTool
+  mcp_remove_server: mcpRemoveServerTool,
+  mcp_get_server_health: mcpGetServerHealthTool,
+  mcp_get_connections_status: mcpGetConnectionsStatusTool,
+  mcp_cleanup: mcpCleanupTool
 };

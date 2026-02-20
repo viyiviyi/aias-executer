@@ -30,7 +30,10 @@ import {
   mcpListServersTool,
   mcpStartServerTool,
   mcpStopServerTool,
-  mcpRemoveServerTool
+  mcpRemoveServerTool,
+  mcpGetServerHealthTool,
+  mcpGetConnectionsStatusTool,
+  mcpCleanupTool
 } from './mcp/index';
 // 注册所有工具
 export function registerAllTools(): void {
@@ -65,6 +68,9 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('mcp_add_server', mcpAddServerTool);
   toolRegistry.registerTool('mcp_call_tool', mcpCallToolTool);
   toolRegistry.registerTool('mcp_list_tools', mcpListToolsTool);
+  toolRegistry.registerTool('mcp_get_server_health', mcpGetServerHealthTool);
+  toolRegistry.registerTool('mcp_get_connections_status', mcpGetConnectionsStatusTool);
+  toolRegistry.registerTool('mcp_cleanup', mcpCleanupTool);
   toolRegistry.registerTool('mcp_list_servers', mcpListServersTool);
   toolRegistry.registerTool('mcp_start_server', mcpStartServerTool);
   toolRegistry.registerTool('mcp_stop_server', mcpStopServerTool);
@@ -106,5 +112,8 @@ export const allTools = {
   mcp_list_servers: mcpListServersTool,
   mcp_start_server: mcpStartServerTool,
   mcp_stop_server: mcpStopServerTool,
+  mcp_get_server_health: mcpGetServerHealthTool,
+  mcp_get_connections_status: mcpGetConnectionsStatusTool,
+  mcp_cleanup: mcpCleanupTool,
   mcp_remove_server: mcpRemoveServerTool
 };

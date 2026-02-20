@@ -19,6 +19,12 @@ export const mcpAddServerTool: Tool = {
           description: '服务器描述',
           default: ''
         },
+        transport: {
+          type: 'string',
+          description: '传输类型 (stdio, http)',
+          default: 'stdio',
+          enum: ['stdio', 'http']
+        },
         command: {
           type: 'array',
           items: { type: 'string' },
@@ -48,6 +54,7 @@ export const mcpAddServerTool: Tool = {
     }
   },
 
+
   async execute(parameters: Record<string, any>): Promise<any> {
     try {
       const name = parameters.name;
@@ -58,7 +65,15 @@ export const mcpAddServerTool: Tool = {
       const env = parameters.env;
       const tools = parameters.tools;
       
-      const result = await mcpClient.addServer(name, description, command, url, args, env, tools);
+      const result = await mcpClient.addServer(
+        name,
+        description,
+        command,
+        url,
+        args,
+        env,
+        tools
+      );
       return {
         success: true,
         result: result
