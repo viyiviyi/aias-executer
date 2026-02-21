@@ -1,0 +1,55 @@
+<!--
+  MIT License
+
+  Copyright (c) 2008-2020 Kohsuke Kawaguchi, Sun Microsystems, Inc., CloudBees,
+  Inc., Oleg Nenashev and other contributors
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+-->
+
+<!--
+ This is an example of a minimal Windows Service Wrapper configuration, which includes only mandatory options.
+ 
+ This configuration file should be placed near the WinSW executable, the name should be the same.
+ E.g. for myapp.exe the configuration file name should be myapp.xml
+ 
+ You can find more information about the configuration options here: https://github.com/kohsuke/winsw/blob/master/doc/xmlConfigFile.md
+ Full example: https://github.com/kohsuke/winsw/blob/master/examples/sample-allOptions.xml
+-->
+<service>
+  <!-- 服务ID -->
+  <id>aias-executer</id>
+  <!-- 服务名称 -->
+  <name>aias-executer</name>
+  <!-- 启动方式 Manual Automatic -->
+  <startmode>Manual</startmode>
+  <stoptimeout>10sec</stoptimeout>
+  <log mode="reset"></log>
+  <!-- 此处需要填写完整路径 -->
+  <workingdirectory>C:/aias-executer</workingdirectory>
+
+  <!-- <env name="VENV_DIR"
+    value="venv" /> -->
+  <!-- 服务描述 -->
+  <description>aias-executer</description>
+  <!-- 应用程序 -->
+  <executable>node</executable>
+  <!-- 参数 -->
+  <arguments> dist/index.js</arguments>
+</service>

@@ -50,6 +50,9 @@ export const writeFileTool: Tool = {
     const dir = path.dirname(resolvedPath);
     await fs.mkdir(dir, { recursive: true });
 
+    // 计算写入内容的统计信息
+    const charCount = content.length;
+    const lineCount = content.split('\n').length;
     // 写入文件
     if (append) {
       await fs.appendFile(resolvedPath, content, encoding);
@@ -60,7 +63,9 @@ export const writeFileTool: Tool = {
     return {
       success: true,
       result: '文件写入成功',
-      path: filePath
+      path: filePath,
+      char_count: charCount,
+      line_count: lineCount
     };
   }
 };

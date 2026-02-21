@@ -1,3 +1,4 @@
 node_modules/
 dist/
 workspace/*/
+win-server/*.log
