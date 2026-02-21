@@ -62,7 +62,7 @@ export const getToolsDocumentationTool = {
 - **当前时间**: ${currentTime}
 - **进程目录**: ${absolutePath}
 - **Node.js版本**: ${process.version}
-- **进程ID**: ${process.pid}
+- **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用，停止后需要等待至少10秒等待服务自动重启，如果10秒后未重启，表示出现系统级错误，任何功能都无法使用。）
 
 
 ## 工具使用建议

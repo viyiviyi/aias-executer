@@ -119,7 +119,7 @@ export const updateFileTool: Tool = {
       return {
         success: true,
         path: filePath,
-        change_blocks: codeBlocks.length > 0 ? codeBlocks : ['没有生成代码块（可能是空操作）']
+        changed_code_context: codeBlocks.length > 0 ? codeBlocks : []
       };
     } catch (error: any) {
       if (error.code === 'EACCES') {

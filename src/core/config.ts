@@ -55,13 +55,13 @@ export class ConfigManager {
     if (this.configPath) {
       try {
         const fileContent = fs.readFileSync(this.configPath, 'utf-8');
-        
+
         if (this.configPath.endsWith('.yaml') || this.configPath.endsWith('.yml')) {
           configData = yaml.load(fileContent) || {};
         } else if (this.configPath.endsWith('.json')) {
           configData = JSON.parse(fileContent);
         }
-        
+
         console.log(`从 ${this.configPath} 加载配置成功`);
       } catch (error) {
         console.error(`加载配置文件失败: ${error}`);
@@ -105,7 +105,7 @@ export class ConfigManager {
     };
   }
 
-  public validatePath(filePath: string, mustExist: boolean = false): string {
+  public validatePath(filePath: string, mustExist: boolean = false): void | string {
     if (!this.config.pathValidation) {
       return path.resolve(this.config.workspaceDir, filePath);
     }
@@ -121,23 +121,81 @@ export class ConfigManager {
     if (mustExist && !fs.existsSync(resolvedPath)) {
       throw new Error(`路径不存在: ${filePath}`);
     }
-
-    return resolvedPath;
   }
-
   public isTextFile(filePath: string): boolean {
     try {
-      // 常见的文本文件扩展名
+      // 如果所有编码都失败，检查文件扩展名作为后备方案
       const textExtensions = [
-        '.txt', '.md', '.py', '.js', '.ts', '.java', '.cs', '.dart',
-        '.json', '.tsx', '.jsx', '.html', '.css', '.xml', '.yaml', '.yml',
-        '.toml', '.ini', '.sh', '.bash', '.ps1', '.sql', '.go', '.rs',
-        '.cpp', '.c', '.h', '.hpp', '.php', '.rb', '.swift', '.kt',
-        '.scala', '.lua', '.r', '.m', '.f', '.for', '.f90', '.f95'
+        '.txt',
+        '.md',
+        '.py',
+        '.js',
+        '.ts',
+        '.java',
+        '.cs',
+        '.dart',
+        '.json',
+        '.tsx',
+        '.jsx',
+        '.html',
+        '.css',
+        '.xml',
+        '.yaml',
+        '.yml',
+        '.toml',
+        '.ini',
+        '.sh',
+        '.bash',
+        '.ps1',
+        '.sql',
+        '.go',
+        '.rs',
+        '.cpp',
+        '.c',
+        '.h',
+        '.hpp',
+        '.php',
+        '.rb',
+        '.swift',
+        '.kt',
+        '.scala',
+        '.lua',
+        '.r',
+        '.m',
+        '.f',
+        '.for',
+        '.f90',
+        '.f95',
       ];
 
       const ext = path.extname(filePath).toLowerCase();
-      return textExtensions.includes(ext);
+      if (textExtensions.includes(ext)) return true;
+      else {
+        // 首先尝试读取文件，如果能够以文本方式读取，则认为是文本文件
+        const buffer = fs.readFileSync(filePath);
+
+        // 尝试将buffer转换为字符串，如果成功则认为是文本文件
+        // 使用多种编码尝试解码
+        const encodings: BufferEncoding[] = ['utf-8', 'utf-16le', 'latin1', 'ascii'];
+
+        for (const encoding of encodings) {
+          try {
+            const text = buffer.toString(encoding);
+            // 检查是否包含过多的空字符（二进制文件的特征）
+            const nullCount = (text.match(/\x00/g) || []).length;
+            const nullRatio = nullCount / text.length;
+
+            // 如果空字符比例小于5%，认为是文本文件
+            if (nullRatio < 0.05) {
+              return true;
+            }
+          } catch (e) {
+            // 尝试下一个编码
+            continue;
+          }
+        }
+      }
+      return false;
     } catch (error) {
       return false;
     }
@@ -150,7 +208,7 @@ export class ConfigManager {
   public isExtensionAllowed(filePath: string): boolean {
     try {
       const ext = path.extname(filePath).toLowerCase();
-      
+
       // 如果允许所有扩展名
       if (this.config.allowedExtensions.includes('*')) {
         return true;

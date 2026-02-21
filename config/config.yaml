@@ -41,7 +41,7 @@ mcp:
       name: "browser-server"
       description: "浏览器自动化MCP服务器"
       transport: "stdio"
-      command: ["npx", "-y", "@modelcontextprotocol/server-browser"]
+      command: ["mcp-server-puppeteer"]
       autoStart: true
     
     # Chrome自动化服务器
@@ -49,7 +49,7 @@ mcp:
       name: "chrome-automation"
       description: "Chrome浏览器自动化MCP服务器"
       transport: "stdio"
-      command: ["chrome-automation-mcp-full"]
+      command: ["chrome-mcp-bridge"]
       autoStart: false
     
     # Playwright浏览器服务器
