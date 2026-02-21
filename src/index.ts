@@ -24,6 +24,16 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+// 全局缓存控制中间件 - 为所有GET请求添加no-cache头
+app.use((req, res, next) => {
+  // 如果是GET请求，设置缓存控制头
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
 
 // 初始化MCP工具管理器
 async function initializeMCPTools() {
