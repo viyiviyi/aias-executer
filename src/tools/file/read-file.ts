@@ -17,13 +17,11 @@ export const readFileTool: Tool = {
         },
         start_line: {
           type: 'integer',
-          description: '起始行号（1-based，可选）',
-          minimum: 1
+          description: '起始行号（1-based，支持负数表示从末尾开始计算，如-1表示最后一行，可选）'
         },
         end_line: {
           type: 'integer',
-          description: '结束行号（1-based，可选）',
-          minimum: 1
+          description: '结束行号（1-based，支持负数表示从末尾开始计算，如-1表示最后一行，可选）'
         },
         encoding: {
           type: 'string',
@@ -61,24 +59,35 @@ export const readFileTool: Tool = {
     const lines = content.split('\n');
     const totalLines = lines.length;
 
-    // 处理行范围
-    const start = startLine ? Math.max(1, startLine) : 1;
-    const end = endLine ? Math.min(totalLines, endLine) : totalLines;
-
-    if (start > end) {
+    // 处理行范围（支持负数表示从末尾开始计算）
+    const normalizeLineNumber = (lineNum: number, total: number): number => {
+      if (lineNum < 0) {
+        // 负数：从末尾开始计算，-1表示最后一行
+        return Math.max(1, total + lineNum + 1);
+      }
+      return lineNum;
+    };
+    
+    const start = startLine ? normalizeLineNumber(startLine, totalLines) : 1;
+    const end = endLine ? normalizeLineNumber(endLine, totalLines) : totalLines;
+    
+    // 确保行号在有效范围内
+    const clampedStart = Math.max(1, Math.min(start, totalLines));
+    const clampedEnd = Math.max(1, Math.min(end, totalLines));
+    
+    if (clampedStart > clampedEnd) {
       throw new Error('起始行号不能大于结束行号');
     }
-
     // 提取指定行的内容
-    const selectedLines = lines.slice(start - 1, end);
+    const selectedLines = lines.slice(clampedStart - 1, clampedEnd);
     const result = selectedLines.join('\n');
     
     return {
       success: true,
       result: result,
       total_lines: totalLines,
-      start_line: start,
-      end_line: end
+      start_line: clampedStart,
+      end_line: clampedEnd
     };
   }
 };

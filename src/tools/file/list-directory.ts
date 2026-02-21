@@ -46,7 +46,7 @@ export const listDirectoryTool: Tool = {
         },
         count_stats: {
           type: 'boolean',
-          description: '是否统计文件字数和行数（可选，默认false，打开时会影响性能）',
+          description: '是否查看文件字数和行数（可选，默认false，打开时会影响性能）',
           default: false
         }
       },
