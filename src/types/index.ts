@@ -63,6 +63,11 @@ export interface Config {
       autoStart?: boolean;
     }>;
   };
+  packageManager?: {
+    default?: 'yarn' | 'npm';
+    autoInstall?: boolean;
+    installTimeout?: number;
+  };
 }
 
 export interface TerminalInfo {

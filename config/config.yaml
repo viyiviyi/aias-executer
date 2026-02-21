@@ -9,17 +9,6 @@ server:
 workspace:
   dir: "/app/workspace"
   maxFileSize: 5242880  # 5MB
-  allowedExtensions:
-    - ".txt"
-    - ".md"
-    - ".py"
-    - ".js"
-    - ".ts"
-    - ".json"
-    - ".yaml"
-    - ".yml"
-    - ".html"
-    - ".css"
   pathValidation: false
 
 # 命令执行配置
@@ -32,30 +21,22 @@ command:
 mcp:
   # 自动启动的服务器列表
   autoStartServers:
-    - "browser-server"
+    - "playwright-browser:"
   
   # 服务器配置
   servers:
-    # 浏览器自动化服务器
-    browser-server:
-      name: "browser-server"
-      description: "浏览器自动化MCP服务器"
-      transport: "stdio"
-      command: ["mcp-server-puppeteer"]
-      autoStart: true
-    
-    # Chrome自动化服务器
-    chrome-automation:
-      name: "chrome-automation"
-      description: "Chrome浏览器自动化MCP服务器"
-      transport: "stdio"
-      command: ["chrome-mcp-bridge"]
-      autoStart: false
-    
     # Playwright浏览器服务器
     playwright-browser:
       name: "playwright-browser"
       description: "Better Playwright浏览器自动化MCP服务器"
       transport: "stdio"
       command: ["better-playwright-mcp", "mcp"]
-      autoStart: false
+
+# 包管理器配置
+packageManager:
+  # 可选项: yarn, npm
+  default: "yarn"
+  # 是否在构建时自动安装依赖
+  autoInstall: true
+  # 安装依赖时的超时时间（秒）
+  installTimeout: 300

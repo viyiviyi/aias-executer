@@ -83,6 +83,15 @@ export class ConfigManager {
       '*'
     ).split(',');
 
+    // 包管理器配置
+    const packageManagerDefault = configData.packageManager?.default || 'yarn';
+    const packageManagerAutoInstall = configData.packageManager?.autoInstall !== false;
+    const packageManagerInstallTimeout = parseInt(
+      process.env.PACKAGE_MANAGER_INSTALL_TIMEOUT || 
+      configData.packageManager?.installTimeout?.toString() || 
+      '300'
+    );
+
     return {
       workspaceDir,
       maxFileSize: parseInt(
@@ -98,6 +107,11 @@ export class ConfigManager {
       allowedExtensions,
       pathValidation:
         process.env.PATH_VALIDATION !== 'false' && configData.workspace?.pathValidation !== false,
+      packageManager: {
+        default: packageManagerDefault,
+        autoInstall: packageManagerAutoInstall,
+        installTimeout: packageManagerInstallTimeout
+      },
       port: parseInt(process.env.PORT || configData.server?.port?.toString() || '23777'),
       host: process.env.HOST || configData.server?.host || '0.0.0.0',
       configPath: this.configPath,

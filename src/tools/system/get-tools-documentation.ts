@@ -1,6 +1,11 @@
 import { ToolDefinition } from '../../types';
+import { ConfigManager } from '../../core/config';
 import os from 'os';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 export const getToolsDocumentationTool = {
   definition: {
@@ -27,6 +32,25 @@ export const getToolsDocumentationTool = {
         freeMemory: `${Math.round(os.freemem() / (1024 * 1024 * 1024))} GB`,
         uptime: `${Math.round(os.uptime() / 3600)} 小时`
       };
+
+      // 获取包管理器信息
+      const configManager = ConfigManager.getInstance();
+      const config = configManager.getConfig();
+      const packageManager = config.packageManager?.default || 'yarn';
+      
+      // 获取包管理器版本
+      let packageManagerVersion = '未知';
+      try {
+        if (packageManager === 'yarn') {
+          const { stdout } = await execAsync('yarn --version');
+          packageManagerVersion = stdout.trim();
+        } else if (packageManager === 'npm') {
+          const { stdout } = await execAsync('npm --version');
+          packageManagerVersion = stdout.trim();
+        }
+      } catch (error) {
+        console.warn(`无法获取${packageManager}版本:`, error);
+      }
 
       // 获取当前时间
       const now = new Date();
@@ -62,8 +86,8 @@ export const getToolsDocumentationTool = {
 - **当前时间**: ${currentTime}
 - **进程目录**: ${absolutePath}
 - **Node.js版本**: ${process.version}
+- **包管理器**: ${packageManager} ${packageManagerVersion}
 - **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用，停止后需要等待至少10秒等待服务自动重启，如果10秒后未重启，表示出现系统级错误，任何功能都无法使用。）
-
 
 ## 工具使用建议
 - 操作文件时优先使用直接操作文件的工具而不是命令行或终端
@@ -101,4 +125,4 @@ export const getToolsDocumentationTool = {
       throw new Error(`生成工具文档失败: ${error.message}`);
     }
   }
-}
+};
