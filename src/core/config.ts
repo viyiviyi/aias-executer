@@ -105,7 +105,7 @@ export class ConfigManager {
     };
   }
 
-  public validatePath(filePath: string, mustExist: boolean = false): void | string {
+  public validatePath(filePath: string, mustExist: boolean = false): string {
     if (!this.config.pathValidation) {
       return path.resolve(this.config.workspaceDir, filePath);
     }
@@ -121,6 +121,8 @@ export class ConfigManager {
     if (mustExist && !fs.existsSync(resolvedPath)) {
       throw new Error(`路径不存在: ${filePath}`);
     }
+
+    return resolvedPath;
   }
   public isTextFile(filePath: string): boolean {
     try {
