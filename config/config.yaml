@@ -7,7 +7,7 @@ server:
 
 # 工作空间配置
 workspace:
-  dir: "/app/workspace"
+  dir: "./workspace"
   maxFileSize: 5242880  # 5MB
   pathValidation: false
 
