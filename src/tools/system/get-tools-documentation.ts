@@ -69,10 +69,10 @@ export const getToolsDocumentationTool = {
       // 获取工作空间路径
       const workspacePath = process.cwd();
       const absolutePath = path.resolve(workspacePath);
-      // 尝试动态加载docs/tools-head.md文件
+      // 尝试动态加载docs/tools-help.md文件
       let dynamicContent = '';
       try {
-        const toolsHeadPath = path.join(process.cwd(), 'docs/tools-head.md');
+        const toolsHeadPath = path.join(process.cwd(), 'docs/tools-help.md');
         dynamicContent = await fs.readFile(toolsHeadPath, 'utf-8');
         console.log('成功加载动态工具使用建议文档');
       } catch (error: any) {
@@ -118,7 +118,7 @@ export const getToolsDocumentationTool = {
 - **进程目录**: ${absolutePath}
 - **Node.js版本**: ${process.version}
 - **包管理器**: ${packageManager} ${packageManagerVersion}
-- **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用，停止后需要等待至少10秒等待服务自动重启，如果10秒后未重启，表示出现系统级错误，任何功能都无法使用。）
+- **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用。）
 
 ${dynamicContent}
 
