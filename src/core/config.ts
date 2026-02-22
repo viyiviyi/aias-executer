@@ -115,6 +115,7 @@ export class ConfigManager {
       port: parseInt(process.env.PORT || configData.server?.port?.toString() || '23777'),
       host: process.env.HOST || configData.server?.host || '0.0.0.0',
       configPath: this.configPath,
+      autostart: configData.autostart || {},
       mcp: configData.mcp || {},
     };
   }

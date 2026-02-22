@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import { ToolDefinition } from '../../types';
 import { ConfigManager } from '../../core/config';
 import os from 'os';
@@ -68,27 +69,16 @@ export const getToolsDocumentationTool = {
       // 获取工作空间路径
       const workspacePath = process.cwd();
       const absolutePath = path.resolve(workspacePath);
-
-      // 工具使用建议文档
-      const toolsDocumentation = `
-# 工具使用建议文档
-
-## 系统信息
-- **操作系统**: ${osInfo.type} ${osInfo.platform} ${osInfo.arch}
-- **系统版本**: ${osInfo.release}
-- **主机名**: ${osInfo.hostname}
-- **CPU核心数**: ${osInfo.cpus}
-- **总内存**: ${osInfo.totalMemory}
-- **可用内存**: ${osInfo.freeMemory}
-- **系统运行时间**: ${osInfo.uptime}
-
-## 环境信息
-- **当前时间**: ${currentTime}
-- **进程目录**: ${absolutePath}
-- **Node.js版本**: ${process.version}
-- **包管理器**: ${packageManager} ${packageManagerVersion}
-- **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用，停止后需要等待至少10秒等待服务自动重启，如果10秒后未重启，表示出现系统级错误，任何功能都无法使用。）
-
+      // 尝试动态加载docs/tools-head.md文件
+      let dynamicContent = '';
+      try {
+        const toolsHeadPath = path.join(process.cwd(), 'docs/tools-head.md');
+        dynamicContent = await fs.readFile(toolsHeadPath, 'utf-8');
+        console.log('成功加载动态工具使用建议文档');
+      } catch (error: any) {
+        console.warn('无法加载动态工具使用建议文档，使用默认内容:', error.message);
+        // 使用默认内容
+        dynamicContent = `
 ## 工具使用建议
 - 操作文件时优先使用直接操作文件的工具而不是命令行或终端
 - 优先更新文件内容而不是重新写入文件
@@ -108,7 +98,29 @@ export const getToolsDocumentationTool = {
 
 1. 在项目目录维护一个dev-readme.md文件，如果没有则新建，文件内容为项目开发维护指南，每次更新项目后更新此文件，此文件只保存项目最新的情况，已过时的资料需要删除。
 2. 维护项目时需要先了解原项目功能和架构，以符合原项目架构的方式尽可能少改动的维护项目。
+`;
+      }
 
+      const toolsDocumentation = `
+# 工具使用建议文档
+
+## 系统信息
+- **操作系统**: ${osInfo.type} ${osInfo.platform} ${osInfo.arch}
+- **系统版本**: ${osInfo.release}
+- **主机名**: ${osInfo.hostname}
+- **CPU核心数**: ${osInfo.cpus}
+- **总内存**: ${osInfo.totalMemory}
+- **可用内存**: ${osInfo.freeMemory}
+- **系统运行时间**: ${osInfo.uptime}
+
+## 环境信息
+- **当前时间**: ${currentTime}
+- **进程目录**: ${absolutePath}
+- **Node.js版本**: ${process.version}
+- **包管理器**: ${packageManager} ${packageManagerVersion}
+- **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用，停止后需要等待至少10秒等待服务自动重启，如果10秒后未重启，表示出现系统级错误，任何功能都无法使用。）
+
+${dynamicContent}
 
 ---
 

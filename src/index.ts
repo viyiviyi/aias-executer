@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { AutostartManager } from './core/autostart-manager';
 import { ConfigManager } from './core/config';
 import { registerAllTools } from './tools';
 import { MCPToolManager } from './core/mcp-tool-manager';
@@ -34,6 +35,28 @@ app.use((req, res, next) => {
   }
   next();
 });
+// 自启动脚本状态端点
+app.get('/api/autostart/status', (_req, res) => {
+  try {
+    const autostartManager = AutostartManager.getInstance();
+    const status = autostartManager.getScriptsStatus();
+    
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      scripts: status,
+      total: status.length,
+      loaded: status.filter(s => s.status === 'loaded').length,
+      errors: status.filter(s => s.status === 'error').length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : '未知错误'
+    });
+  }
+});
+
 
 // 初始化MCP工具管理器
 async function initializeMCPTools() {
@@ -67,11 +90,11 @@ app.get('/', (_req, res) => {
     endpoints: {
       tools: '/api/tools',
       execute: '/api/execute',
-      health: '/health'
+      health: '/health',
+      autostartStatus: '/api/autostart/status'
     }
   });
 });
-
 // 启动服务器
 // 启动服务器
 const PORT = config.port || 3000;
@@ -80,7 +103,14 @@ const HOST = config.host || '0.0.0.0';
 // 异步启动
 async function startServer() {
   try {
-    // 先初始化MCP工具
+    // 初始化自启动脚本管理器
+    const autostartManager = AutostartManager.getInstance();
+    
+    // 加载并执行所有自启动脚本
+    console.log('🚀 开始加载自启动脚本...');
+    await autostartManager.loadAllScripts();
+    
+    // 初始化MCP工具
     initializeMCPTools();
     
     // 然后启动HTTP服务器
@@ -91,11 +121,37 @@ async function startServer() {
       console.log(`  GET  /health        - 健康检查`);
       console.log(`  GET  /api/tools     - 获取所有工具`);
       console.log(`  POST /api/execute   - 执行工具`);
+      console.log(`  GET  /api/autostart/status - 自启动脚本状态`);
     });
   } catch (error) {
     console.error('启动服务器失败:', error);
     process.exit(1);
   }
 }
+// 进程退出时的清理逻辑
+process.on('SIGINT', async () => {
+  console.log('\n🛑 收到SIGINT信号，正在清理...');
+  try {
+    const autostartManager = AutostartManager.getInstance();
+    await autostartManager.cleanup();
+  } catch (error) {
+    console.error('清理自启动脚本失败:', error);
+  }
+  console.log('👋 进程退出');
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 收到SIGTERM信号，正在清理...');
+  try {
+    const autostartManager = AutostartManager.getInstance();
+    await autostartManager.cleanup();
+  } catch (error) {
+    console.error('清理自启动脚本失败:', error);
+  }
+  console.log('👋 进程退出');
+  process.exit(0);
+});
 
 startServer();
+

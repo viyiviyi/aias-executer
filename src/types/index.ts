@@ -68,6 +68,12 @@ export interface Config {
     autoInstall?: boolean;
     installTimeout?: number;
   };
+  autostart?: {
+    dir?: string;
+    enabled?: boolean;
+    timeout?: number;
+    recursive?: boolean;
+  };
 }
 
 export interface TerminalInfo {
