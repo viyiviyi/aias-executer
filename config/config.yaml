@@ -27,7 +27,9 @@ autostart:
 # 命令执行配置
 command:
   timeout: 300
-  allowedCommands: []
+  allowedCommands:
+    - "yarn build"
+    - "tsc --noEmit"
   maxTerminals: 5
 
 # MCP配置

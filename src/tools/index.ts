@@ -14,6 +14,8 @@ import { copyFileTool } from './file/copy-file';
 // 系统工具
 import { executeCommandTool } from './system/command';
 import { createTerminalTool, terminalInputTool, readTerminalOutputTool, closeTerminalTool, listTerminalsTool } from './system/terminal';
+// 重启工具
+import { restartServiceTool } from './system/restart-service';
 
 // 文档工具
 import { getToolsDocumentationTool } from './system/get-tools-documentation';
@@ -46,6 +48,7 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('read_terminal_output', readTerminalOutputTool);
   toolRegistry.registerTool('close_terminal', closeTerminalTool);
   toolRegistry.registerTool('list_terminals', listTerminalsTool);
+  toolRegistry.registerTool('restart_service', restartServiceTool);
 
   // 网络工具
   toolRegistry.registerTool('http_request', httpRequestTool);
@@ -77,6 +80,7 @@ export const allTools = {
   list_terminals: listTerminalsTool,
   execute_command: executeCommandTool,
   create_terminal: createTerminalTool,
+  restart_service: restartServiceTool,
   
   // 网络工具
   http_request: httpRequestTool

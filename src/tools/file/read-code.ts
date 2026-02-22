@@ -53,8 +53,8 @@ const readCodeTool = {
         },
         line_number_format: {
           type: 'string',
-          description: '行号格式（可选），例如："{line}│" 或 "[{line}] "',
-          default: '{line}│'
+          description: '行号格式（可选），例如："{line}┆" 或 "[{line}] "',
+          default: '{line}┆'
         }
       },
       required: ['path']
@@ -68,7 +68,7 @@ const readCodeTool = {
       end_line: endLine,
       encoding = 'utf-8',
       show_line_numbers: showLineNumbers = true,
-      line_number_format: lineNumberFormat = '{line}│'
+      line_number_format: lineNumberFormat = '{line}┆'
     } = parameters as ReadCodeParameters;
 
     // 验证路径

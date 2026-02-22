@@ -11,6 +11,13 @@ interface FileUpdateItem {
   del_line_count?: number;       // 要删除的行数（用于delete操作）
 }
 
+interface LineMapping {
+  originalLine: number;  // 原始行号
+  newLine: number;       // 新行号
+  operation: 'insert' | 'delete' | 'unchanged';
+  content: string;
+}
+
 export const updateFileTool: Tool = {
   definition: {
     name: 'update_file',
@@ -75,26 +82,30 @@ export const updateFileTool: Tool = {
     try {
       // 读取原始文件
       const content = await fs.readFile(resolvedPath, 'utf-8');
-      const lines = content.split('\n');
-
+      const originalLines = content.split('\n');
+      
       // 按原始行号排序（从后往前处理）
       const sortedUpdates = [...updates].sort((a, b) => {
         // 按行号降序排序
         return b.start_line_index - a.start_line_index;
       });
 
-      // 跟踪所有变更区域
-      const changedRanges: Array<{start: number; end: number}> = [];
-      let currentLines = [...lines];
-
+      // 跟踪变更
+      const changes: Array<{
+        type: 'insert' | 'delete';
+        originalLine: number;
+        lines: string[];
+      }> = [];
+      
+      let currentLines = [...originalLines];
+      
       // 应用所有更新
       for (const update of sortedUpdates) {
         const result = applyUpdate(currentLines, update);
         currentLines = result.lines;
         
-        // 记录变更范围
-        if (result.affectedRange) {
-          changedRanges.push(result.affectedRange);
+        if (result.change) {
+          changes.push(result.change);
         }
       }
 
@@ -102,24 +113,17 @@ export const updateFileTool: Tool = {
       const newContent = currentLines.join('\n');
       await fs.writeFile(resolvedPath, newContent, 'utf-8');
 
-      // 合并重叠的变更区域
-      // 合并重叠或接近的变更区域（考虑上下文行）
-      const mergedRanges = mergeRanges(changedRanges, contextLines);
+      // 生成行号映射
+      const lineMappings = generateLineMappings(originalLines, changes);
       
-      // 为每个变更区域生成代码块
-      const codeBlocks: string[] = [];
-      for (const range of mergedRanges) {
-        const block = generateCodeBlock(currentLines, range.start, range.end, contextLines);
-        if (block) {
-          codeBlocks.push(block);
-        }
-      }
+      // 生成代码块
+      const codeBlock = generateEnhancedCodeBlock(lineMappings, changes, contextLines);
 
       // 返回简洁的结果
       return {
         success: true,
         path: filePath,
-        changed_code_context: codeBlocks.length > 0 ? codeBlocks : []
+        changed_code_context: codeBlock ? [codeBlock] : []
       };
     } catch (error: any) {
       if (error.code === 'EACCES') {
@@ -163,7 +167,11 @@ function validateUpdates(updates: FileUpdateItem[]): void {
 // 应用单个更新操作
 function applyUpdate(lines: string[], update: FileUpdateItem): { 
   lines: string[]; 
-  affectedRange?: { start: number; end: number };
+  change?: {
+    type: 'insert' | 'delete';
+    originalLine: number;
+    lines: string[];
+  };
 } {
   if (update.operation === 'insert') {
     return insertContent(lines, update);
@@ -176,7 +184,11 @@ function applyUpdate(lines: string[], update: FileUpdateItem): {
 // 插入内容
 function insertContent(lines: string[], update: FileUpdateItem): { 
   lines: string[]; 
-  affectedRange?: { start: number; end: number };
+  change?: {
+    type: 'insert' | 'delete';
+    originalLine: number;
+    lines: string[];
+  };
 } {
   const startLineIndex = update.start_line_index;
   const insertContent = update.insert_content || '';
@@ -201,9 +213,10 @@ function insertContent(lines: string[], update: FileUpdateItem): {
 
   return {
     lines: newLines,
-    affectedRange: {
-      start: insertIdx + 1,
-      end: insertIdx + insertLines.length
+    change: {
+      type: 'insert',
+      originalLine: startLineIndex,
+      lines: insertLines
     }
   };
 }
@@ -211,7 +224,11 @@ function insertContent(lines: string[], update: FileUpdateItem): {
 // 删除行
 function deleteLines(lines: string[], update: FileUpdateItem): { 
   lines: string[]; 
-  affectedRange?: { start: number; end: number };
+  change?: {
+    type: 'insert' | 'delete';
+    originalLine: number;
+    lines: string[];
+  };
 } {
   const startLineIndex = update.start_line_index;
   const delLineCount = update.del_line_count!;
@@ -227,7 +244,9 @@ function deleteLines(lines: string[], update: FileUpdateItem): {
 
   // 转换为0-based索引
   const startIdx = startLineIndex - 1;
-  // const endIdx = endLineIndex;
+
+  // 获取被删除的行内容
+  const deletedLines = lines.slice(startIdx, startIdx + actualCount);
 
   // 执行删除
   const newLines = [...lines];
@@ -235,57 +254,161 @@ function deleteLines(lines: string[], update: FileUpdateItem): {
 
   return {
     lines: newLines,
-    affectedRange: {
-      start: startLineIndex,
-      end: endLineIndex
+    change: {
+      type: 'delete',
+      originalLine: startLineIndex,
+      lines: deletedLines
     }
   };
 }
 
-// 合并重叠或接近的范围（考虑上下文行）
-function mergeRanges(ranges: Array<{start: number; end: number}>, contextLines: number = 3): Array<{start: number; end: number}> {
-  if (ranges.length === 0) return [];
+// 生成行号映射
+function generateLineMappings(
+  originalLines: string[],
+  changes: Array<{
+    type: 'insert' | 'delete';
+    originalLine: number;
+    lines: string[];
+  }>
+): LineMapping[] {
+  const mappings: LineMapping[] = [];
   
-  // 按起始行排序
-  const sorted = [...ranges].sort((a, b) => a.start - b.start);
-  const merged: Array<{start: number; end: number}> = [sorted[0]];
-  
-  for (let i = 1; i < sorted.length; i++) {
-    const last = merged[merged.length - 1];
-    const current = sorted[i];
-    
-    // 如果当前范围与上一个范围重叠或接近（考虑上下文行），合并它们
-    // 接近的定义：两个范围之间的距离小于2 * contextLines
-    // 这样它们的代码块就不会重叠
-    const distance = current.start - last.end;
-    if (distance <= 2 * contextLines + 1) {
-      last.end = Math.max(last.end, current.end);
-    } else {
-      merged.push(current);
+  // 收集所有删除的行
+  const deletedLines = new Set<number>();
+  for (const change of changes) {
+    if (change.type === 'delete') {
+      // 对于删除操作，记录被删除的原始行号
+      for (let i = 0; i < change.lines.length; i++) {
+        const originalLine = change.originalLine + i;
+        if (originalLine <= originalLines.length) {
+          deletedLines.add(originalLine);
+        }
+      }
     }
   }
   
-  return merged;
+  // 收集插入操作的位置
+  const insertions = new Map<number, string[]>();
+  for (const change of changes) {
+    if (change.type === 'insert') {
+      insertions.set(change.originalLine, change.lines);
+    }
+  }
+  
+  // 生成映射
+  let newLineCounter = 1;
+  
+  for (let originalLine = 1; originalLine <= originalLines.length; originalLine++) {
+    // 检查是否有插入在这个位置之前
+    const insertedLines = insertions.get(originalLine);
+    if (insertedLines) {
+      // 添加插入的行
+      for (let i = 0; i < insertedLines.length; i++) {
+        mappings.push({
+          originalLine: originalLine,
+          newLine: newLineCounter,
+          operation: 'insert',
+          content: insertedLines[i]
+        });
+        newLineCounter++;
+      }
+    }
+    
+    // 检查当前行是否被删除
+    if (deletedLines.has(originalLine)) {
+      // 被删除的行
+      mappings.push({
+        originalLine,
+        newLine: -1,
+        operation: 'delete',
+        content: originalLines[originalLine - 1]
+      });
+    } else {
+      // 未被删除的行
+      mappings.push({
+        originalLine,
+        newLine: newLineCounter,
+        operation: 'unchanged',
+        content: originalLines[originalLine - 1]
+      });
+      newLineCounter++;
+    }
+  }
+  
+  // 处理文件末尾的插入
+  for (const change of changes) {
+    if (change.type === 'insert' && change.originalLine > originalLines.length) {
+      for (let i = 0; i < change.lines.length; i++) {
+        mappings.push({
+          originalLine: change.originalLine,
+          newLine: newLineCounter,
+          operation: 'insert',
+          content: change.lines[i]
+        });
+        newLineCounter++;
+      }
+    }
+  }
+  
+  return mappings;
 }
 
-// 生成代码块
-function generateCodeBlock(
-  lines: string[], 
-  changeStart: number, 
-  changeEnd: number, 
+// 生成增强的代码块
+function generateEnhancedCodeBlock(
+  lineMappings: LineMapping[],
+  changes: Array<{
+    type: 'insert' | 'delete';
+    originalLine: number;
+    lines: string[];
+  }>,
   contextLines: number
 ): string {
-  // 计算显示范围（包含上下文）
-  const displayStart = Math.max(1, changeStart - contextLines);
-  const displayEnd = Math.min(lines.length, changeEnd + contextLines);
+  if (lineMappings.length === 0) {
+    return '';
+  }
+  
+  // 找到所有变更影响的行范围
+  let minOriginalLine = Infinity;
+  let maxOriginalLine = -Infinity;
+  
+  for (const change of changes) {
+    if (change.type === 'insert') {
+      minOriginalLine = Math.min(minOriginalLine, change.originalLine);
+      maxOriginalLine = Math.max(maxOriginalLine, change.originalLine);
+    } else if (change.type === 'delete') {
+      minOriginalLine = Math.min(minOriginalLine, change.originalLine);
+      maxOriginalLine = Math.max(maxOriginalLine, change.originalLine + change.lines.length - 1);
+    }
+  }
+  
+  // 找到相关的行映射（包含上下文）
+  const relevantMappings = lineMappings.filter(mapping => {
+    return mapping.originalLine >= minOriginalLine - contextLines && 
+           mapping.originalLine <= maxOriginalLine + contextLines;
+  });
+  
+  if (relevantMappings.length === 0) {
+    return '';
+  }
   
   // 构建代码块
   let codeBlock = '';
-  for (let i = displayStart; i <= displayEnd; i++) {
-    const lineNumber = i;
-    const lineContent = lines[i - 1] || '';
+  
+  for (const mapping of relevantMappings) {
+    let linePrefix = '';
     
-    codeBlock += `${lineNumber}│${lineContent}\n`;
+    if (mapping.operation === 'insert') {
+      // 插入时：原始行号 + 新行号┆行内容
+      linePrefix = `${mapping.originalLine} + ${mapping.newLine}┆`;
+    } else if (mapping.operation === 'delete') {
+      // 删除时：-原始行号┆行内容
+      linePrefix = ` - ${mapping.originalLine}┆`;
+    } else {
+      // 不变时：原始行号 新行号┆行内容
+      linePrefix = `${mapping.originalLine} ${mapping.newLine}┆`;
+    }
+    
+    codeBlock += `${linePrefix}${mapping.content}\n`;
   }
   
   // 移除最后一个换行符

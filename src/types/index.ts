@@ -90,4 +90,7 @@ export interface TerminalInfo {
 }
 
 // 导出MCP相关类型
+
+// 导出行号映射相关类型
+export * from './line-mapping';
 export * from './mcp';
