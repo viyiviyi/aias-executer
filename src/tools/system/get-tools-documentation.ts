@@ -115,7 +115,8 @@ export const getToolsDocumentationTool = {
 
 ## 环境信息
 - **当前时间**: ${currentTime}
-- **进程目录**: ${absolutePath}
+- **服务进程目录**: ${absolutePath}
+- **工作目录**: ${path.resolve(config.workspaceDir)}
 - **Node.js版本**: ${process.version}
 - **包管理器**: ${packageManager} ${packageManagerVersion}
 - **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用。）
