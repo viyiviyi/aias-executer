@@ -59,8 +59,9 @@ export const updateFileTool: Tool = {
           description: '更新操作列表，所有操作都基于原始行号，且为1-based。\n\n**使用建议**：\n1. 如果要替换大段内容，建议先使用delete操作删除旧内容，再使用insert操作插入新内容\n2. 所有操作都基于原始行号（1-based），且按顺序执行\n3. 插入操作是在指定行之前插入内容\n4. 删除操作是从指定行开始删除指定行数'
         }
       },
-      required: ['path', 'updates']
-    }
+      required: ['path', 'updates'],
+    },
+    result_use_type: 'last'
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -74,7 +75,7 @@ export const updateFileTool: Tool = {
 
     // 验证路径
     const resolvedPath = configManager.validatePath(filePath, true);
-    
+
 
     // 验证更新操作
     validateUpdates(updates);
@@ -83,7 +84,7 @@ export const updateFileTool: Tool = {
       // 读取原始文件
       const content = await fs.readFile(resolvedPath, 'utf-8');
       const originalLines = content.split('\n');
-      
+
       // 按原始行号排序（从后往前处理）
       // 按原始行号排序（从后往前处理），行号相同时删除优先
       const sortedUpdates = [...updates].sort((a, b) => {
@@ -91,7 +92,7 @@ export const updateFileTool: Tool = {
         if (b.start_line_index !== a.start_line_index) {
           return b.start_line_index - a.start_line_index;
         }
-        
+
         // 行号相同时，删除操作优先于插入操作
         if (a.operation === 'delete' && b.operation === 'insert') {
           return -1; // a(delete)在b(insert)之前
@@ -99,7 +100,7 @@ export const updateFileTool: Tool = {
         if (a.operation === 'insert' && b.operation === 'delete') {
           return 1; // b(delete)在a(insert)之前
         }
-        
+
         // 操作类型相同，保持原始顺序
         return 0;
       });
@@ -110,14 +111,14 @@ export const updateFileTool: Tool = {
         originalLine: number;
         lines: string[];
       }> = [];
-      
+
       let currentLines = [...originalLines];
-      
+
       // 应用所有更新
       for (const update of sortedUpdates) {
         const result = applyUpdate(currentLines, update);
         currentLines = result.lines;
-        
+
         if (result.change) {
           changes.push(result.change);
         }
@@ -129,7 +130,7 @@ export const updateFileTool: Tool = {
 
       // 生成行号映射
       const lineMappings = generateLineMappings(originalLines, changes);
-      
+
       // 生成代码块
       const codeBlock = generateEnhancedCodeBlock(lineMappings, changes, contextLines);
 
@@ -152,7 +153,7 @@ export const updateFileTool: Tool = {
 function validateUpdates(updates: FileUpdateItem[]): void {
   for (let i = 0; i < updates.length; i++) {
     const update = updates[i];
-    
+
     if (update.operation === 'insert') {
       if (!update.insert_content && update.insert_content !== '') {
         throw new Error(`第 ${i + 1} 个更新操作：insert操作需要insert_content参数`);
@@ -179,8 +180,8 @@ function validateUpdates(updates: FileUpdateItem[]): void {
 }
 
 // 应用单个更新操作
-function applyUpdate(lines: string[], update: FileUpdateItem): { 
-  lines: string[]; 
+function applyUpdate(lines: string[], update: FileUpdateItem): {
+  lines: string[];
   change?: {
     type: 'insert' | 'delete';
     originalLine: number;
@@ -196,8 +197,8 @@ function applyUpdate(lines: string[], update: FileUpdateItem): {
 }
 
 // 插入内容
-function insertContent(lines: string[], update: FileUpdateItem): { 
-  lines: string[]; 
+function insertContent(lines: string[], update: FileUpdateItem): {
+  lines: string[];
   change?: {
     type: 'insert' | 'delete';
     originalLine: number;
@@ -236,8 +237,8 @@ function insertContent(lines: string[], update: FileUpdateItem): {
 }
 
 // 删除行
-function deleteLines(lines: string[], update: FileUpdateItem): { 
-  lines: string[]; 
+function deleteLines(lines: string[], update: FileUpdateItem): {
+  lines: string[];
   change?: {
     type: 'insert' | 'delete';
     originalLine: number;
@@ -286,7 +287,7 @@ function generateLineMappings(
   }>
 ): LineMapping[] {
   const mappings: LineMapping[] = [];
-  
+
   // 收集所有删除的行
   const deletedLines = new Set<number>();
   for (const change of changes) {
@@ -300,7 +301,7 @@ function generateLineMappings(
       }
     }
   }
-  
+
   // 收集插入操作的位置
   const insertions = new Map<number, string[]>();
   for (const change of changes) {
@@ -308,10 +309,10 @@ function generateLineMappings(
       insertions.set(change.originalLine, change.lines);
     }
   }
-  
+
   // 生成映射
   let newLineCounter = 1;
-  
+
   for (let originalLine = 1; originalLine <= originalLines.length; originalLine++) {
     // 检查是否有插入在这个位置之前
     const insertedLines = insertions.get(originalLine);
@@ -327,7 +328,7 @@ function generateLineMappings(
         newLineCounter++;
       }
     }
-    
+
     // 检查当前行是否被删除
     if (deletedLines.has(originalLine)) {
       // 被删除的行
@@ -348,7 +349,7 @@ function generateLineMappings(
       newLineCounter++;
     }
   }
-  
+
   // 处理文件末尾的插入
   for (const change of changes) {
     if (change.type === 'insert' && change.originalLine > originalLines.length) {
@@ -363,7 +364,7 @@ function generateLineMappings(
       }
     }
   }
-  
+
   return mappings;
 }
 
@@ -380,11 +381,11 @@ function generateEnhancedCodeBlock(
   if (lineMappings.length === 0) {
     return '';
   }
-  
+
   // 找到所有变更影响的行范围
   let minOriginalLine = Infinity;
   let maxOriginalLine = -Infinity;
-  
+
   for (const change of changes) {
     if (change.type === 'insert') {
       minOriginalLine = Math.min(minOriginalLine, change.originalLine);
@@ -394,23 +395,23 @@ function generateEnhancedCodeBlock(
       maxOriginalLine = Math.max(maxOriginalLine, change.originalLine + change.lines.length - 1);
     }
   }
-  
+
   // 找到相关的行映射（包含上下文）
   const relevantMappings = lineMappings.filter(mapping => {
-    return mapping.originalLine >= minOriginalLine - contextLines && 
-           mapping.originalLine <= maxOriginalLine + contextLines;
+    return mapping.originalLine >= minOriginalLine - contextLines &&
+      mapping.originalLine <= maxOriginalLine + contextLines;
   });
-  
+
   if (relevantMappings.length === 0) {
     return '';
   }
-  
+
   // 构建代码块
   let codeBlock = '';
-  
+
   for (const mapping of relevantMappings) {
     let linePrefix = '';
-    
+
     if (mapping.operation === 'insert') {
       // 插入时：原始行号 + 新行号┆行内容
       linePrefix = `${mapping.originalLine} + ${mapping.newLine}┆`;
@@ -421,14 +422,14 @@ function generateEnhancedCodeBlock(
       // 不变时：原始行号 新行号┆行内容
       linePrefix = `${mapping.originalLine} ${mapping.newLine}┆`;
     }
-    
+
     codeBlock += `${linePrefix}${mapping.content}\n`;
   }
-  
+
   // 移除最后一个换行符
   if (codeBlock.endsWith('\n')) {
     codeBlock = codeBlock.slice(0, -1);
   }
-  
+
   return codeBlock;
 }

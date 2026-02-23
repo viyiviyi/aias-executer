@@ -45,7 +45,8 @@ export const httpRequestTool: Tool = {
         }
       },
       required: ['url']
-    }
+    },
+    result_use_type:'once'
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
