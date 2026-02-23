@@ -56,7 +56,7 @@ export const updateFileTool: Tool = {
             },
             required: ['operation', 'start_line_index']
           },
-          description: '更新操作列表，所有操作都基于原始行号，且为1-based。'
+          description: '更新操作列表，所有操作都基于原始行号，且为1-based。\n\n**使用建议**：\n1. 如果要替换大段内容，建议先使用delete操作删除旧内容，再使用insert操作插入新内容\n2. 所有操作都基于原始行号（1-based），且按顺序执行\n3. 插入操作是在指定行之前插入内容\n4. 删除操作是从指定行开始删除指定行数'
         }
       },
       required: ['path', 'updates']
@@ -85,9 +85,23 @@ export const updateFileTool: Tool = {
       const originalLines = content.split('\n');
       
       // 按原始行号排序（从后往前处理）
+      // 按原始行号排序（从后往前处理），行号相同时删除优先
       const sortedUpdates = [...updates].sort((a, b) => {
-        // 按行号降序排序
-        return b.start_line_index - a.start_line_index;
+        // 首先按行号降序排序
+        if (b.start_line_index !== a.start_line_index) {
+          return b.start_line_index - a.start_line_index;
+        }
+        
+        // 行号相同时，删除操作优先于插入操作
+        if (a.operation === 'delete' && b.operation === 'insert') {
+          return -1; // a(delete)在b(insert)之前
+        }
+        if (a.operation === 'insert' && b.operation === 'delete') {
+          return 1; // b(delete)在a(insert)之前
+        }
+        
+        // 操作类型相同，保持原始顺序
+        return 0;
       });
 
       // 跟踪变更
