@@ -26,7 +26,7 @@ function truncateText(text: string, maxLines: number = 100): string {
 export const executeCommandTool: Tool = {
   definition: {
     name: 'execute_command',
-    description: '执行命令行命令（即时执行，适合快速命令。需要交互式会话请使用终端工具）',
+    description: '执行命令行命令（命令行执行结束或超时后相关进程会退出，不可执行需要后台运行的命令）',
     parameters: {
       type: 'object',
       properties: {

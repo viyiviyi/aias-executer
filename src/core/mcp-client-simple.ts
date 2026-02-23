@@ -67,6 +67,7 @@ export class MCPClientSimple {
       return { success: false, error: `服务器不存在: ${serverName}` };
     }
 
+      console.log(`[MCP客户端简单] 启动服务器 ${serverName}, 传输: ${server.transport}, URL: ${server.url}`);
     try {
       // 连接到服务器
       const connectResult = await this.realClient.connectToServer(serverName, server);

@@ -186,7 +186,7 @@ function performGracefulExit(): void {
 export const restartServiceTool: Tool = {
   definition: {
     name: 'restart_service',
-    description: '检查编译并安全重启当前服务（通过优雅退出让外部进程管理器重启）',
+    description: '检查编译并安全重启当前服务（通过退出让外部进程管理器重启）',
     parameters: {
       type: 'object',
       properties: {
@@ -209,7 +209,7 @@ export const restartServiceTool: Tool = {
         },
         delay: {
           type: 'integer',
-          description: '重启延迟时间（毫秒，给响应返回留出时间）',
+          description: '重启延迟时间（毫秒，给响应返回留出时间，外部重启会再延迟12秒）',
           default: 2000,
           minimum: 500,
           maximum: 10000

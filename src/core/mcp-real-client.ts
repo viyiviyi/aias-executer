@@ -70,7 +70,14 @@ export class MCPRealClient {
         }
       );
 
-      // 连接服务器
+
+      // 连接服务器（带超时）
+      const connectPromise = client.connect(transport);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('连接MCP服务器超时 (10秒)')), 10000);
+      });
+      
+      await Promise.race([connectPromise, timeoutPromise]);
       await client.connect(transport);
 
       // 保存连接信息

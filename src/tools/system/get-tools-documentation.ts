@@ -114,7 +114,7 @@ export const getToolsDocumentationTool = {
 
 ## 环境信息
 - **当前时间**: ${currentTime}  UTC: ${now.toISOString()}
-- **启动目录**: ${absolutePath}
+- **启动目录**: ${absolutePath} (当前tools服务项目源码路径)
 - **工作目录**: ${path.resolve(config.workspaceDir)}
 - **Node.js版本**: ${process.version}
 - **包管理器**: ${packageManager} ${packageManagerVersion}

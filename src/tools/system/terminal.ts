@@ -1,10 +1,21 @@
 import { spawn } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
+import { platform } from 'os';
 import { ConfigManager } from '../../core/config';
 import { Tool } from '../../core/tool-registry';
 import { TerminalInfo } from '../../types';
 
 const configManager = ConfigManager.getInstance();
+
+// 根据操作系统获取默认shell
+function getDefaultShell(): string {
+  const osPlatform = platform();
+  if (osPlatform === 'win32') {
+    return 'powershell';
+  }
+  return 'bash';
+}
+
 
 class TerminalManager {
   private static instance: TerminalManager;
@@ -25,7 +36,7 @@ class TerminalManager {
   }
 
   public createTerminal(
-    shell: string = 'bash',
+    shell: string = getDefaultShell(),
     workdir: string = '.',
     env: Record<string, string> = {},
     description?: string,
@@ -326,7 +337,7 @@ export const createTerminalTool: Tool = {
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
-    const shell = parameters.shell || 'bash';
+    const shell = parameters.shell || getDefaultShell();
     const workdir = parameters.workdir || '.';
     const env = parameters.env || {};
     const description = parameters.description;
