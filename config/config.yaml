@@ -31,21 +31,6 @@ command:
   allowedCommands: []
   maxTerminals: 5
 
-# MCP配置
-mcp:
-  autoStartServers:
-    - "playwright"
-  
-  # 服务器配置
-  servers:
-    # Playwright MCP服务器 (Microsoft官方)
-    playwright:
-      name: "playwright"
-      transport: "stdio"
-      command: ["npx", "@playwright/mcp", "--headless"]
-      workdir: "./workspace/mcp-browser"
-      # workdir: "./workspace/mcp-browser"
-
 # 包管理器配置
 packageManager:
   # 可选项: yarn, npm
