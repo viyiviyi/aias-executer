@@ -98,6 +98,16 @@ aias-executer.exe restart
 
 
 ### 2026-02-23
+- **MCP工具加载机制重构**：
+  - 修改MCP工具管理器，不再自动将MCP工具注册到全局工具列表
+  - 新增两个专用工具：
+    - `get_third_party_tools`：获取所有第三方工具（MCP工具）列表
+    - `execute_third_party_tool`：执行第三方工具（MCP工具）
+  - 工具名称格式：`serverName__toolName`
+  - 保持MCP服务器自动启动和工具发现功能
+  - 提供更好的工具管理和隔离
+
+### 2026-02-23
 - 添加重启服务工具 `restart_service`
 - 功能：检查编译并安全重启当前服务
 - 支持环境：Docker、Windows服务、systemd、开发环境

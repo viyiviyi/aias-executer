@@ -1,3 +1,6 @@
+// 第三方工具
+import { getThirdPartyToolsTool } from './system/get-third-party-tools';
+import { executeThirdPartyToolTool } from './system/execute-third-party-tool';
 import { ToolRegistry } from '../core/tool-registry';
 
 // 文件工具
@@ -53,6 +56,10 @@ export function registerAllTools(): void {
   // 网络工具
   toolRegistry.registerTool('http_request', httpRequestTool);
 
+  // 第三方工具
+  toolRegistry.registerTool(getThirdPartyToolsTool.definition, getThirdPartyToolsTool.execute);
+  toolRegistry.registerTool(executeThirdPartyToolTool.definition, executeThirdPartyToolTool.execute);
+
   // 注意：MCP工具不再在这里手动注册
   // 它们将由MCPToolManager在服务启动时自动注册
 }
@@ -83,7 +90,11 @@ export const allTools = {
   restart_service: restartServiceTool,
   
   // 网络工具
-  http_request: httpRequestTool
+  http_request: httpRequestTool,
+  
+  // 第三方工具
+  get_third_party_tools: getThirdPartyToolsTool,
+  execute_third_party_tool: executeThirdPartyToolTool
   
   // 注意：MCP工具不在这里导出
   // 它们将由MCPToolManager动态管理
