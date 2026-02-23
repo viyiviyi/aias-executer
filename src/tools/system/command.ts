@@ -7,7 +7,7 @@ const execAsync = promisify(exec);
 const configManager = ConfigManager.getInstance();
 
 // 辅助函数：截断文本到指定行数，并添加截断标识
-function truncateText(text: string, maxLines: number = 30): string {
+function truncateText(text: string, maxLines: number = 100): string {
   if (!text) return text;
 
   const lines = text.split('\n');
@@ -18,7 +18,7 @@ function truncateText(text: string, maxLines: number = 30): string {
   // 保留最后maxLines行
   const truncatedLines = lines.slice(-maxLines);
   // 添加截断标识
-  const truncatedText = `[内容被截断，只显示最后${maxLines}行，共${lines.length}行]\n${truncatedLines.join('\n')}`;
+  const truncatedText = `[内容过长被截断，只显示最后${maxLines}行，共${lines.length}行]\n${truncatedLines.join('\n')}`;
 
   return truncatedText;
 }

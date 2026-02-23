@@ -37,6 +37,7 @@ export class MCPToolManager {
     
     // 自动启动配置的服务器
     if (this.autoStartServers.length > 0) {
+      console.log('需要自动启动的服务器:', this.autoStartServers);
       await this.autoStartConfiguredServers();
     }
     
@@ -66,16 +67,22 @@ export class MCPToolManager {
   private async autoStartConfiguredServers(): Promise<void> {
     for (const serverName of this.autoStartServers) {
       try {
-        console.log(`自动启动MCP服务器: ${serverName}`);
+        console.log(`[MCP工具管理器] 自动启动服务器: ${serverName}`);
+        console.log(`[MCP工具管理器] 调用mcpClient.startServer...`);
+        
         const result = await this.mcpClient.startServer(serverName);
+        console.log(`[MCP工具管理器] startServer结果:`, result);
         
         if (result.success) {
-          console.log(`MCP服务器 ${serverName} 启动成功`);
+          console.log(`[MCP工具管理器] 服务器 ${serverName} 启动成功，开始扫描工具...`);
+          // 等待服务器完全启动
+          console.log(`等待服务器 ${serverName} 启动完成...`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
           
           // 扫描服务器获取工具
           await this.scanAndCacheServerTools(serverName);
         } else {
-          console.error(`MCP服务器 ${serverName} 启动失败:`, result.error);
+          console.error(`[MCP工具管理器] 服务器 ${serverName} 启动失败:`, result.error);
         }
       } catch (error) {
         console.error(`自动启动MCP服务器 ${serverName} 时出错:`, error);

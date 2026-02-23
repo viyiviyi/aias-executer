@@ -103,7 +103,7 @@ class TerminalManager {
   public async readTerminalOutput(
     terminalId: string,
     waitTimeout: number = 30,
-    maxLines: number = 30
+    maxLines: number = 100
   ): Promise<any> {
     const terminal = this.terminals.get(terminalId);
     if (!terminal) {
@@ -224,7 +224,7 @@ class TerminalManager {
     terminalId: string,
     input: string,
     waitTimeout: number = 30,
-    maxLines: number = 30
+    maxLines: number = 100
   ): Promise<any> {
     const terminal = this.terminals.get(terminalId);
     if (!terminal) {
@@ -361,7 +361,7 @@ export const terminalInputTool: Tool = {
         max_lines: {
           type: 'integer',
           description: '返回的最大行数',
-          default: 30,
+          default: 100,
           minimum: 1,
           maximum: 100
         }
@@ -374,7 +374,7 @@ export const terminalInputTool: Tool = {
     const terminalId = parameters.terminal_id;
     const input = parameters.input;
     const waitTimeout = parameters.wait_timeout || 30;
-    const maxLines = parameters.max_lines || 30;
+    const maxLines = parameters.max_lines || 100;
 
     if (!terminalId || !input) {
       throw new Error('terminal_id和input参数不能为空');
@@ -405,7 +405,7 @@ export const readTerminalOutputTool: Tool = {
         max_lines: {
           type: 'integer',
           description: '返回的最大行数',
-          default: 30,
+          default: 100,
           minimum: 1,
           maximum: 100
         }
@@ -417,7 +417,7 @@ export const readTerminalOutputTool: Tool = {
   async execute(parameters: Record<string, any>): Promise<any> {
     const terminalId = parameters.terminal_id;
     const waitTimeout = parameters.wait_timeout || 30;
-    const maxLines = parameters.max_lines || 30;
+    const maxLines = parameters.max_lines || 100;
 
     if (!terminalId) {
       throw new Error('terminal_id参数不能为空');

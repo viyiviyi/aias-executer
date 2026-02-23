@@ -33,19 +33,19 @@ command:
 
 # MCP配置
 mcp:
-  # 自动启动的服务器列表
+  autoStartServers: []  # 不自动启动，服务器已独立运行
   autoStartServers:
-    - "playwright:"
+    - "playwright"
   
   # 服务器配置
   servers:
     # Playwright MCP服务器 (Microsoft官方)
     playwright:
       name: "playwright"
-      description: "Playwright浏览器自动化MCP服务器"
-      transport: "stdio"
-      command: ["npx", "@playwright/mcp"]
-      workdir: "./workspace/mcp-browser"
+      transport: "http"
+      url: "http://localhost:3000"
+      # command: ["npx", "@playwright/mcp", "--headless", "--port", "3000"]
+      # workdir: "./workspace/mcp-browser"
 
 # 包管理器配置
 packageManager:
