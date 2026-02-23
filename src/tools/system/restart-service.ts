@@ -167,19 +167,19 @@ function performGracefulExit(): void {
     case 'systemd':
       // 这些环境有外部进程管理器，直接退出即可
       console.log('[RestartService] 退出进程，等待外部管理器重启');
-      process.exit(0);
+      process.exit(1);
       break;
       
     case 'development':
       // 开发环境：尝试使用nodemon/ts-node-dev的热重载
       console.log('[RestartService] 开发环境退出，可能需要手动重启');
-      process.exit(0);
+      process.exit(1);
       break;
       
     default:
       // 默认优雅退出
       console.log('[RestartService] 执行默认优雅退出');
-      process.exit(0);
+      process.exit(1);
   }
 }
 

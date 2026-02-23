@@ -41,7 +41,7 @@ export const updateFileTool: Tool = {
               },
               start_line_index: {
                 type: 'integer',
-                description: '起始行号（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除。所有操作都基于原始文件行号。',
+                description: '起始行号（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除。所有操作都基于原始行号。',
                 minimum: 1
               },
               insert_content: {
@@ -56,7 +56,7 @@ export const updateFileTool: Tool = {
             },
             required: ['operation', 'start_line_index']
           },
-          description: '更新操作列表，所有操作都基于原始文件行号，从后往前处理以避免冲突。'
+          description: '更新操作列表，所有操作都基于原始行号，且为1-based。'
         }
       },
       required: ['path', 'updates']
