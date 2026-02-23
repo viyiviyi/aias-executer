@@ -111,11 +111,10 @@ export const getToolsDocumentationTool = {
 - **CPU核心数**: ${osInfo.cpus}
 - **总内存**: ${osInfo.totalMemory}
 - **可用内存**: ${osInfo.freeMemory}
-- **系统运行时间**: ${osInfo.uptime}
 
 ## 环境信息
-- **当前时间**: ${currentTime}
-- **服务进程目录**: ${absolutePath}
+- **当前时间**: ${currentTime}  UTC: ${now.toISOString()}
+- **启动目录**: ${absolutePath}
 - **工作目录**: ${path.resolve(config.workspaceDir)}
 - **Node.js版本**: ${process.version}
 - **包管理器**: ${packageManager} ${packageManagerVersion}
@@ -125,7 +124,6 @@ ${dynamicContent}
 
 ---
 
-**文档生成时间**: ${currentTime}
 **文档版本**: 1.0
 **最后更新**: ${now.toISOString()}
 `;
