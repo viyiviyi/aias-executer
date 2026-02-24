@@ -26,7 +26,7 @@ export const getPageContentTool: Tool = {
       },
       required: []
     },
-    result_use_type: 'once'
+    result_use_type: 'last'
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {

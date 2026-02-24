@@ -21,25 +21,11 @@
 2. 维护项目时需要先了解原项目功能和架构，以符合原项目架构的方式尽可能少改动的维护项目。
 3. 如果新增的服务或功能需要独立启动，可以在autoStart目录维护自启脚本
 
-## 文件外联服务
-
-提供了静态文件服务功能，允许通过HTTP访问工作目录中的文件。
-
 ### 外链使用
 
-可以通过将URL的**主机部分**（protocol + hostname + port）替换为 `{{execution_url}}` 来创建外链。
+可以通过将URL的**主机部分**（protocol + hostname + port）替换为 `{{execution_url}}` 来创建外链，用于在消息中插入图片或文件。
 
 例如，有一个文件 `static/files/report.pdf` 在工作目录中：
 
 - 外链格式：`{{execution_url}}/api/static/files/report.pdf`
 
-### 安全说明
-
-- 只能访问工作目录（workspace）内的文件
-- 禁止访问工作目录外的文件
-- 支持的文件类型由MIME类型自动识别
-- 文件缓存时间为1小时
-
-### 响应格式
-
-**文件访问**：直接返回文件内容，Content-Type根据文件类型自动设置

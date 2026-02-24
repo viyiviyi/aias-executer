@@ -16,7 +16,6 @@ function getDefaultShell(): string {
   return 'bash';
 }
 
-
 class TerminalManager {
   private static instance: TerminalManager;
   private terminals: Map<string, TerminalInfo> = new Map();
@@ -62,20 +61,20 @@ class TerminalManager {
         cwd: workdirPath,
         env: fullEnv,
         stdio: ['pipe', 'pipe', 'pipe'],
-        shell: true
+        shell: true,
       });
 
       // 初始化输出缓冲区
       const outputBuffer: string[] = [];
-      
+
       // 收集所有输出到缓冲区，并限制缓冲区大小
       const collectOutput = (data: Buffer) => {
         const output = data.toString();
-        const lines = output.split('\n').filter(line => line.trim() !== '');
-        
+        const lines = output.split('\n').filter((line) => line.trim() !== '');
+
         // 添加新行到缓冲区
         outputBuffer.push(...lines);
-        
+
         // 限制缓冲区大小，移除最旧的行
         if (outputBuffer.length > this.MAX_BUFFER_SIZE) {
           const excess = outputBuffer.length - this.MAX_BUFFER_SIZE;
@@ -97,7 +96,7 @@ class TerminalManager {
         description,
         lastReadPosition: 0, // 上次读取的位置，保存在后台
         outputBuffer,
-        isReading: false
+        isReading: false,
       });
 
       // 如果有初始命令，执行它
@@ -132,7 +131,7 @@ class TerminalManager {
 
     // 如果正在读取，等待
     if (terminal.isReading) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     terminal.isReading = true;
@@ -142,7 +141,7 @@ class TerminalManager {
         const startTime = Date.now();
         let lastOutputTime = Date.now();
         const newLines: string[] = [];
-        let timeoutId: NodeJS.Timeout = setTimeout(() => {},0)
+        let timeoutId: NodeJS.Timeout = setTimeout(() => {}, 0);
 
         // 检查是否有新输出
         const checkOutput = () => {
@@ -163,7 +162,7 @@ class TerminalManager {
               output,
               line_count: Math.min(newLines.length, maxLines),
               truncated: newLines.length > maxLines,
-              has_new_output: true
+              has_new_output: true,
             });
             return;
           }
@@ -171,18 +170,19 @@ class TerminalManager {
           // 检查超时条件
           const elapsedTime = Date.now() - startTime;
           const timeSinceLastOutput = Date.now() - lastOutputTime;
-          
+
           if (elapsedTime >= waitTimeout * 1000) {
             // 总超时
             clearTimeout(timeoutId);
-            const output = newLines.length > 0 
-              ? newLines.join('\n')
-              : terminal.outputBuffer.slice(-5).join('\n'); // 返回最后5行
+            const output =
+              newLines.length > 0
+                ? newLines.join('\n')
+                : terminal.outputBuffer.slice(-5).join('\n'); // 返回最后5行
             resolve({
               output,
               line_count: newLines.length || Math.min(5, terminal.outputBuffer.length),
               timeout: true,
-              has_new_output: newLines.length > 0
+              has_new_output: newLines.length > 0,
             });
           } else if (timeSinceLastOutput >= 3000 && newLines.length > 0) {
             // 3秒无新输出且有输出
@@ -192,7 +192,7 @@ class TerminalManager {
               output,
               line_count: newLines.length,
               no_new_output_timeout: true,
-              has_new_output: true
+              has_new_output: true,
             });
           } else if (timeSinceLastOutput >= 3000 && newLines.length === 0) {
             // 3秒无新输出且无输出
@@ -202,7 +202,7 @@ class TerminalManager {
               output,
               line_count: Math.min(5, terminal.outputBuffer.length),
               no_new_output: true,
-              has_new_output: false
+              has_new_output: false,
             });
           } else {
             // 继续等待
@@ -212,14 +212,13 @@ class TerminalManager {
 
         // 设置总超时
         timeoutId = setTimeout(() => {
-          const output = newLines.length > 0 
-            ? newLines.join('\n')
-            : terminal.outputBuffer.slice(-5).join('\n');
+          const output =
+            newLines.length > 0 ? newLines.join('\n') : terminal.outputBuffer.slice(-5).join('\n');
           resolve({
             output,
             line_count: newLines.length || Math.min(5, terminal.outputBuffer.length),
             timeout: true,
-            has_new_output: newLines.length > 0
+            has_new_output: newLines.length > 0,
           });
         }, waitTimeout * 1000);
 
@@ -288,13 +287,13 @@ class TerminalManager {
     last_activity: number;
     description?: string;
   }> {
-    return Array.from(this.terminals.values()).map(terminal => ({
+    return Array.from(this.terminals.values()).map((terminal) => ({
       id: terminal.id,
       workdir: terminal.workdir,
       shell: terminal.shell,
       created_at: terminal.createdAt,
       last_activity: terminal.lastActivity,
-      description: terminal.description
+      description: terminal.description,
     }));
   }
 }
@@ -311,29 +310,30 @@ export const createTerminalTool: Tool = {
         shell: {
           type: 'string',
           description: 'Shell类型（bash, zsh, sh等）',
-          default: 'bash'
+          default: 'bash',
         },
         workdir: {
           type: 'string',
           description: '工作目录',
-          default: '.'
+          default: '.',
         },
         env: {
           type: 'object',
           additionalProperties: { type: 'string' },
-          description: '环境变量（可选）'
+          description: '环境变量（可选）',
         },
         description: {
           type: 'string',
-          description: '终端描述（可选）'
+          description: '终端描述（可选）',
         },
         initial_command: {
           type: 'string',
-          description: '初始命令（可选），创建终端后立即执行的命令'
-        }
+          description: '初始命令（可选），创建终端后立即执行的命令',
+        },
       },
-      required: []
-    }
+      required: [],
+    },
+    result_use_type: 'once',
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -344,7 +344,7 @@ export const createTerminalTool: Tool = {
     const initialCommand = parameters.initial_command;
 
     return terminalManager.createTerminal(shell, workdir, env, description, initialCommand);
-  }
+  },
 };
 
 export const terminalInputTool: Tool = {
@@ -356,29 +356,30 @@ export const terminalInputTool: Tool = {
       properties: {
         terminal_id: {
           type: 'string',
-          description: '终端ID'
+          description: '终端ID',
         },
         input: {
           type: 'string',
-          description: '输入的命令或文本'
+          description: '输入的命令或文本',
         },
         wait_timeout: {
           type: 'integer',
           description: '等待输出的超时时间（秒）',
           default: 30,
           minimum: 1,
-          maximum: 60
+          maximum: 60,
         },
         max_lines: {
           type: 'integer',
           description: '返回的最大行数',
           default: 100,
           minimum: 1,
-          maximum: 100
-        }
+          maximum: 100,
+        },
       },
-      required: ['terminal_id', 'input']
-    }
+      required: ['terminal_id', 'input'],
+    },
+    result_use_type: 'once',
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -392,7 +393,7 @@ export const terminalInputTool: Tool = {
     }
 
     return await terminalManager.sendInput(terminalId, input, waitTimeout, maxLines);
-  }
+  },
 };
 
 export const readTerminalOutputTool: Tool = {
@@ -404,25 +405,26 @@ export const readTerminalOutputTool: Tool = {
       properties: {
         terminal_id: {
           type: 'string',
-          description: '终端ID'
+          description: '终端ID',
         },
         wait_timeout: {
           type: 'integer',
           description: '等待输出的超时时间（秒）',
           default: 30,
           minimum: 1,
-          maximum: 60
+          maximum: 60,
         },
         max_lines: {
           type: 'integer',
           description: '返回的最大行数',
           default: 100,
           minimum: 1,
-          maximum: 100
-        }
+          maximum: 100,
+        },
       },
-      required: ['terminal_id']
-    }
+      required: ['terminal_id'],
+    },
+    result_use_type: 'once',
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -435,7 +437,7 @@ export const readTerminalOutputTool: Tool = {
     }
 
     return await terminalManager.readTerminalOutput(terminalId, waitTimeout, maxLines);
-  }
+  },
 };
 
 export const closeTerminalTool: Tool = {
@@ -447,22 +449,22 @@ export const closeTerminalTool: Tool = {
       properties: {
         terminal_id: {
           type: 'string',
-          description: '终端ID'
-        }
+          description: '终端ID',
+        },
       },
-      required: ['terminal_id']
-    }
+      required: ['terminal_id'],
+    },
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const terminalId = parameters.terminal_id;
-    
+
     if (!terminalId) {
       throw new Error('terminal_id参数不能为空');
     }
 
     return terminalManager.closeTerminal(terminalId);
-  }
+  },
 };
 
 export const listTerminalsTool: Tool = {
@@ -471,14 +473,14 @@ export const listTerminalsTool: Tool = {
     description: '列出所有活动的终端会话',
     parameters: {
       type: 'object',
-      properties: {}
-    }
+      properties: {},
+    },
   },
 
   async execute(): Promise<any> {
     return {
       terminals: terminalManager.listTerminals(),
-      count: terminalManager.listTerminals().length
+      count: terminalManager.listTerminals().length,
     };
-  }
+  },
 };
