@@ -48,7 +48,7 @@ export const getPageContentTool: Tool = {
       const url = page.url();
 
       // 获取页面内容 简单dom数
-      const bodyContent = await page.evaluate(() => {
+      const bodyDomTree = await page.evaluate(() => {
         const body = document.body;
         const isDisplay = (e: HTMLElement): boolean => {
           // 检查元素是否存在
@@ -118,9 +118,9 @@ export const getPageContentTool: Tool = {
           let html = '';
           if (typeof e == 'string') return e;
           if (isDisplay(e)) {
-            html += `${''.padEnd(depth, ' ')}${e.tagName.toLowerCase()}:`;
+            html += `${''.padEnd(depth, ' ')}- ${e.tagName.toLowerCase()}`;
             if (e.children && e.children.length) {
-              html += `\n`;
+              html += `:\n`;
               html += Array.from(e.children)
                 .map((v) => getElement(v as HTMLElement, depth + 1))
                 .filter((f) => f)
@@ -131,12 +131,18 @@ export const getPageContentTool: Tool = {
               e.getAttributeNames().forEach((attrName) => {
                 attrName = attrName.toLowerCase();
                 let val: string = ele[attrName] || ele[attrName.toUpperCase()];
-                if (['src', 'type', 'alt', 'title', 'placeholder'].includes(attrName) && val) {
+                if (
+                  ['src', 'type', 'alt', 'title', 'placeholder', 'name', 'value'].includes(
+                    attrName
+                  ) &&
+                  val
+                ) {
                   if (attrName == 'src' && val.startsWith('data:')) val = '';
-                  if (val) html += ` ${attrName}: ${val}`;
+                  if (val) html += ` [${attrName}=${val}]`;
                 }
               });
-              html += `\n`;
+              if (e.style.cursor?.toLowerCase() == 'pointer') html += ` [cursor=pointer]`;
+              html += `:\n`;
             }
           }
           return html;
@@ -151,7 +157,7 @@ export const getPageContentTool: Tool = {
           title: title,
           url: url,
         },
-        body_content: bodyContent,
+        body_dom_tree: bodyDomTree,
       };
     } catch (error: any) {
       throw new Error(`获取页面内容失败: ${error.message}`);

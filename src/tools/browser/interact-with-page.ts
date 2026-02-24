@@ -18,15 +18,15 @@ export const interactWithPageTool: Tool = {
         action: {
           type: 'string',
           description: '要执行的操作类型',
-          enum: ['click', 'type', 'fill', 'press', 'hover', 'select', 'check', 'uncheck', 'goto', 'go_back', 'go_forward', 'reload']
+          enum: ['click', 'fill', 'press', 'hover', 'select', 'check', 'uncheck', 'goto', 'go_back', 'go_forward', 'reload']
         },
         selector: {
           type: 'string',
-          description: 'CSS选择器（对于click、type、fill、hover、select、check、uncheck操作需要）'
+          description: 'CSS选择器（对于click、fill、hover、select、check、uncheck操作需要）'
         },
         text: {
           type: 'string',
-          description: '要输入的文本（对于type、fill操作需要）'
+          description: '要输入的文本（对于fill操作需要）'
         },
         value: {
           type: 'string',
@@ -91,14 +91,6 @@ export const interactWithPageTool: Tool = {
             await page.click(selector, { timeout: timeout * 1000 });
           }
           result = { message: `已点击元素: ${selector}` };
-          break;
-
-        case 'type':
-          if (!selector || !text) {
-            throw new Error('type操作需要selector和text参数');
-          }
-          await page.type(selector, text, { timeout: timeout * 1000 });
-          result = { message: `已在 ${selector} 输入文本: ${text}` };
           break;
 
         case 'fill':
