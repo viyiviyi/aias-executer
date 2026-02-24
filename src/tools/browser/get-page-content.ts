@@ -25,6 +25,7 @@ export const getPageContentTool: Tool = {
       },
       required: [],
     },
+    result_use_type: 'last',
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -90,6 +91,26 @@ export const getPageContentTool: Tool = {
           }
           */
 
+          if (e.tagName.toLowerCase() == 'svg') return false;
+          if (
+            e.getElementsByTagName('a').length ||
+            e.getElementsByTagName('img').length ||
+            e.getElementsByTagName('input').length ||
+            e.getElementsByTagName('textarea').length ||
+            e.getElementsByTagName('image').length ||
+            e.getElementsByTagName('button').length
+          )
+            return true;
+
+          // 检查是否有可见子元素
+          if (e.children && e.children.length) {
+            let subIsVisible = false;
+            for (const sub of Array.from(e.children)) {
+              if (isDisplay(sub as HTMLElement)) subIsVisible = true;
+            }
+            if (!subIsVisible) return false;
+          }
+
           return true;
         };
 
@@ -109,21 +130,11 @@ export const getPageContentTool: Tool = {
               const ele = e as any;
               e.getAttributeNames().forEach((attrName) => {
                 attrName = attrName.toLowerCase();
-                if (
-                  ([
-                    'href',
-                    'src',
-                    'type',
-                    'alt',
-                    'title',
-                    'placeholder',
-                    'id',
-                    'data-ai-placeholder',
-                  ].includes(attrName) ||
-                    attrName.startsWith('data-')) &&
-                  (ele[attrName] || ele[attrName.toUpperCase()])
-                )
-                  html += ` ${attrName}: ${ele[attrName] || ele[attrName.toUpperCase()]}`;
+                let val: string = ele[attrName] || ele[attrName.toUpperCase()];
+                if (['src', 'type', 'alt', 'title', 'placeholder'].includes(attrName) && val) {
+                  if (attrName == 'src' && val.startsWith('data:')) val = '';
+                  if (val) html += ` ${attrName}: ${val}`;
+                }
               });
               html += `\n`;
             }
