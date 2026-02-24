@@ -1,3 +1,11 @@
+// 浏览器工具
+import { 
+  openBrowserTool, 
+  getPageContentTool, 
+  interactWithPageTool, 
+  closeBrowserTool
+} from './browser';
+
 import { ToolRegistry } from '../core/tool-registry';
 
 // 文件工具
@@ -33,6 +41,12 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('write_file', writeFileTool);
   toolRegistry.registerTool('list_directory', listDirectoryTool);
   toolRegistry.registerTool('update_file', updateFileTool);
+  // 浏览器工具
+  toolRegistry.registerTool('open_browser', openBrowserTool);
+  toolRegistry.registerTool('get_page_content', getPageContentTool);
+  toolRegistry.registerTool('interact_with_page', interactWithPageTool);
+  toolRegistry.registerTool('close_browser', closeBrowserTool);
+
   toolRegistry.registerTool('read_code', readCodeTool);
   toolRegistry.registerTool('delete_file', deleteFileTool);
   toolRegistry.registerTool('move_file', moveFileTool);
@@ -63,6 +77,12 @@ export const allTools = {
   delete_file: deleteFileTool,
   move_file: moveFileTool,
   delete_files: deleteFilesTool,
+  
+  // 浏览器工具
+  open_browser: openBrowserTool,
+  get_page_content: getPageContentTool,
+  interact_with_page: interactWithPageTool,
+  close_browser: closeBrowserTool,
   copy_file: copyFileTool,
   
   // 文档工具
