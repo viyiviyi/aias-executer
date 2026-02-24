@@ -54,6 +54,7 @@ export const executeCommandTool: Tool = {
       },
       required: ['command'],
     },
+    result_use_type:'once'
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {

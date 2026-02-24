@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { AutostartManager } from './core/autostart-manager';
 import { ConfigManager } from './core/config';
 import { registerAllTools } from './tools';
+import staticRouter from './api/static';
 import toolsRouter from './api/tools';
 
 // 注册所有基础工具
@@ -69,6 +70,9 @@ app.get('/health', (_req, res) => {
 
 // API路由 - 简化接口
 app.use('/api', toolsRouter);
+// 静态文件服务路由
+app.use('/api/static', staticRouter);
+
 
 // 根路径
 app.get('/', (_req, res) => {
@@ -82,6 +86,9 @@ app.get('/', (_req, res) => {
       execute: '/api/execute',
       health: '/health',
       autostartStatus: '/api/autostart/status',
+      staticFiles: '/api/static/files/*',
+      listDirectory: '/api/static/list/*',
+      fileInfo: '/api/static/info/*'
     },
   });
 });
