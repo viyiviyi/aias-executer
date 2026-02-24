@@ -47,7 +47,7 @@
   <resetfailure>1 hour</resetfailure>
   <log mode="reset"></log>
   <!-- 此处需要填写完整路径 -->
-  <workingdirectory>F:/aias-executer</workingdirectory>
+  <workingdirectory>C:/aias-executer</workingdirectory>
 
   <!-- <env name="VENV_DIR"
     value="venv" /> -->
