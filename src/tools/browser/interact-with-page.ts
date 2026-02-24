@@ -1,13 +1,12 @@
 import { Tool } from '../../core/tool-registry';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { BrowserManager } from './browser-manager';
 
-const execAsync = promisify(exec);
+const browserManager = BrowserManager.getInstance();
 
 export const interactWithPageTool: Tool = {
   definition: {
     name: 'interact_with_page',
-    description: '操作浏览器，输入、点击、滚动等',
+    description: 'playwright操作浏览器，输入、点击、滚动等',
     parameters: {
       type: 'object',
       properties: {
@@ -55,8 +54,7 @@ export const interactWithPageTool: Tool = {
         }
       },
       required: ['action']
-    },
-    result_use_type: 'once'
+    }
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -67,174 +65,140 @@ export const interactWithPageTool: Tool = {
     const value = parameters.value;
     const key = parameters.key;
     const url = parameters.url;
-    const waitForNavigation = parameters.wait_for_navigation !== false;
+    const waitForNavigation = parameters.wait_for_navigation !== undefined ? parameters.wait_for_navigation : true;
     const timeout = parameters.timeout || 30;
 
+    const session = browserManager.getSession(browserId);
+    if (!session) {
+      throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 open_browser 打开浏览器`);
+    }
+
+    const page = session.page;
+    let result: any = {};
+
     try {
-      let command = `playwright-cli`;
-      
-      // 如果有浏览器ID，添加到命令中
-      if (browserId !== 'default') {
-        command += ` -s=${browserId}`;
-      }
-      
-      // 根据操作类型构建命令
       switch (action) {
         case 'click':
           if (!selector) {
             throw new Error('click操作需要selector参数');
           }
-          command += ` click "${selector}"`;
+          if (waitForNavigation) {
+            await Promise.all([
+              page.waitForNavigation({ timeout: timeout * 1000 }).catch(() => {}),
+              page.click(selector, { timeout: timeout * 1000 })
+            ]);
+          } else {
+            await page.click(selector, { timeout: timeout * 1000 });
+          }
+          result = { message: `已点击元素: ${selector}` };
           break;
-          
+
         case 'type':
           if (!selector || !text) {
             throw new Error('type操作需要selector和text参数');
           }
-          command += ` type "${selector}" "${text}"`;
+          await page.type(selector, text, { timeout: timeout * 1000 });
+          result = { message: `已在 ${selector} 输入文本: ${text}` };
           break;
-          
+
         case 'fill':
           if (!selector || !text) {
             throw new Error('fill操作需要selector和text参数');
           }
-          command += ` fill "${selector}" "${text}"`;
+          await page.fill(selector, text, { timeout: timeout * 1000 });
+          result = { message: `已填充 ${selector} 内容: ${text}` };
           break;
-          
+
         case 'press':
           if (!key) {
             throw new Error('press操作需要key参数');
           }
-          command += ` press "${key}"`;
+          if (selector) {
+            await page.press(selector, key, { timeout: timeout * 1000 });
+            result = { message: `已在 ${selector} 按下键: ${key}` };
+          } else {
+            await page.keyboard.press(key);
+            result = { message: `已按下键: ${key}` };
+          }
           break;
-          
+
         case 'hover':
           if (!selector) {
             throw new Error('hover操作需要selector参数');
           }
-          command += ` hover "${selector}"`;
+          await page.hover(selector, { timeout: timeout * 1000 });
+          result = { message: `已悬停在元素: ${selector}` };
           break;
-          
+
         case 'select':
           if (!selector || !value) {
             throw new Error('select操作需要selector和value参数');
           }
-          command += ` select "${selector}" "${value}"`;
+          await page.selectOption(selector, value, { timeout: timeout * 1000 });
+          result = { message: `已在 ${selector} 选择值: ${value}` };
           break;
-          
+
         case 'check':
           if (!selector) {
             throw new Error('check操作需要selector参数');
           }
-          command += ` check "${selector}"`;
+          await page.check(selector, { timeout: timeout * 1000 });
+          result = { message: `已勾选元素: ${selector}` };
           break;
-          
+
         case 'uncheck':
           if (!selector) {
             throw new Error('uncheck操作需要selector参数');
           }
-          command += ` uncheck "${selector}"`;
+          await page.uncheck(selector, { timeout: timeout * 1000 });
+          result = { message: `已取消勾选元素: ${selector}` };
           break;
-          
+
         case 'goto':
           if (!url) {
             throw new Error('goto操作需要url参数');
           }
-          command += ` goto "${url}"`;
+          await browserManager.navigateTo(browserId, url, timeout * 1000);
+          result = { message: `已导航到: ${url}` };
           break;
-          
+
         case 'go_back':
-          command += ` go-back`;
+          await page.goBack({ timeout: timeout * 1000 });
+          result = { message: '已返回上一页' };
           break;
-          
+
         case 'go_forward':
-          command += ` go-forward`;
+          await page.goForward({ timeout: timeout * 1000 });
+          result = { message: '已前进到下一页' };
           break;
-          
+
         case 'reload':
-          command += ` reload`;
+          await page.reload({ timeout: timeout * 1000, waitUntil: 'domcontentloaded' });
+          result = { message: '已重新加载页面' };
           break;
-          
+
         default:
           throw new Error(`不支持的操作类型: ${action}`);
       }
 
-      // 执行命令
-      // 执行命令，忽略stdout输出，只检查stderr
-      const { stderr } = await execAsync(command, {
-        cwd: process.cwd()
-      });
+      // 获取操作后的页面状态
+      const currentUrl = page.url();
+      const currentTitle = await page.title();
 
-      // 精简返回结果
-      const result: any = {
+      return {
         success: true,
-        browser_id: browserId,
+        session_id: browserId,
         action: action,
-        message: `成功执行 ${action} 操作`
+        result: result,
+        page_state: {
+          url: currentUrl,
+          title: currentTitle
+        },
+        timestamp: new Date().toISOString()
       };
 
-      // 添加操作特定的信息
-      if (selector) result.selector = selector;
-      if (text) result.text = text;
-      if (value) result.value = value;
-      if (key) result.key = key;
-      if (url) result.url = url;
-
-      // 检查是否有错误输出
-      if (stderr && stderr.trim()) {
-        const errorMsg = stderr.trim();
-        if (errorMsg.includes('Error') || errorMsg.includes('error')) {
-          result.success = false;
-          result.message = `操作执行失败: ${errorMsg}`;
-        } else {
-          result.warning = errorMsg;
-        }
-      }
-
-      // 如果需要等待导航完成，可以获取当前页面信息
-      if (waitForNavigation && (action === 'click' || action === 'goto' || action === 'go_back' || action === 'go_forward' || action === 'reload')) {
-        try {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 等待2秒让页面加载
-          
-          const infoCommand = browserId !== 'default' 
-            ? `playwright-cli -s=${browserId} eval "window.location.href"`
-            : `playwright-cli eval "window.location.href"`;
-            
-          const { stdout: urlStdout } = await execAsync(infoCommand, {
-            timeout: 10 * 1000,
-            cwd: process.cwd()
-          });
-          
-          result.current_url = urlStdout.trim();
-          
-          const titleCommand = browserId !== 'default' 
-            ? `playwright-cli -s=${browserId} eval "document.title"`
-            : `playwright-cli eval "document.title"`;
-            
-          const { stdout: titleStdout } = await execAsync(titleCommand, {
-            timeout: 10 * 1000,
-            cwd: process.cwd()
-          });
-          
-          result.current_title = titleStdout.trim();
-        } catch (infoError) {
-          result.info_error = `获取页面信息失败: ${infoError instanceof Error ? infoError.message : String(infoError)}`;
-        }
-      }
-
-      return result;
-
     } catch (error: any) {
-      // 处理执行错误
-      if (error.code === 'ETIMEDOUT') {
-        throw new Error(`命令执行超时（${timeout}秒）`);
-      }
-      
-      if (error.stderr) {
-        throw new Error(`playwright-cli执行错误: ${error.stderr}`);
-      }
-      
-      throw new Error(`页面交互操作失败: ${error.message}`);
+      throw new Error(`执行操作 ${action} 失败: ${error.message}`);
     }
   }
 };

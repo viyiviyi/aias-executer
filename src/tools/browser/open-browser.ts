@@ -1,13 +1,12 @@
 import { Tool } from '../../core/tool-registry';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { BrowserManager } from './browser-manager';
 
-const execAsync = promisify(exec);
+const browserManager = BrowserManager.getInstance();
 
 export const openBrowserTool: Tool = {
   definition: {
     name: 'open_browser',
-    description: '在浏览器打开URL，直到页面加载完成或超时才返回是否成功和浏览器ID',
+    description: 'playwright打开浏览器，用于访问互联网、网站、测试网页等，默认可联网',
     parameters: {
       type: 'object',
       properties: {
@@ -40,15 +39,14 @@ export const openBrowserTool: Tool = {
         }
       },
       required: ['url']
-    },
-    result_use_type: 'once'
+    }
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const url = parameters.url;
-    const browser = parameters.browser || 'chrome';
+    const browserType = parameters.browser || 'chrome';
     const sessionName = parameters.session_name || 'default';
-    // headless参数保留但不使用，因为playwright-cli不支持headless模式
+    const headless = parameters.headless !== undefined ? parameters.headless : false;
     const timeout = parameters.timeout || 30;
 
     if (!url) {
@@ -63,54 +61,35 @@ export const openBrowserTool: Tool = {
     }
 
     try {
-      // 构建playwright-cli命令
-      let command = `playwright-cli`;
+      // 创建浏览器会话
+      const session = await browserManager.createSession(sessionName, browserType, headless);
       
-      // 如果有会话名称，添加到命令中
-      if (sessionName !== 'default') {
-        command += ` -s=${sessionName}`;
-      }
-      
-      // 添加浏览器参数
-      command += ` open --browser=${browser}`;
-      
-      // 添加URL
-      command += ` ${url}`;
+      // 导航到指定URL
+      await browserManager.navigateTo(sessionName, url, timeout * 1000);
 
-      // 执行命令
-      // 执行命令，忽略stdout输出，只检查stderr
-      const { stderr } = await execAsync(command, {
-        cwd: process.cwd()
-      });
+      // 获取页面基本信息
+      const page = session.page;
+      const title = await page.title();
+      const urlAfterNavigation = page.url();
 
-      // 精简返回结果
-      const result = {
+      return {
         success: true,
-        browser_id: sessionName,
-        browser_type: browser,
-        url: url,
-        message: `浏览器已成功打开并导航到 ${url}`
+        session_id: sessionName,
+        browser_type: browserType,
+        headless: headless,
+        page_info: {
+          title: title,
+          url: urlAfterNavigation,
+          original_url: url
+        },
+        message: `浏览器已成功打开并导航到 ${url}`,
+        sessions_count: browserManager.listSessions().length
       };
-
-      // 检查是否有错误输出
-      if (stderr && stderr.trim()) {
-        result.success = false;
-        result.message = `浏览器打开失败: ${stderr.trim()}`;
-      }
-
-      return result;
-
     } catch (error: any) {
-      // 处理执行错误
-      if (error.code === 'ETIMEDOUT') {
-        throw new Error(`命令执行超时（${timeout}秒）`);
-      }
+      // 如果创建会话失败，确保清理
+      await browserManager.closeSession(sessionName).catch(() => {});
       
-      if (error.stderr) {
-        throw new Error(`playwright-cli执行错误: ${error.stderr}`);
-      }
-      
-      throw new Error(`浏览器打开失败: ${error.message}`);
+      throw new Error(`打开浏览器失败: ${error.message}`);
     }
   }
 };

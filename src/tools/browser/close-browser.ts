@@ -1,13 +1,12 @@
 import { Tool } from '../../core/tool-registry';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { BrowserManager } from './browser-manager';
 
-const execAsync = promisify(exec);
+const browserManager = BrowserManager.getInstance();
 
 export const closeBrowserTool: Tool = {
   definition: {
     name: 'close_browser',
-    description: '关闭浏览器',
+    description: 'playwright关闭浏览器',
     parameters: {
       type: 'object',
       properties: {
@@ -35,80 +34,91 @@ export const closeBrowserTool: Tool = {
         }
       },
       required: []
-    },
-    result_use_type: 'once'
+    }
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const browserId = parameters.browser_id || 'default';
     const deleteData = parameters.delete_data || false;
     const forceKill = parameters.force_kill || false;
-    const timeout = parameters.timeout || 30;
-
     try {
-      let command = `playwright-cli`;
-      let result: any = {
-        success: true
-      };
-
       if (browserId === 'all') {
-        // 关闭所有浏览器
-        if (forceKill) {
-          command += ` kill-all`;
-          result.action = 'kill_all_browsers';
-          result.message = '强制杀死所有浏览器进程';
-        } else {
-          command += ` close-all`;
-          result.action = 'close_all_browsers';
-          result.message = '关闭所有浏览器';
-        }
-      } else {
-        // 关闭指定浏览器
-        if (browserId !== 'default') {
-          command += ` -s=${browserId}`;
-          result.browser_id = browserId;
-        }
+        // 关闭所有浏览器会话
+        const sessionsBefore = browserManager.listSessions();
+        const sessionCount = sessionsBefore.length;
         
-        if (deleteData) {
-          command += ` delete-data`;
-          result.action = 'delete_browser_data';
-          result.message = `删除浏览器 ${browserId} 的数据`;
+        if (sessionCount === 0) {
+          return {
+            success: true,
+            message: '没有活动的浏览器会话需要关闭',
+            closed_sessions: 0,
+            remaining_sessions: 0
+          };
+        }
+
+        await browserManager.closeAllSessions();
+        
+        const sessionsAfter = browserManager.listSessions();
+        
+        return {
+          success: true,
+          message: `已关闭所有浏览器会话（共 ${sessionCount} 个）`,
+          closed_sessions: sessionCount,
+          remaining_sessions: sessionsAfter.length,
+          force_kill: forceKill,
+          delete_data: deleteData
+        };
+      } else {
+        // 关闭指定浏览器会话
+        const session = browserManager.getSession(browserId);
+        if (!session) {
+          return {
+            success: false,
+            message: `浏览器会话 ${browserId} 不存在`,
+            closed: false
+          };
+        }
+
+        // 如果设置了删除数据，先清理上下文
+        if (deleteData && session.context) {
+          try {
+            await session.context.clearCookies();
+            // 注意：Playwright没有直接的localStorage清理API，可以通过页面执行脚本
+            const pages = session.context.pages();
+            for (const page of pages) {
+              await page.evaluate(() => {
+                localStorage.clear();
+                sessionStorage.clear();
+              }).catch(() => {}); // 忽略错误
+            }
+          } catch (error) {
+            console.warn(`清理浏览器数据时出错: ${error}`);
+          }
+        }
+
+        const closed = await browserManager.closeSession(browserId);
+        
+        if (closed) {
+          const remainingSessions = browserManager.listSessions();
+          
+          return {
+            success: true,
+            message: `已关闭浏览器会话: ${browserId}`,
+            session_id: browserId,
+            closed: true,
+            delete_data: deleteData,
+            remaining_sessions: remainingSessions.length,
+            remaining_session_ids: remainingSessions.map(s => s.id)
+          };
         } else {
-          command += ` close`;
-          result.action = 'close_browser';
-          result.message = `关闭浏览器 ${browserId}`;
+          return {
+            success: false,
+            message: `关闭浏览器会话 ${browserId} 失败`,
+            closed: false
+          };
         }
       }
-
-      // 执行命令
-      // 执行命令，忽略stdout输出，只检查stderr
-      const { stderr } = await execAsync(command, {
-        cwd: process.cwd()
-      });
-
-      // 检查是否有错误输出
-      if (stderr && stderr.trim()) {
-        const errorMsg = stderr.trim();
-        if (errorMsg.includes('Error') || errorMsg.includes('error') || errorMsg.includes('not found')) {
-          result.success = false;
-          result.message = `关闭浏览器失败: ${errorMsg}`;
-        } else {
-          result.warning = errorMsg;
-        }
-      }
-
-      return result;
-
     } catch (error: any) {
-      // 处理执行错误
-      if (error.code === 'ETIMEDOUT') {
-        throw new Error(`命令执行超时（${timeout}秒）`);
-      }
-      
-      if (error.stderr) {
-        throw new Error(`playwright-cli执行错误: ${error.stderr}`);
-      }
-      
       throw new Error(`关闭浏览器失败: ${error.message}`);
     }
   }

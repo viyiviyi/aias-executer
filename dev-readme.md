@@ -2,7 +2,7 @@
 
 ## 简介
 
-**AIAS Executor** (AI Agent System Executor) 是一个为OpenAI函数调用设计的工具执行器系统。项目采用TypeScript开发，提供完整的文件、系统、网络和MCP协议工具支持，可作为AI代理的后端服务。
+**AIAS Executor** (AI Agent System Executor) 是一个符合OpenAI function calls的MCP服务，一切功能都需要尽可能利于ai使用，比如操作结果清晰精简不容易污染上下文、函数说明语义准确有效。
 
 本文档是AIAS Executor项目的开发维护指南目录。详细文档已按功能分解到 `dev-docs/` 目录中。
 
@@ -105,6 +105,20 @@ aias-executer.exe restart
     - `execute_third_party_tool`：执行第三方工具（MCP工具）
   - 工具名称格式：`serverName__toolName`
   - 保持MCP服务器自动启动和工具发现功能
+### 2026-02-24
+- **添加Playwright浏览器工具**：
+  - 新增 `open_browser` 工具：打开浏览器并导航到指定URL
+  - 新增 `get_page_content` 工具：获取页面HTML、文本、截图和元数据
+  - 新增 `interact_with_page` 工具：执行点击、输入、导航等交互操作
+  - 新增 `close_browser` 工具：关闭浏览器会话
+  - 基于Playwright库，提供完整的浏览器自动化能力
+  - 支持多会话管理、自动清理、错误处理和超时控制
+  - 支持Chrome、Firefox、WebKit、Edge四种浏览器
+  - 创建详细的使用文档和示例
+
+**Playwright工具状态**: 已集成并编译通过
+**依赖要求**: playwright已安装
+**使用场景**: 网页自动化、数据采集、测试、信息获取
   - 提供更好的工具管理和隔离
 
 ### 2026-02-23

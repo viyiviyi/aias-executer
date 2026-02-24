@@ -1,10 +1,5 @@
 // 浏览器工具
-import { 
-  openBrowserTool, 
-  getPageContentTool, 
-  interactWithPageTool, 
-  closeBrowserTool
-} from './browser';
+import { openBrowserTool, getPageContentTool, interactWithPageTool, closeBrowserTool } from './browser';
 
 import { ToolRegistry } from '../core/tool-registry';
 
@@ -14,7 +9,6 @@ import { writeFileTool } from './file/write-file';
 import { listDirectoryTool } from './file/list-directory';
 import { updateFileTool } from './file/update-file';
 import { readCodeTool } from './file/read-code';
-import { deleteFileTool } from './file/delete-file';
 import { moveFileTool } from './file/move-file';
 import { deleteFilesTool } from './file/delete-files';
 import { copyFileTool } from './file/copy-file';
@@ -31,7 +25,6 @@ import { getToolsDocumentationTool } from './system/get-tools-documentation';
 // 网络工具
 import { httpRequestTool } from './network/http-request';
 
-// 注册所有基础工具
 export function registerAllTools(): void {
   const toolRegistry = ToolRegistry.getInstance();
 
@@ -47,9 +40,7 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('interact_with_page', interactWithPageTool);
   toolRegistry.registerTool('close_browser', closeBrowserTool);
 
-  toolRegistry.registerTool('read_code', readCodeTool);
-  toolRegistry.registerTool('delete_file', deleteFileTool);
-  toolRegistry.registerTool('move_file', moveFileTool);
+
   toolRegistry.registerTool('delete_files', deleteFilesTool);
   toolRegistry.registerTool('copy_file', copyFileTool);
 
@@ -73,22 +64,22 @@ export const allTools = {
   write_file: writeFileTool,
   list_directory: listDirectoryTool,
   read_code: readCodeTool,
-  update_file: updateFileTool,
-  delete_file: deleteFileTool,
   move_file: moveFileTool,
+  update_file: updateFileTool,
   delete_files: deleteFilesTool,
-  
-  // 浏览器工具
-  open_browser: openBrowserTool,
-  get_page_content: getPageContentTool,
-  interact_with_page: interactWithPageTool,
-  close_browser: closeBrowserTool,
+
   copy_file: copyFileTool,
   
   // 文档工具
   get_tools_documentation: getToolsDocumentationTool,
   
   // 系统工具
+  // 浏览器工具
+  open_browser: openBrowserTool,
+  get_page_content: getPageContentTool,
+  interact_with_page: interactWithPageTool,
+  close_browser: closeBrowserTool,
+  
   terminal_input: terminalInputTool,
   read_terminal_output: readTerminalOutputTool,
   close_terminal: closeTerminalTool,
