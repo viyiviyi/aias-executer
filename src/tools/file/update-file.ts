@@ -21,7 +21,7 @@ interface LineMapping {
 export const updateFileTool: Tool = {
   definition: {
     name: 'update_file',
-    description: '部分更新文件内容，支持批量操作：插入内容到指定行、删除行。更新后返回变更区域的代码块（带行号）。',
+    description: '部分更新文件内容，支持批量操作',
     parameters: {
       type: 'object',
       properties: {
@@ -41,7 +41,7 @@ export const updateFileTool: Tool = {
               },
               start_line_index: {
                 type: 'integer',
-                description: '起始行号（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除。所有操作都基于原始行号。',
+                description: '起始行号（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除。所有操作都基于原行号。',
                 minimum: 1
               },
               insert_content: {
@@ -56,7 +56,7 @@ export const updateFileTool: Tool = {
             },
             required: ['operation', 'start_line_index']
           },
-          description: '更新操作列表，所有操作都基于原始行号，且为1-based。\n\n**使用建议**：\n1. 如果要替换大段内容，建议先使用delete操作删除旧内容，再使用insert操作插入新内容\n2. 所有操作都基于原始行号（1-based），且按顺序执行\n3. 插入操作是在指定行之前插入内容\n4. 删除操作是从指定行开始删除指定行数'
+          description: '更新操作列表，所有操作都基于原行号（1-based）。如果要替换内容，先使用delete操作删除旧内容，再使用insert操作插入新内容。'
         }
       },
       required: ['path', 'updates'],

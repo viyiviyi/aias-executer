@@ -14,21 +14,10 @@ export const openBrowserTool: Tool = {
           type: 'string',
           description: '要打开的URL地址'
         },
-        browser: {
-          type: 'string',
-          description: '浏览器类型（chrome, firefox, webkit, msedge）',
-          default: 'chrome',
-          enum: ['chrome', 'firefox', 'webkit', 'msedge']
-        },
         session_name: {
           type: 'string',
           description: '浏览器会话名称（可选），用于管理多个浏览器会话',
           default: 'default'
-        },
-        headless: {
-          type: 'boolean',
-          description: '是否以无头模式运行（不显示浏览器界面）',
-          default: false
         },
         timeout: {
           type: 'integer',
@@ -44,9 +33,7 @@ export const openBrowserTool: Tool = {
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const url = parameters.url;
-    const browserType = parameters.browser || 'chrome';
     const sessionName = parameters.session_name || 'default';
-    const headless = parameters.headless !== undefined ? parameters.headless : false;
     const timeout = parameters.timeout || 30;
 
     if (!url) {
@@ -61,8 +48,17 @@ export const openBrowserTool: Tool = {
     }
 
     try {
-      // 创建浏览器会话
-      const session = await browserManager.createSession(sessionName, browserType, headless);
+      // 获取配置
+      const config = browserManager.getConfig();
+      
+      // 创建浏览器会话（使用配置文件中的默认设置）
+      const session = await browserManager.createSession(
+        sessionName,
+        config.defaultBrowser,
+        config.defaultHeadless,
+        config.antiDetection,
+        config.userDataDir
+      );
       
       // 导航到指定URL
       await browserManager.navigateTo(sessionName, url, timeout * 1000);
@@ -72,11 +68,30 @@ export const openBrowserTool: Tool = {
       const title = await page.title();
       const urlAfterNavigation = page.url();
 
+      // 获取反检测状态
+      const stealthStatus = {
+        enabled: config.antiDetection && config.stealthOptions.enable,
+        features: config.antiDetection && config.stealthOptions.enable ? [
+          'webdriver属性隐藏',
+          '用户代理伪装',
+          'WebGL指纹修改',
+          'Canvas指纹修改',
+          '屏幕分辨率修改',
+          '硬件信息修改'
+        ] : []
+      };
+
       return {
         success: true,
         session_id: sessionName,
-        browser_type: browserType,
-        headless: headless,
+        config: {
+          browser_type: config.defaultBrowser,
+          headless: config.defaultHeadless,
+          anti_detection: config.antiDetection,
+          user_data_dir: config.userDataDir,
+          stealth_enabled: stealthStatus.enabled,
+          stealth_features_count: stealthStatus.features.length
+        },
         page_info: {
           title: title,
           url: urlAfterNavigation,
