@@ -1,7 +1,7 @@
 defaultBrowser: chrome
 defaultHeadless: false
 antiDetection: true
-userDataDir: F:\aias-executer\browser-data
+userDataDir: ./browser-data
 viewport:
   width: 1280
   height: 720
