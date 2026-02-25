@@ -60,7 +60,7 @@ app.get('/api/autostart/status', (_req, res) => {
 });
 
 // 健康检查
-app.get('/health', (_req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -84,7 +84,7 @@ app.get('/', (_req, res) => {
     endpoints: {
       tools: '/api/tools',
       execute: '/api/execute',
-      health: '/health',
+      health: '/api/health',
       autostartStatus: '/api/autostart/status',
       staticFiles: '/api/static/files/*',
       listDirectory: '/api/static/list/*',

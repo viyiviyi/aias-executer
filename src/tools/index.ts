@@ -1,5 +1,11 @@
 // 浏览器工具
-import { openBrowserTool, getPageContentTool, interactWithPageTool, closeBrowserTool, browserConfigTool } from './browser';
+import {
+  openBrowserTool,
+  getPageContentTool,
+  interactWithPageTool,
+  closeBrowserTool,
+  browserConfigTool,
+} from './browser';
 
 import { ToolRegistry } from '../core/tool-registry';
 
@@ -15,7 +21,13 @@ import { copyFileTool } from './file/copy-file';
 
 // 系统工具
 import { executeCommandTool } from './system/command';
-import { createTerminalTool, terminalInputTool, readTerminalOutputTool, closeTerminalTool, listTerminalsTool } from './system/terminal';
+import {
+  createTerminalTool,
+  terminalInputTool,
+  readTerminalOutputTool,
+  closeTerminalTool,
+  listTerminalsTool,
+} from './system/terminal';
 // 重启工具
 import { restartServiceTool } from './system/restart-service';
 
@@ -34,6 +46,19 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('write_file', writeFileTool);
   toolRegistry.registerTool('list_directory', listDirectoryTool);
   toolRegistry.registerTool('update_file', updateFileTool);
+  toolRegistry.registerTool('move_file', moveFileTool);
+  toolRegistry.registerTool('copy_file', copyFileTool);
+  toolRegistry.registerTool('delete_files', deleteFilesTool);
+
+  // 系统工具 命令行
+  toolRegistry.registerTool('execute_command', executeCommandTool);
+  // 终端
+  toolRegistry.registerTool('create_terminal', createTerminalTool);
+  toolRegistry.registerTool('terminal_input', terminalInputTool);
+  toolRegistry.registerTool('read_terminal_output', readTerminalOutputTool);
+  toolRegistry.registerTool('close_terminal', closeTerminalTool);
+  toolRegistry.registerTool('list_terminals', listTerminalsTool);
+
   // 浏览器工具
   toolRegistry.registerTool('open_browser', openBrowserTool);
   toolRegistry.registerTool('get_page_content', getPageContentTool);
@@ -41,21 +66,10 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('close_browser', closeBrowserTool);
   toolRegistry.registerTool('manage_browser_config', browserConfigTool);
 
-
-  toolRegistry.registerTool('delete_files', deleteFilesTool);
-  toolRegistry.registerTool('copy_file', copyFileTool);
-
-  // 系统工具
-  toolRegistry.registerTool('execute_command', executeCommandTool);
-  toolRegistry.registerTool('create_terminal', createTerminalTool);
-  toolRegistry.registerTool('terminal_input', terminalInputTool);
-  toolRegistry.registerTool('read_terminal_output', readTerminalOutputTool);
-  toolRegistry.registerTool('close_terminal', closeTerminalTool);
-  toolRegistry.registerTool('list_terminals', listTerminalsTool);
-  toolRegistry.registerTool('restart_service', restartServiceTool);
-
   // 网络工具
   toolRegistry.registerTool('http_request', httpRequestTool);
+  // 重启服务
+  toolRegistry.registerTool('restart_service', restartServiceTool);
 }
 
 // 导出所有基础工具定义
@@ -70,10 +84,10 @@ export const allTools = {
   delete_files: deleteFilesTool,
 
   copy_file: copyFileTool,
-  
+
   // 文档工具
   get_tools_documentation: getToolsDocumentationTool,
-  
+
   // 系统工具
   // 浏览器工具
   open_browser: openBrowserTool,
@@ -81,7 +95,7 @@ export const allTools = {
   interact_with_page: interactWithPageTool,
   close_browser: closeBrowserTool,
   manage_browser_config: browserConfigTool,
-  
+
   terminal_input: terminalInputTool,
   read_terminal_output: readTerminalOutputTool,
   close_terminal: closeTerminalTool,
@@ -89,7 +103,7 @@ export const allTools = {
   execute_command: executeCommandTool,
   create_terminal: createTerminalTool,
   restart_service: restartServiceTool,
-  
+
   // 网络工具
   http_request: httpRequestTool,
 };
