@@ -220,14 +220,6 @@ export class BrowserManager {
       await this.closeSession(browserId);
     }
 
-<<<<<<< HEAD
-    const browser = await this.createBrowser(browserType, headless);
-    const context = await browser.newContext({
-      acceptDownloads: true,
-      viewport: { width: 1280, height: 720 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    });
-=======
     const browser = await this.createBrowser(
       finalBrowserType,
       finalHeadless,
@@ -245,7 +237,6 @@ export class BrowserManager {
       await StealthUtils.applyStealthToContext(context, config);
     }
 
->>>>>>> 22c3a8efb9717b9db7cc41ff1e786bfdcea4f01f
     const page = await context.newPage();
 
     // 应用反检测措施到页面
