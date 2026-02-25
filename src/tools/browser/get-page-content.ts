@@ -118,7 +118,7 @@ export const getPageContentTool: Tool = {
           let html = '';
           if (typeof e == 'string') return e;
           if (isDisplay(e)) {
-            html += `${''.padEnd(depth, ' ')}- ${e.tagName.toLowerCase()}`;
+            html += `${''.padEnd(depth, '  ')}- ${e.tagName.toLowerCase()}`;
             if (e.children && e.children.length) {
               html += `:\n`;
               html += Array.from(e.children)
@@ -132,7 +132,7 @@ export const getPageContentTool: Tool = {
                 attrName = attrName.toLowerCase();
                 let val: string = ele[attrName] || ele[attrName.toUpperCase()];
                 if (
-                  ['src', 'type', 'alt', 'title', 'placeholder', 'name', 'value'].includes(
+                  ['src', 'type', 'alt', 'title', 'placeholder', 'name', 'value', 'id'].includes(
                     attrName
                   ) &&
                   val
