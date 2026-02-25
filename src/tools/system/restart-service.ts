@@ -186,7 +186,7 @@ function performGracefulExit(): void {
 export const restartServiceTool: Tool = {
   definition: {
     name: 'restart_service',
-    description: '检查编译并安全重启当前服务（通过退出让外部进程管理器重启）',
+    description: '编译并安全重启当前服务（通过退出让外部进程管理器重启）',
     parameters: {
       type: 'object',
       properties: {

@@ -1,4 +1,17 @@
-import { Browser, BrowserContext, Page, chromium, firefox, webkit } from 'playwright';
+import {
+  Browser,
+  BrowserContext,
+  BrowserContextOptions,
+  LaunchOptions,
+  Page,
+  chromium,
+  firefox,
+  webkit,
+} from 'playwright';
+import { BrowserConfigManager } from '../../core/browser-config';
+import { StealthUtils } from '../../core/stealth-utils';
+import * as path from 'path';
+import * as fs from 'fs';
 
 export interface BrowserSession {
   browser: Browser;
@@ -6,13 +19,18 @@ export interface BrowserSession {
   page: Page;
   createdAt: Date;
   lastUsed: Date;
+  config: {
+    browserType: 'chrome' | 'firefox' | 'webkit' | 'msedge';
+    headless: boolean;
+    antiDetection: boolean;
+    userDataDir?: string;
+  };
 }
 
 export class BrowserManager {
   private static instance: BrowserManager;
   private sessions: Map<string, BrowserSession> = new Map();
-  private maxSessions = 5; // 最大会话数限制
-  private sessionTimeout = 30 * 60 * 1000; // 30分钟超时
+  private configManager = BrowserConfigManager.getInstance();
 
   private constructor() {
     // 定期清理过期会话
@@ -26,8 +44,15 @@ export class BrowserManager {
     return BrowserManager.instance;
   }
 
-  private async createBrowser(browserType: 'chrome' | 'firefox' | 'webkit' | 'msedge' = 'chrome', headless: boolean = false): Promise<Browser> {
+  private async createBrowser(
+    browserType: 'chrome' | 'firefox' | 'webkit' | 'msedge',
+    headless: boolean,
+    antiDetection: boolean,
+    userDataDir?: string
+  ): Promise<Browser> {
+    const config = this.configManager.getConfig();
     let playwrightBrowser;
+
     switch (browserType) {
       case 'chrome':
         playwrightBrowser = chromium;
@@ -45,19 +70,144 @@ export class BrowserManager {
         playwrightBrowser = chromium;
     }
 
-    return await playwrightBrowser.launch({
+    const launchOptions: LaunchOptions = {
       headless,
-      args: ['--no-sandbox', '--disable-dev-shm-usage'],
-    });
+      args: config.args,
+    };
+    if (!userDataDir) userDataDir = './browser-data';
+    // 如果启用了用户数据目录
+    if (userDataDir && userDataDir.trim() !== '') {
+      const fullPath = path.isAbsolute(userDataDir)
+        ? userDataDir
+        : path.join(process.cwd(), userDataDir);
+      userDataDir = fullPath;
+
+      // 确保目录存在
+      try {
+        if (!fs.existsSync(fullPath)) {
+          fs.mkdirSync(fullPath, { recursive: true });
+        }
+      } catch (error) {
+        console.warn(`创建用户数据目录失败: ${error}`);
+      }
+    }
+
+    // 如果是Chrome/Edge且启用了反检测，添加额外的参数
+    if ((browserType === 'chrome' || browserType === 'msedge') && antiDetection) {
+      launchOptions.args = [
+        ...(launchOptions.args || []),
+        '--disable-blink-features=AutomationControlled',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-web-security',
+        '--disable-site-isolation-trials',
+        '--disable-features=BlockInsecurePrivateNetworkRequests',
+        '--disable-component-update',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--metrics-recording-only',
+        '--disable-default-apps',
+        '--mute-audio',
+        '--no-first-run',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-client-side-phishing-detection',
+        '--disable-popup-blocking',
+        '--disable-prompt-on-repost',
+        '--disable-domain-reliability',
+        '--disable-breakpad',
+        '--disable-crash-reporter',
+        '--disable-ipc-flooding-protection',
+        '--disable-notifications',
+        '--disable-logging',
+        '--disable-hang-monitor',
+        '--disable-extensions',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-component-update',
+        '--disable-background-downloads',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--disable-translate',
+        '--disable-default-apps',
+        '--disable-web-resources',
+        '--disable-3d-apis',
+        '--disable-accelerated-2d-canvas',
+        '--disable-accelerated-jpeg-decoding',
+        '--disable-accelerated-mjpeg-decode',
+        '--disable-accelerated-video-decode',
+        '--disable-app-list-dismiss-on-blur',
+        '--disable-application-cache',
+        '--disable-audio-output',
+        '--disable-back-forward-cache',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-boot-animation',
+        '--disable-breakpad',
+        '--disable-checker-imaging',
+        '--disable-client-side-phishing-detection',
+        '--disable-component-update',
+        '--disable-crash-reporter',
+        '--disable-datasaver-prompt',
+        '--disable-default-apps',
+        '--disable-dev-shm-usage',
+        '--disable-domain-reliability',
+        '--disable-extensions',
+        '--disable-features=TranslateUI',
+        '--disable-field-trial-config',
+        '--disable-gpu',
+        '--disable-hang-monitor',
+        '--disable-infobars',
+        '--disable-ipc-flooding-protection',
+        '--disable-logging',
+        '--disable-notifications',
+        '--disable-popup-blocking',
+        '--disable-prompt-on-repost',
+        '--disable-renderer-backgrounding',
+        '--disable-search-engine-choice-screen',
+        '--disable-sync',
+        '--disable-translate',
+        '--hide-scrollbars',
+        '--ignore-certificate-errors',
+        '--ignore-certificate-errors-spki-list',
+        '--ignore-gpu-blacklist',
+        '--ignore-ssl-errors',
+        '--incognito',
+        '--no-default-browser-check',
+        '--no-first-run',
+        '--no-pings',
+        '--no-sandbox',
+        '--no-zygote',
+        '--password-store=basic',
+        "--proxy-server='direct://'",
+        '--proxy-bypass-list=*',
+        '--remote-debugging-port=0',
+        '--safebrowsing-disable-auto-update',
+        '--test-type',
+        '--use-mock-keychain',
+        '--window-size=1280,720',
+      ];
+    }
+    const context = await playwrightBrowser.launchPersistentContext(userDataDir, launchOptions);
+    return context.browser() || (await playwrightBrowser.launch(launchOptions));
   }
 
   public async createSession(
     browserId: string = 'default',
-    browserType: 'chrome' | 'firefox' | 'webkit' | 'msedge' = 'chrome',
-    headless: boolean = false
+    browserType?: 'chrome' | 'firefox' | 'webkit' | 'msedge',
+    headless?: boolean,
+    antiDetection?: boolean,
+    userDataDir?: string
   ): Promise<BrowserSession> {
+    const config = this.configManager.getConfig();
+
+    // 使用配置中的默认值或传入的参数
+    const finalBrowserType = browserType || config.defaultBrowser;
+    const finalHeadless = headless !== undefined ? headless : config.defaultHeadless;
+    const finalAntiDetection = antiDetection !== undefined ? antiDetection : config.antiDetection;
+    const finalUserDataDir = userDataDir || config.userDataDir;
+
     // 检查是否达到最大会话数
-    if (this.sessions.size >= this.maxSessions) {
+    if (this.sessions.size >= config.maxSessions) {
       // 清理最旧的会话
       const oldestSessionId = this.getOldestSessionId();
       if (oldestSessionId) {
@@ -70,22 +220,57 @@ export class BrowserManager {
       await this.closeSession(browserId);
     }
 
-    const browser = await this.createBrowser(browserType, headless);
-    const context = await browser.newContext({
-      viewport: { width: 1280, height: 720 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    });
+    const browser = await this.createBrowser(
+      finalBrowserType,
+      finalHeadless,
+      finalAntiDetection,
+      finalUserDataDir
+    );
+
+    const contextOptions: BrowserContextOptions = {
+      viewport: config.viewport,
+      userAgent: config.userAgent,
+    };
+    const context = await browser.newContext(contextOptions);
+    // 应用反检测措施
+    if (finalAntiDetection) {
+      await StealthUtils.applyStealthToContext(context, config);
+    }
+
     const page = await context.newPage();
+
+    // 应用反检测措施到页面
+    if (finalAntiDetection) {
+      await StealthUtils.applyStealthToPage(page, config);
+    }
 
     const session: BrowserSession = {
       browser,
       context,
       page,
       createdAt: new Date(),
-      lastUsed: new Date()
+      lastUsed: new Date(),
+      config: {
+        browserType: finalBrowserType,
+        headless: finalHeadless,
+        antiDetection: finalAntiDetection,
+        userDataDir: finalUserDataDir,
+      },
     };
 
     this.sessions.set(browserId, session);
+
+    // 获取反检测状态
+    const stealthStatus = StealthUtils.getStealthStatus(config);
+
+    console.log(`浏览器会话已创建: ${browserId}`, {
+      browserType: finalBrowserType,
+      headless: finalHeadless,
+      antiDetection: finalAntiDetection,
+      stealthEnabled: stealthStatus.enabled,
+      stealthFeatures: stealthStatus.features.length,
+    });
+
     return session;
   }
 
@@ -120,13 +305,19 @@ export class BrowserManager {
     await Promise.all(closePromises);
   }
 
-  public listSessions(): Array<{ id: string; createdAt: Date; lastUsed: Date }> {
+  public listSessions(): Array<{
+    id: string;
+    createdAt: Date;
+    lastUsed: Date;
+    config: BrowserSession['config'];
+  }> {
     const result = [];
     for (const [id, session] of this.sessions.entries()) {
       result.push({
         id,
         createdAt: session.createdAt,
-        lastUsed: session.lastUsed
+        lastUsed: session.lastUsed,
+        config: session.config,
       });
     }
     return result;
@@ -147,26 +338,44 @@ export class BrowserManager {
   }
 
   private cleanupExpiredSessions(): void {
+    const config = this.configManager.getConfig();
     const now = Date.now();
+    const timeout = config.sessionTimeout * 60 * 1000; // 转换为毫秒
+
     for (const [id, session] of this.sessions.entries()) {
-      if (now - session.lastUsed.getTime() > this.sessionTimeout) {
+      if (now - session.lastUsed.getTime() > timeout) {
         console.log(`清理过期会话: ${id}`);
-        this.closeSession(id).catch(error => {
+        this.closeSession(id).catch((error) => {
           console.error(`清理会话 ${id} 时出错:`, error);
         });
       }
     }
   }
 
-  public async navigateTo(browserId: string, url: string, timeout: number = 30000): Promise<void> {
+  public async navigateTo(browserId: string, url: string, timeout?: number): Promise<void> {
     const session = this.getSession(browserId);
     if (!session) {
       throw new Error(`浏览器会话 ${browserId} 不存在`);
     }
 
+    const config = this.configManager.getConfig();
+    const finalTimeout = timeout || config.timeout * 1000;
+
     await session.page.goto(url, {
-      timeout,
-      waitUntil: 'domcontentloaded'
+      timeout: finalTimeout,
+      waitUntil: 'domcontentloaded',
     });
+  }
+
+  public getConfig() {
+    return this.configManager.getConfig();
+  }
+
+  public updateConfig(newConfig: Partial<any>) {
+    return this.configManager.updateConfig(newConfig);
+  }
+
+  public reloadConfig() {
+    return this.configManager.reloadConfig();
   }
 }

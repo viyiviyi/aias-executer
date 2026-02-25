@@ -1,5 +1,5 @@
 // 浏览器工具
-import { openBrowserTool, getPageContentTool, interactWithPageTool, closeBrowserTool } from './browser';
+import { openBrowserTool, getPageContentTool, interactWithPageTool, closeBrowserTool, browserConfigTool } from './browser';
 
 import { ToolRegistry } from '../core/tool-registry';
 
@@ -39,6 +39,7 @@ export function registerAllTools(): void {
   toolRegistry.registerTool('get_page_content', getPageContentTool);
   toolRegistry.registerTool('interact_with_page', interactWithPageTool);
   toolRegistry.registerTool('close_browser', closeBrowserTool);
+  toolRegistry.registerTool('manage_browser_config', browserConfigTool);
 
 
   toolRegistry.registerTool('delete_files', deleteFilesTool);
@@ -79,6 +80,7 @@ export const allTools = {
   get_page_content: getPageContentTool,
   interact_with_page: interactWithPageTool,
   close_browser: closeBrowserTool,
+  manage_browser_config: browserConfigTool,
   
   terminal_input: terminalInputTool,
   read_terminal_output: readTerminalOutputTool,
