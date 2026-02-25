@@ -122,36 +122,73 @@ export const getPageContentTool: Tool = {
 
             return true;
           };
-
-          const getElement = (e: HTMLElement, depth = 0): string => {
+          const attrNames = [
+            'src',
+            'type',
+            'alt',
+            'title',
+            'placeholder',
+            'name',
+            'value',
+            'checked',
+            'disabled',
+            'hidden',
+            'readOnly',
+            'selected',
+            'required',
+            'class',
+            'id',
+            'class',
+            'offsetTop',
+            'offsetLeft',
+            'contenteditable',
+            'onclick',
+            'onkeypress',
+          ];
+          const getElement = (e: HTMLElement, depth = 0, w = 0, h = 0): string => {
             let html = '';
-            if (typeof e == 'string') return e;
             if (isDisplay(e)) {
-              html += `${''.padEnd(depth, '  ')}- ${e.tagName.toLowerCase()}`;
+              html += `${''.padEnd(depth * 2, ' ')}- ${e.tagName.toUpperCase()}`;
+              // 如果没有子元素，且有innerText，innerText展示在标签后面
+              if (e.innerText && (!e.children || !e.children.length)) html += ` ${e.innerText}`;
+              // 属性
+              if (e.style.display) html += ` [style.display=${e.style.display}]`;
+              if (e.clientWidth != w) html += ` [clientWidth=${e.clientWidth}]`;
+              if (e.clientHeight != h) html += ` [clientHeight=${e.clientHeight}]`;
+              const ele = e as any;
+              [
+                ...e.getAttributeNames().filter((f) => !attrNames.includes(f.toLowerCase())),
+                ...attrNames,
+              ].forEach((attrName) => {
+                let val: string = ele[attrName] || ele[attrName.toUpperCase()];
+                if (attrNames.includes(attrName) && val) {
+                  // 处理一些特殊的值
+                  if (attrName == 'src' && val.startsWith('data:')) val = '';
+                  if (attrName == 'contenteditable' && val !== 'true') val = '';
+                  if (attrName == 'offsetLeft' && Number(val) < 16) val = '';
+                  if (attrName == 'offsetTop' && Number(val) < 16) val = '';
+                  if (attrName == 'onclick' && val) val = 'fn';
+                  if (attrName == 'onkeypress' && val) val = 'fn';
+                  if (val) html += ` [${attrName}=${val}]`;
+                }
+              });
+              if (e.style.cursor?.toLowerCase() == 'pointer') html += ` [style.cursor=pointer]`;
+              if (e.style.position?.toLowerCase() == 'absolute')
+                html += ` [style.position=absolute]`;
+              if (e.style.position?.toLowerCase() == 'fixed') html += ` [style.position=fixed]`;
+              if (e.style.visibility?.toLowerCase() == 'hidden')
+                html += ` [style.visibility=hidden]`;
+              if (e.style.visibility?.toLowerCase() == 'collapse')
+                html += ` [style.visibility=collapse]`;
+              if (e.style.opacity?.toLowerCase() == '0') html += ` [style.opacity=0]`;
+              html += `:\n`;
               if (e.children && e.children.length) {
-                html += `:\n`;
                 html += Array.from(e.children)
-                  .map((v) => getElement(v as HTMLElement, depth + 1))
+                  .map((v) =>
+                    getElement(v as HTMLElement, depth + 1, e.clientWidth, e.clientHeight)
+                  )
                   .filter((f) => f)
                   .join('');
-              } else {
-                if (e.innerText) html += ` ${e.innerText}`;
-                const ele = e as any;
-                e.getAttributeNames().forEach((attrName) => {
-                  attrName = attrName.toLowerCase();
-                  let val: string = ele[attrName] || ele[attrName.toUpperCase()];
-                  if (
-                    ['src', 'type', 'alt', 'title', 'placeholder', 'name', 'value', 'id'].includes(
-                      attrName
-                    ) &&
-                    val
-                  ) {
-                    if (attrName == 'src' && val.startsWith('data:')) val = '';
-                    if (val) html += ` [${attrName}=${val}]`;
-                  }
-                });
-                if (e.style.cursor?.toLowerCase() == 'pointer') html += ` [cursor=pointer]`;
-                html += `:\n`;
               }
             }
             return html;
