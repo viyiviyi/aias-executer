@@ -3,3 +3,4 @@ dist/
 workspace/*/
 win-server/*.log
 browser-data/
+playwright-browsers/
