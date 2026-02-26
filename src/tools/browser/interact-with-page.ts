@@ -34,7 +34,7 @@ export const interactWithPageTool: Tool = {
         },
         selector: {
           type: 'string',
-          description: 'CSS选择器（对于click、fill、hover、select、check、uncheck操作需要）',
+          description: 'CSS选择器（对于click、fill、hover、press、select、check、uncheck操作需要）',
         },
         text: {
           type: 'string',
@@ -105,13 +105,9 @@ export const interactWithPageTool: Tool = {
           if (!selector) {
             throw new Error('click操作需要selector参数');
           }
+          await page.click(selector, { timeout: timeout * 1000 });
           if (waitForNavigation) {
-            await Promise.all([
-              page.waitForNavigation({ timeout: timeout * 1000 }).catch(() => {}),
-              page.click(selector, { timeout: timeout * 1000 }),
-            ]);
-          } else {
-            await page.click(selector, { timeout: timeout * 1000 });
+            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
           }
           result = { message: `已点击元素: ${selector}` };
           break;
@@ -120,13 +116,9 @@ export const interactWithPageTool: Tool = {
           if (x === undefined || y === undefined) {
             throw new Error('click_coordinate操作需要x和y参数');
           }
+          await page.mouse.click(x, y);
           if (waitForNavigation) {
-            await Promise.all([
-              page.waitForNavigation({ timeout: timeout * 1000 }).catch(() => {}),
-              page.mouse.click(x, y),
-            ]);
-          } else {
-            await page.mouse.click(x, y);
+            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
           }
           result = { message: `已点击坐标: (${x}, ${y})` };
           break;
@@ -135,8 +127,8 @@ export const interactWithPageTool: Tool = {
           if (!selector || !text) {
             throw new Error('fill操作需要selector和text参数');
           }
+          await page.locator(selector).focus();
           await page.fill(selector, text, { timeout: timeout * 1000 });
-          await page.locator(selector).blur();
           result = { message: `已填充 ${selector} 内容: ${text}` };
           break;
 
