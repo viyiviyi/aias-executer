@@ -13,48 +13,60 @@ export const interactWithPageTool: Tool = {
         browser_id: {
           type: 'string',
           description: '浏览器ID（会话名称）',
-          default: 'default'
+          default: 'default',
         },
         action: {
           type: 'string',
           description: '要执行的操作类型',
-          enum: ['click', 'fill', 'press', 'hover', 'select', 'check', 'uncheck', 'goto', 'go_back', 'go_forward', 'reload']
+          enum: [
+            'click',
+            'fill',
+            'press',
+            'hover',
+            'select',
+            'check',
+            'uncheck',
+            'goto',
+            'go_back',
+            'go_forward',
+            'reload',
+          ],
         },
         selector: {
           type: 'string',
-          description: 'CSS选择器（对于click、fill、hover、select、check、uncheck操作需要）'
+          description: 'CSS选择器（对于click、fill、hover、select、check、uncheck操作需要）',
         },
         text: {
           type: 'string',
-          description: '要输入的文本（对于fill操作需要）'
+          description: '要输入的文本（对于fill操作需要）',
         },
         value: {
           type: 'string',
-          description: '要选择的值（对于select操作需要）'
+          description: '要选择的值（对于select操作需要）',
         },
         key: {
           type: 'string',
-          description: '要按下的键（对于press操作需要），如Enter、Tab、ArrowDown等'
+          description: '要按下的键（对于press操作需要），如Enter、Tab、ArrowDown等',
         },
         url: {
           type: 'string',
-          description: '要导航到的URL（对于goto操作需要）'
+          description: '要导航到的URL（对于goto操作需要）',
         },
         wait_for_navigation: {
           type: 'boolean',
           description: '操作后是否等待页面导航完成',
-          default: true
+          default: true,
         },
         timeout: {
           type: 'integer',
           description: '超时时间（秒）',
           default: 30,
           minimum: 5,
-          maximum: 300
-        }
+          maximum: 300,
+        },
       },
-      required: ['action']
-    }
+      required: ['action'],
+    },
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -65,7 +77,8 @@ export const interactWithPageTool: Tool = {
     const value = parameters.value;
     const key = parameters.key;
     const url = parameters.url;
-    const waitForNavigation = parameters.wait_for_navigation !== undefined ? parameters.wait_for_navigation : true;
+    const waitForNavigation =
+      parameters.wait_for_navigation !== undefined ? parameters.wait_for_navigation : true;
     const timeout = parameters.timeout || 30;
 
     const session = browserManager.getSession(browserId);
@@ -85,7 +98,7 @@ export const interactWithPageTool: Tool = {
           if (waitForNavigation) {
             await Promise.all([
               page.waitForNavigation({ timeout: timeout * 1000 }).catch(() => {}),
-              page.click(selector, { timeout: timeout * 1000 })
+              page.click(selector, { timeout: timeout * 1000 }),
             ]);
           } else {
             await page.click(selector, { timeout: timeout * 1000 });
@@ -98,6 +111,7 @@ export const interactWithPageTool: Tool = {
             throw new Error('fill操作需要selector和text参数');
           }
           await page.fill(selector, text, { timeout: timeout * 1000 });
+          await page.locator(selector).blur();
           result = { message: `已填充 ${selector} 内容: ${text}` };
           break;
 
@@ -184,13 +198,12 @@ export const interactWithPageTool: Tool = {
         result: result,
         page_state: {
           url: currentUrl,
-          title: currentTitle
+          title: currentTitle,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-
     } catch (error: any) {
       throw new Error(`执行操作 ${action} 失败: ${error.message}`);
     }
-  }
+  },
 };

@@ -1,7 +1,6 @@
 import {
   Browser,
   BrowserContext,
-  BrowserContextOptions,
   LaunchOptions,
   Page,
   chromium,
@@ -49,7 +48,7 @@ export class BrowserManager {
     headless: boolean,
     antiDetection: boolean,
     userDataDir?: string
-  ): Promise<Browser> {
+  ): Promise<BrowserContext> {
     const config = this.configManager.getConfig();
     let playwrightBrowser;
 
@@ -187,8 +186,12 @@ export class BrowserManager {
         '--window-size=1280,720',
       ];
     }
-    const context = await playwrightBrowser.launchPersistentContext(userDataDir, launchOptions);
-    return context.browser() || (await playwrightBrowser.launch(launchOptions));
+    const context = await playwrightBrowser.launchPersistentContext(userDataDir, {
+      ...launchOptions,
+      viewport: config.viewport,
+      userAgent: config.userAgent,
+    });
+    return context;
   }
 
   public async createSession(
@@ -220,32 +223,33 @@ export class BrowserManager {
       await this.closeSession(browserId);
     }
 
-    const browser = await this.createBrowser(
+    const context = await this.createBrowser(
       finalBrowserType,
       finalHeadless,
       finalAntiDetection,
       finalUserDataDir
     );
+    const browser = await context.browser();
+    if (!browser) throw '打开浏览器失败';
+    // const contextOptions: BrowserContextOptions = {
+    //   viewport: config.viewport,
+    //   userAgent: config.userAgent,
+    // };
+    // const context = await browser.newContext(contextOptions);
 
-    const contextOptions: BrowserContextOptions = {
-      viewport: config.viewport,
-      userAgent: config.userAgent,
-    };
-    const context = await browser.newContext(contextOptions);
     // 应用反检测措施
     if (finalAntiDetection) {
       await StealthUtils.applyStealthToContext(context, config);
     }
 
     const page = await context.newPage();
-
     // 应用反检测措施到页面
     if (finalAntiDetection) {
       await StealthUtils.applyStealthToPage(page, config);
     }
 
     const session: BrowserSession = {
-      browser,
+      browser: browser!,
       context,
       page,
       createdAt: new Date(),
