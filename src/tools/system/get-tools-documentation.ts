@@ -38,7 +38,7 @@ export const getToolsDocumentationTool = {
       const configManager = ConfigManager.getInstance();
       const config = configManager.getConfig();
       const packageManager = config.packageManager?.default || 'yarn';
-      
+
       // 获取包管理器版本
       let packageManagerVersion = '未知';
       try {
@@ -78,54 +78,28 @@ export const getToolsDocumentationTool = {
       } catch (error: any) {
         console.warn('无法加载动态工具使用建议文档，使用默认内容:', error.message);
         // 使用默认内容
-        dynamicContent = `
-## 工具使用建议
-- 操作文件时优先使用直接操作文件的工具而不是命令行或终端
-- 优先更新文件内容而不是重新写入文件
-- 终端和命令行工具均有只能查看最新30行输出的限制，不能用于获取较长的内容
-- 需要多次交互执行命令行时建议使用终端，如ssh访问服务器、编译、安装服务等操作
-- 终端可以输入命令后使用读取终端输出的功能等待和读取需要长时间执行的命令执行结果
-- 当使用tool不能达成目的时及时停止而不要无休止的尝试和重试
-- 任一操作重试次数不能超过3次，达到重试次数后停止访问任何工具
-- 目标不明确时必须询问，切勿当做一般情况自动处理，建议任何工作开始前都询问清楚
-- 禁止创建虚假的测试结果；禁止创建虚假的操作结果；当工作无法完成时必须告知实际情况
-- 同项目从已有的文件学习编码风格和功能实现风格，而不要按照一般规范处理，符合项目比符合规范更重要
-- 没有明确的指示也没有参考项目时规范化、标准化的完成目标工作
-- 绝对不能用宽泛或不明确的删除操作
-- 尽可能不要执行或生成可能有副作用的代码
-
-## 项目维护指南
-
-1. 在项目目录维护一个dev-readme.md文件，如果没有则新建，文件内容为项目开发维护指南，每次更新项目后更新此文件，此文件只保存项目最新的情况，已过时的资料需要删除。
-2. 维护项目时需要先了解原项目功能和架构，以符合原项目架构的方式尽可能少改动的维护项目。
-`;
+        dynamicContent = ``;
       }
 
       const toolsDocumentation = `
-# 工具使用建议文档
+# 重要信息
 
 ## 系统信息
 - **操作系统**: ${osInfo.type} ${osInfo.platform} ${osInfo.arch}
 - **系统版本**: ${osInfo.release}
-- **主机名**: ${osInfo.hostname}
-- **CPU核心数**: ${osInfo.cpus}
 - **总内存**: ${osInfo.totalMemory}
 - **可用内存**: ${osInfo.freeMemory}
 
 ## 环境信息
 - **当前时间**: ${currentTime}  UTC: ${now.toISOString()}
 - **启动目录**: ${absolutePath} (当前tools服务项目源码路径)
+- **服务端口**: ${config.port}
 - **工作目录**: ${path.resolve(config.workspaceDir)}
 - **Node.js版本**: ${process.version}
 - **包管理器**: ${packageManager} ${packageManagerVersion}
-- **进程ID**: ${process.pid}  （该进程是当前执行tool的服务进程，非必要不能停止，如果停止文件、命令行和mcp相关的tool将不可用。）
+- **进程ID**: ${process.pid}  （禁止停止该进程）
 
 ${dynamicContent}
-
----
-
-**文档版本**: 1.0
-**最后更新**: ${now.toISOString()}
 `;
 
       return {
