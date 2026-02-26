@@ -64,6 +64,14 @@ export const interactWithPageTool: Tool = {
           minimum: 5,
           maximum: 300,
         },
+        x: {
+          type: 'integer',
+          description: 'X坐标（对于click_coordinate操作需要）',
+        },
+        y: {
+          type: 'integer',
+          description: 'Y坐标（对于click_coordinate操作需要）',
+        },
       },
       required: ['action'],
     },
@@ -77,6 +85,8 @@ export const interactWithPageTool: Tool = {
     const value = parameters.value;
     const key = parameters.key;
     const url = parameters.url;
+    const x = parameters.x;
+    const y = parameters.y;
     const waitForNavigation =
       parameters.wait_for_navigation !== undefined ? parameters.wait_for_navigation : true;
     const timeout = parameters.timeout || 30;
@@ -104,6 +114,21 @@ export const interactWithPageTool: Tool = {
             await page.click(selector, { timeout: timeout * 1000 });
           }
           result = { message: `已点击元素: ${selector}` };
+          break;
+
+        case 'click_coordinate':
+          if (x === undefined || y === undefined) {
+            throw new Error('click_coordinate操作需要x和y参数');
+          }
+          if (waitForNavigation) {
+            await Promise.all([
+              page.waitForNavigation({ timeout: timeout * 1000 }).catch(() => {}),
+              page.mouse.click(x, y),
+            ]);
+          } else {
+            await page.mouse.click(x, y);
+          }
+          result = { message: `已点击坐标: (${x}, ${y})` };
           break;
 
         case 'fill':

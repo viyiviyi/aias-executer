@@ -85,13 +85,15 @@
 
 **参数**:
 - `browser_id` (可选): 浏览器会话名称，默认: `default`
-- `action` (必需): 操作类型，可选值: `click`, `type`, `fill`, `press`, `hover`, `select`, `check`, `uncheck`, `goto`, `go_back`, `go_forward`, `reload`
+- `action` (必需): 操作类型，可选值: `click`, `click_coordinate`, `fill`, `press`, `hover`, `select`, `check`, `uncheck`, `goto`, `go_back`, `go_forward`, `reload`
 - `selector` (可选): CSS选择器（对于需要定位的操作）
 - `text` (可选): 要输入的文本（对于type、fill操作需要）
 - `value` (可选): 要选择的值（对于select操作需要）
 - `key` (可选): 要按下的键（对于press操作需要），如Enter、Tab、ArrowDown等
 - `url` (可选): 要导航到的URL（对于goto操作需要）
 - `wait_for_navigation` (可选): 操作后是否等待页面导航完成，默认: `true`
+- `x` (可选): X坐标（对于click_coordinate操作需要）
+- `y` (可选): Y坐标（对于click_coordinate操作需要）
 - `timeout` (可选): 超时时间（秒），默认: 30，范围: 5-300
 
 **操作示例**:
@@ -130,6 +132,16 @@
   "browser_id": "default",
   "action": "press",
   "key": "Enter"
+}
+```
+
+5. **按坐标点击**:
+```json
+{
+  "browser_id": "default",
+  "action": "click_coordinate",
+  "x": 100,
+  "y": 200
 }
 ```
 
