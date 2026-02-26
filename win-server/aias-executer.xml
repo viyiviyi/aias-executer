@@ -37,6 +37,13 @@
   <id>aias-executer</id>
   <!-- 服务名称 -->
   <name>aias-executer</name>
+    <!-- 服务运行账户 建议使用当前用户 -->
+  <serviceaccount>
+    <domain>.</domain>
+    <user>aias-executer</user>
+    <password>123456</password>
+    <allowservicelogon>false</allowservicelogon>
+  </serviceaccount>
   <!-- 启动方式 Manual Automatic -->
   <startmode>Automatic</startmode>
   <stoptimeout>10sec</stoptimeout>

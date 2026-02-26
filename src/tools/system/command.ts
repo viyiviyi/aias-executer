@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { ConfigManager } from '../../core/config';
 import { Tool } from '../../core/tool-registry';
+import path from 'path';
 
 const execAsync = promisify(exec);
 const configManager = ConfigManager.getInstance();
@@ -54,12 +55,12 @@ export const executeCommandTool: Tool = {
       },
       required: ['command'],
     },
-    result_use_type:'once'
+    result_use_type: 'once'
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const command = parameters.command;
-    const workdir = parameters.workdir || '.';
+    const workdir = parameters.workdir || path.resolve(process.cwd());
     const timeout = parameters.timeout || 300;
     const env = parameters.env || {};
 
