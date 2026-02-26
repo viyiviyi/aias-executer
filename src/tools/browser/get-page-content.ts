@@ -3,6 +3,183 @@ import { BrowserManager } from './browser-manager';
 
 const browserManager = BrowserManager.getInstance();
 
+// 配置：需要包含的属性（移除style，因为我们会单独处理有用的样式属性）
+const INCLUDE_ATTRIBUTES = [
+  'id',
+  //   'class',
+  'type',
+  'name',
+  'value',
+  'placeholder',
+  'alt',
+  'title',
+  'role',
+  'aria-label',
+  'aria-hidden',
+  'tabindex',
+  'disabled',
+  'readonly',
+  'required',
+  'checked',
+  'selected',
+  'contenteditable',
+  'draggable',
+  'hidden',
+] as const;
+
+// 配置：事件属性
+const EVENT_ATTRIBUTES = [
+  'onclick',
+  'ondblclick',
+  'onmousedown',
+  'onmouseup',
+  'onmouseover',
+  'onmouseout',
+  'onmousemove',
+  'onkeydown',
+  'onkeyup',
+  'onkeypress',
+  'onfocus',
+  'onblur',
+  'onchange',
+  'oninput',
+  'onsubmit',
+  'onreset',
+  'onselect',
+  //   'onload',
+  //   'onunload',
+  //   'onerror',
+  'onresize',
+  'onscroll',
+] as const;
+
+// 配置：需要返回位置和大小的元素类型
+const POSITION_ELEMENTS = [
+  'img',
+  'button',
+  'input[type="button"]',
+  'input[type="submit"]',
+  'input[type="image"]',
+] as const;
+
+// 配置：图标元素类型
+const ICON_ELEMENTS = ['i', 'span.icon', 'svg', 'img[src*="icon"]', 'img[alt*="icon"]'] as const;
+
+// 配置：对页面查看有用的样式属性
+const USEFUL_STYLE_PROPERTIES = [
+  'display', // 布局相关
+  //   'position', // 定位相关
+  //   'visibility', // 可见性
+  //   'opacity', // 透明度
+  'cursor', // 鼠标指针
+  //   'z-index', // 层级
+  //   'overflow', // 溢出处理
+  //   'flex', // flex布局
+  //   'grid', // grid布局
+  //   'float', // 浮动
+  //   'clear', // 清除浮动
+] as const;
+
+// 元素的默认样式值
+const DEFAULT_STYLE_VALUES: Record<string, Record<string, string>> = {
+  // 块级元素
+  div: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  p: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  h1: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  h2: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  h3: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  h4: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  h5: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  h6: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  ul: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  ol: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  li: { display: 'list-item', position: 'static', float: 'none', clear: 'none' },
+  table: { display: 'table', position: 'static', float: 'none', clear: 'none' },
+  form: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  header: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  footer: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  section: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  article: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  aside: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  nav: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+  main: { display: 'block', position: 'static', float: 'none', clear: 'none' },
+
+  // 行内元素
+  span: { display: 'inline', position: 'static', float: 'none', clear: 'none' },
+  a: { display: 'inline', position: 'static', cursor: 'pointer', float: 'none', clear: 'none' },
+  strong: { display: 'inline', position: 'static', float: 'none', clear: 'none' },
+  em: { display: 'inline', position: 'static', float: 'none', clear: 'none' },
+  code: { display: 'inline', position: 'static', float: 'none', clear: 'none' },
+  small: { display: 'inline', position: 'static', float: 'none', clear: 'none' },
+  label: { display: 'inline', position: 'static', cursor: 'default', float: 'none', clear: 'none' },
+
+  // 行内块元素
+  button: {
+    display: 'inline-block',
+    position: 'static',
+    cursor: 'pointer',
+    float: 'none',
+    clear: 'none',
+  },
+  input: { display: 'inline-block', position: 'static', float: 'none', clear: 'none' },
+  textarea: { display: 'inline-block', position: 'static', float: 'none', clear: 'none' },
+  select: { display: 'inline-block', position: 'static', float: 'none', clear: 'none' },
+  img: { display: 'inline-block', position: 'static', float: 'none', clear: 'none' },
+  canvas: { display: 'inline-block', position: 'static', float: 'none', clear: 'none' },
+  video: { display: 'inline-block', position: 'static', float: 'none', clear: 'none' },
+  audio: { display: 'inline-block', position: 'static', float: 'none', clear: 'none' },
+
+  // 其他特殊元素
+  iframe: { display: 'inline', position: 'static', float: 'none', clear: 'none' },
+  svg: { display: 'inline', position: 'static', float: 'none', clear: 'none' },
+
+  // 默认值（用于未列出的元素）
+  default: {
+    display: 'inline',
+    position: 'static',
+    visibility: 'visible',
+    opacity: '1',
+    cursor: 'auto',
+    'z-index': 'auto',
+    overflow: 'visible',
+    float: 'none',
+    clear: 'none',
+    flex: '0 1 auto',
+    grid: 'none / none / auto / auto',
+  },
+};
+
+// 参数类型定义
+interface GetPageContentParameters {
+  browser_id?: string;
+  show_no_visibility?: boolean;
+  timeout?: number;
+  include_attributes?: string[];
+  event_attributes?: string[];
+}
+
+// 传递给页面执行的选项类型
+interface PageEvaluateOptions {
+  showNoVisibility: boolean;
+  includeAttributes: string[];
+  eventAttributes: string[];
+  positionElements: readonly string[];
+  iconElements: readonly string[];
+  usefulStyleProperties: readonly string[];
+  defaultStyleValues: Record<string, Record<string, string>>;
+}
+
+// 返回结果类型
+interface GetPageContentResult {
+  success: boolean;
+  session_id: string;
+  page_info: {
+    title: string;
+    url: string;
+  };
+  body_dom_tree: string;
+}
+
 export const getPageContentTool: Tool = {
   definition: {
     name: 'get_page_content',
@@ -27,16 +204,30 @@ export const getPageContentTool: Tool = {
           minimum: 5,
           maximum: 300,
         },
+        // include_attributes: {
+        //   type: 'array',
+        //   items: { type: 'string' },
+        //   description: '需要包含的属性列表（可选）',
+        //   default: INCLUDE_ATTRIBUTES,
+        // },
+        // event_attributes: {
+        //   type: 'array',
+        //   items: { type: 'string' },
+        //   description: '事件属性列表（可选）',
+        //   default: EVENT_ATTRIBUTES,
+        // },
       },
       required: [],
     },
     result_use_type: 'last',
   },
 
-  async execute(parameters: Record<string, any>): Promise<any> {
+  async execute(parameters: GetPageContentParameters): Promise<GetPageContentResult> {
     const browserId = parameters.browser_id || 'default';
     const timeout = parameters.timeout || 30;
     const show_no_visibility = parameters.show_no_visibility || false;
+    const includeAttributes = parameters.include_attributes || [...INCLUDE_ATTRIBUTES];
+    const eventAttributes = parameters.event_attributes || [...EVENT_ATTRIBUTES];
 
     const session = browserManager.getSession(browserId);
     if (!session) {
@@ -53,150 +244,288 @@ export const getPageContentTool: Tool = {
       const title = await page.title();
       const url = page.url();
 
-      // 获取页面内容 简单dom数
-      const bodyDomTree = await page.evaluate(
-        (arg: Record<string, any>) => {
-          const body = document.body;
-          const isDisplay = (e: HTMLElement): boolean => {
-            // 检查元素是否存在
-            if (!e || !e.isConnected) {
-              return false;
-            }
+      // 传递给页面执行的选项
+      const evaluateOptions: PageEvaluateOptions = {
+        showNoVisibility: show_no_visibility,
+        includeAttributes,
+        eventAttributes,
+        positionElements: POSITION_ELEMENTS,
+        iconElements: ICON_ELEMENTS,
+        usefulStyleProperties: USEFUL_STYLE_PROPERTIES,
+        defaultStyleValues: DEFAULT_STYLE_VALUES,
+      };
 
-            // 如果显示不可见元素，以下条件都不计算
-            if (arg.show_no_visibility) return true;
+      // 获取页面内容 - 优化的DOM树
+      const bodyDomTree = await page.evaluate((options: PageEvaluateOptions) => {
+        const {
+          showNoVisibility,
+          includeAttributes,
+          eventAttributes,
+          positionElements,
+          iconElements,
+          usefulStyleProperties,
+          defaultStyleValues,
+        } = options;
 
-            // 检查元素的 display 样式
-            const style = window.getComputedStyle(e);
-            if (style.display === 'none') {
-              return false;
-            }
-            // 检查元素的 visibility 样式
-            if (style.visibility === 'hidden' || style.visibility === 'collapse') {
-              return false;
-            }
-
-            // 检查元素的 opacity
-            if (parseFloat(style.opacity) === 0) {
-              return false;
-            }
-
-            // 检查元素的尺寸
-            const rect = e.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) {
-              return false;
-            }
-
-            // 检查元素是否在视口内（可选，根据需求决定）
-            // 如果希望只返回可见区域内的元素，可以启用以下检查
-            /*
-          if (
-            rect.top > window.innerHeight ||
-            rect.bottom < 0 ||
-            rect.left > window.innerWidth ||
-            rect.right < 0
-          ) {
+        // 检查元素是否可见
+        const isVisible = (element: Element): boolean => {
+          if (!element || !element.isConnected) {
             return false;
           }
-          */
 
-            if (e.tagName.toLowerCase() == 'svg') return false;
-            if (
-              e.getElementsByTagName('a').length ||
-              e.getElementsByTagName('img').length ||
-              e.getElementsByTagName('input').length ||
-              e.getElementsByTagName('textarea').length ||
-              e.getElementsByTagName('image').length ||
-              e.getElementsByTagName('button').length
-            )
-              return true;
+          const style = window.getComputedStyle(element);
 
-            // 检查是否有可见子元素
-            if (e.children && e.children.length) {
-              let subIsVisible = false;
-              for (const sub of Array.from(e.children)) {
-                if (isDisplay(sub as HTMLElement)) subIsVisible = true;
-              }
-              if (!subIsVisible) return false;
-            }
+          // 检查display
+          if (style.display === 'none') {
+            return false;
+          }
 
+          // 检查visibility
+          if (style.visibility === 'hidden' || style.visibility === 'collapse') {
+            return false;
+          }
+
+          // 检查opacity（透明度为0不可见）
+          if (parseFloat(style.opacity) === 0) {
+            return false;
+          }
+
+          // 检查尺寸
+          if (element.clientWidth === 0 && element.clientHeight === 0) {
+            return false;
+          }
+
+          return true;
+        };
+
+        // 检查元素是否有用内容
+        const hasUsefulContent = (element: Element): boolean => {
+          // 检查是否有文本内容
+          const textContent = element.textContent?.trim();
+          if (textContent && textContent.length > 0) {
             return true;
-          };
-          const attrNames = [
-            'src',
-            'type',
-            'alt',
-            'title',
-            'placeholder',
-            'name',
-            'value',
-            'checked',
-            'disabled',
-            'hidden',
-            'readOnly',
-            'selected',
-            'required',
-            'class',
-            'id',
-            'class',
-            'offsetTop',
-            'offsetLeft',
-            'contenteditable',
-            'onclick',
-            'onkeypress',
-          ];
-          const getElement = (e: HTMLElement, depth = 0, w = 0, h = 0): string => {
-            let html = '';
-            if (isDisplay(e)) {
-              html += `${''.padEnd(depth * 2, ' ')}- ${e.tagName.toUpperCase()}`;
-              // 如果没有子元素，且有innerText，innerText展示在标签后面
-              if (e.innerText && (!e.children || !e.children.length)) html += ` ${e.innerText}`;
-              // 属性
-              if (e.style.display) html += ` [style.display=${e.style.display}]`;
-              if (e.clientWidth != w) html += ` [clientWidth=${e.clientWidth}]`;
-              if (e.clientHeight != h) html += ` [clientHeight=${e.clientHeight}]`;
-              const ele = e as any;
-              [
-                ...e.getAttributeNames().filter((f) => !attrNames.includes(f.toLowerCase())),
-                ...attrNames,
-              ].forEach((attrName) => {
-                let val: string = ele[attrName] || ele[attrName.toUpperCase()];
-                if (attrNames.includes(attrName) && val) {
-                  // 处理一些特殊的值
-                  if (attrName == 'src' && val.startsWith('data:')) val = '';
-                  if (attrName == 'contenteditable' && val !== 'true') val = '';
-                  if (attrName == 'offsetLeft' && Number(val) < 16) val = '';
-                  if (attrName == 'offsetTop' && Number(val) < 16) val = '';
-                  if (attrName == 'onclick' && val) val = 'fn';
-                  if (attrName == 'onkeypress' && val) val = 'fn';
-                  if (val) html += ` [${attrName}=${val}]`;
+          }
+
+          // 检查是否是图片
+          if (element.tagName.toLowerCase() === 'img') {
+            return true;
+          }
+
+          // 检查是否是链接
+          if (element.tagName.toLowerCase() === 'a') {
+            return true;
+          }
+
+          // 检查是否是按钮或表单元素
+          const tagName = element.tagName.toLowerCase();
+          if (
+            tagName === 'button' ||
+            tagName === 'input' ||
+            tagName === 'textarea' ||
+            tagName === 'select'
+          ) {
+            return true;
+          }
+
+          // 检查是否有事件绑定
+          for (const attr of eventAttributes) {
+            if (element.hasAttribute(attr)) {
+              return true;
+            }
+          }
+
+          // 检查是否有可操作属性
+          if (
+            element.hasAttribute('contenteditable') ||
+            element.hasAttribute('draggable') ||
+            element.getAttribute('role') === 'button' ||
+            element.getAttribute('role') === 'link' ||
+            element.getAttribute('role') === 'checkbox' ||
+            element.getAttribute('role') === 'radio'
+          ) {
+            return true;
+          }
+
+          // 检查子元素是否有用内容
+          for (const child of Array.from(element.children)) {
+            if (hasUsefulContent(child)) {
+              return true;
+            }
+          }
+
+          return false;
+        };
+
+        // 获取有用的样式属性（过滤默认值）
+        const getUsefulStyleAttributes = (element: Element): string[] => {
+          const attrs: string[] = [];
+          const style = window.getComputedStyle(element);
+          const tagName = element.tagName.toLowerCase();
+
+          // 获取该元素的默认样式值
+          const elementDefaults = defaultStyleValues[tagName] || defaultStyleValues['default'];
+
+          for (const prop of usefulStyleProperties) {
+            const value = style[prop as keyof CSSStyleDeclaration];
+            if (value && value !== '' && value !== 'initial' && value !== 'inherit') {
+              // 获取该属性的默认值
+              const defaultValue = elementDefaults[prop] || '';
+
+              // 只有当值不是默认值时才显示
+              if (value !== defaultValue) {
+                // 特殊处理一些属性值的格式
+                let displayValue = value;
+
+                // 对于flex和grid属性，如果值很复杂，可以简化显示
+                if (prop === 'flex' && (value as string).includes(' ')) {
+                  displayValue = 'flex'; // 简化显示
+                } else if (prop === 'grid' && (value as string).includes('/')) {
+                  displayValue = 'grid'; // 简化显示
                 }
-              });
-              if (e.style.cursor?.toLowerCase() == 'pointer') html += ` [style.cursor=pointer]`;
-              if (e.style.position?.toLowerCase() == 'absolute')
-                html += ` [style.position=absolute]`;
-              if (e.style.position?.toLowerCase() == 'fixed') html += ` [style.position=fixed]`;
-              if (e.style.visibility?.toLowerCase() == 'hidden')
-                html += ` [style.visibility=hidden]`;
-              if (e.style.visibility?.toLowerCase() == 'collapse')
-                html += ` [style.visibility=collapse]`;
-              if (e.style.opacity?.toLowerCase() == '0') html += ` [style.opacity=0]`;
-              html += `:\n`;
-              if (e.children && e.children.length) {
-                html += Array.from(e.children)
-                  .map((v) =>
-                    getElement(v as HTMLElement, depth + 1, e.clientWidth, e.clientHeight)
-                  )
-                  .filter((f) => f)
-                  .join('');
+                // cursor 只显示
+                else if (
+                  prop == 'cursor' &&
+                  !['pointer', 'grab', 'not-allowed'].includes(displayValue as string)
+                )
+                  continue;
+
+                attrs.push(`style.${prop}=${displayValue}`);
               }
             }
-            return html;
-          };
-          return getElement(body);
-        },
-        { show_no_visibility: show_no_visibility }
-      );
+          }
+
+          return attrs;
+        };
+
+        // 获取元素属性字符串
+        const getAttributesString = (element: Element): string => {
+          const attrs: string[] = [];
+
+          // 添加有用的样式属性（已过滤默认值）
+          const styleAttrs = getUsefulStyleAttributes(element);
+          attrs.push(...styleAttrs);
+
+          // 处理包含的属性
+          for (const attrName of includeAttributes) {
+            const value = element.getAttribute(attrName);
+            if (value !== null && value !== '') {
+              // 特殊处理一些属性
+              if (attrName === 'src' && value.startsWith('data:image')) {
+                // 对于base64图片，只返回头信息
+                const match = value.match(/^data:image\/(\w+);base64,/);
+                if (match) {
+                  attrs.push(`src=data:image/${match[1]};base64,...`);
+                }
+              } else if (attrName === 'href' && element.tagName.toLowerCase() === 'a') {
+                // a标签不返回链接
+                continue;
+              } else {
+                attrs.push(`${attrName}=${value}`);
+              }
+            }
+          }
+
+          // 处理事件属性
+          for (const eventAttr of eventAttributes) {
+            if (element.hasAttribute(eventAttr)) {
+              attrs.push(`${eventAttr}=fn`);
+            }
+          }
+
+          // 处理位置和大小信息
+          const tagName = element.tagName.toLowerCase();
+          const rect = element.getBoundingClientRect();
+
+          // 检查是否是位置元素
+          const isPositionElement =
+            positionElements.includes(tagName) ||
+            iconElements.some((selector) => {
+              try {
+                return element.matches(selector);
+              } catch {
+                return false;
+              }
+            });
+
+          if (isPositionElement) {
+            attrs.push(`width=${Math.round(rect.width)}`);
+            attrs.push(`height=${Math.round(rect.height)}`);
+            attrs.push(`x=${Math.round(rect.left + window.scrollX)}`);
+            attrs.push(`y=${Math.round(rect.top + window.scrollY)}`);
+          }
+
+          return attrs.length > 0 ? ` [${attrs.join('] [')}]` : '';
+        };
+
+        // 检查是否是图标元素
+        const isIconElement = (element: Element): boolean => {
+          const tagName = element.tagName.toLowerCase();
+          if (tagName === 'svg') {
+            return true;
+          }
+
+          // 检查类名或属性是否包含icon
+          const className = element.className?.toString().toLowerCase() || '';
+          const alt = element.getAttribute('alt')?.toLowerCase() || '';
+          const src = element.getAttribute('src')?.toLowerCase() || '';
+
+          return (
+            className.includes('icon') ||
+            alt.includes('icon') ||
+            src.includes('icon') ||
+            element.getAttribute('role') === 'img'
+          );
+        };
+
+        // 递归构建DOM树
+        const buildDomTree = (node: Node, depth: number = 0): string[] => {
+          const lines: string[] = [];
+          const indent = '  '.repeat(depth);
+
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent?.trim();
+            if (text && text.length > 0) {
+              lines.push(`${indent}- TEXT ${text}`);
+            }
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as Element;
+
+            // 检查是否可见
+            if (!showNoVisibility && !isVisible(element)) {
+              return lines;
+            }
+
+            // 检查是否有用内容
+            if (!hasUsefulContent(element)) {
+              return lines;
+            }
+
+            const tagName = element.tagName.toUpperCase();
+            const attrsStr = getAttributesString(element);
+
+            // 对于svg图标，不显示path
+            if (tagName === 'SVG' && isIconElement(element)) {
+              lines.push(`${indent}- ${tagName}${attrsStr}:`);
+            } else {
+              lines.push(`${indent}- ${tagName}${attrsStr}:`);
+            }
+
+            // 处理子节点
+            for (const child of Array.from(node.childNodes)) {
+              const childLines = buildDomTree(child, depth + 1);
+              lines.push(...childLines);
+            }
+          }
+
+          return lines;
+        };
+
+        // 从body开始构建
+        const body = document.body;
+        const treeLines = buildDomTree(body);
+
+        return treeLines.join('\n');
+      }, evaluateOptions);
 
       return {
         success: true,
@@ -207,8 +536,9 @@ export const getPageContentTool: Tool = {
         },
         body_dom_tree: bodyDomTree,
       };
-    } catch (error: any) {
-      throw new Error(`获取页面内容失败: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      throw new Error(`获取页面内容失败: ${errorMessage}`);
     }
   },
 };
