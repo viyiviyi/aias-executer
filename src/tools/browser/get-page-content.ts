@@ -156,6 +156,7 @@ interface GetPageContentParameters {
   timeout?: number;
   include_attributes?: string[];
   event_attributes?: string[];
+  root_selector?: string;
 }
 
 // 传递给页面执行的选项类型
@@ -167,6 +168,17 @@ interface PageEvaluateOptions {
   iconElements: readonly string[];
   usefulStyleProperties: readonly string[];
   defaultStyleValues: Record<string, Record<string, string>>;
+  rootSelector?: string;
+}
+interface PageEvaluateOptions {
+  showNoVisibility: boolean;
+  includeAttributes: string[];
+  eventAttributes: string[];
+  positionElements: readonly string[];
+  iconElements: readonly string[];
+  usefulStyleProperties: readonly string[];
+  defaultStyleValues: Record<string, Record<string, string>>;
+  rootSelector?: string;
 }
 
 // 返回结果类型
@@ -176,8 +188,9 @@ interface GetPageContentResult {
   page_info: {
     title: string;
     url: string;
+    root_selector?: string;
   };
-  body_dom_tree: string;
+  dom_tree: string;
 }
 
 export const getPageContentTool: Tool = {
@@ -204,21 +217,27 @@ export const getPageContentTool: Tool = {
           minimum: 5,
           maximum: 300,
         },
-        // include_attributes: {
-        //   type: 'array',
-        //   items: { type: 'string' },
-        //   description: '需要包含的属性列表（可选）',
-        //   default: INCLUDE_ATTRIBUTES,
-        // },
-        // event_attributes: {
-        //   type: 'array',
-        //   items: { type: 'string' },
-        //   description: '事件属性列表（可选）',
-        //   default: EVENT_ATTRIBUTES,
-        // },
+        include_attributes: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '需要包含的属性列表（可选）',
+          default: INCLUDE_ATTRIBUTES,
+        },
+        event_attributes: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '事件属性列表（可选）',
+          default: EVENT_ATTRIBUTES,
+        },
+        root_selector: {
+          type: 'string',
+          description: 'CSS选择器，指定从哪个DOM元素开始获取内容（可选）。如果未指定，则从body元素开始。',
+          default: '',
+        },
       },
       required: [],
     },
+
     result_use_type: 'last',
   },
 
@@ -228,6 +247,7 @@ export const getPageContentTool: Tool = {
     const show_no_visibility = parameters.show_no_visibility || false;
     const includeAttributes = parameters.include_attributes || [...INCLUDE_ATTRIBUTES];
     const eventAttributes = parameters.event_attributes || [...EVENT_ATTRIBUTES];
+    const rootSelector = parameters.root_selector || '';
 
     const session = browserManager.getSession(browserId);
     if (!session) {
@@ -243,7 +263,6 @@ export const getPageContentTool: Tool = {
       // 获取页面基本信息
       const title = await page.title();
       const url = page.url();
-
       // 传递给页面执行的选项
       const evaluateOptions: PageEvaluateOptions = {
         showNoVisibility: show_no_visibility,
@@ -253,6 +272,7 @@ export const getPageContentTool: Tool = {
         iconElements: ICON_ELEMENTS,
         usefulStyleProperties: USEFUL_STYLE_PROPERTIES,
         defaultStyleValues: DEFAULT_STYLE_VALUES,
+        rootSelector,
       };
 
       // 获取页面内容 - 优化的DOM树
@@ -265,6 +285,7 @@ export const getPageContentTool: Tool = {
           iconElements,
           usefulStyleProperties,
           defaultStyleValues,
+          rootSelector,
         } = options;
 
         // 检查元素是否可见
@@ -416,9 +437,6 @@ export const getPageContentTool: Tool = {
                 if (match) {
                   attrs.push(`src=data:image/${match[1]};base64,...`);
                 }
-              } else if (attrName === 'href' && element.tagName.toLowerCase() === 'a') {
-                // a标签不返回链接
-                continue;
               } else {
                 attrs.push(`${attrName}=${value}`);
               }
@@ -520,9 +538,23 @@ export const getPageContentTool: Tool = {
           return lines;
         };
 
-        // 从body开始构建
-        const body = document.body;
-        const treeLines = buildDomTree(body);
+        // 确定根节点
+        let rootElement: Element | null = document.body;
+        if (rootSelector && rootSelector.trim() !== '') {
+          try {
+            const element = document.querySelector(rootSelector);
+            if (element) {
+              rootElement = element;
+            } else {
+              console.warn(`未找到选择器 ${rootSelector} 对应的元素，将使用body作为根节点`);
+            }
+          } catch (error) {
+            console.warn(`选择器 ${rootSelector} 无效，将使用body作为根节点`);
+          }
+        }
+
+        // 从根节点开始构建
+        const treeLines = buildDomTree(rootElement);
 
         return treeLines.join('\n');
       }, evaluateOptions);
@@ -533,8 +565,9 @@ export const getPageContentTool: Tool = {
         page_info: {
           title: title,
           url: url,
+          root_selector: rootSelector || undefined,
         },
-        body_dom_tree: bodyDomTree,
+        dom_tree: bodyDomTree,
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';

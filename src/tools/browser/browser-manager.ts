@@ -86,7 +86,7 @@ export class BrowserManager {
     const launchOptions: LaunchOptions = {
       headless,
       args: config.args,
-      executablePath: path.join(process.cwd(), 'playwright-browsers')
+      executablePath: path.join(process.cwd(), 'playwright-browsers', 'chromium-1208', 'chrome-win64', 'chrome.exe')
     };
 
     if (!userDataDir) userDataDir = './browser-data';
