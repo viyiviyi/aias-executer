@@ -178,7 +178,6 @@ export class BrowserManager {
         '--ignore-certificate-errors-spki-list',
         '--ignore-gpu-blacklist',
         '--ignore-ssl-errors',
-        '--incognito',
         '--no-default-browser-check',
         '--no-first-run',
         '--no-pings',
@@ -191,7 +190,7 @@ export class BrowserManager {
         '--safebrowsing-disable-auto-update',
         '--test-type',
         '--use-mock-keychain',
-        '--window-size=1280,720',
+        '--window-size=1875,980',
       ];
     }
 
