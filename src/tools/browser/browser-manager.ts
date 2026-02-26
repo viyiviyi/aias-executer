@@ -30,6 +30,8 @@ export class BrowserManager {
   private static instance: BrowserManager;
   private sessions: Map<string, BrowserSession> = new Map();
   private configManager = BrowserConfigManager.getInstance();
+  private mainBrowser: Browser | null = null;
+  private mainContext: BrowserContext | null = null;
 
   private constructor() {
     // 定期清理过期会话
@@ -43,12 +45,17 @@ export class BrowserManager {
     return BrowserManager.instance;
   }
 
-  private async createBrowser(
+  private async getOrCreateMainBrowser(
     browserType: 'chrome' | 'firefox' | 'webkit' | 'msedge',
     headless: boolean,
     antiDetection: boolean,
     userDataDir?: string
-  ): Promise<BrowserContext> {
+  ): Promise<{ browser: Browser; context: BrowserContext }> {
+    // 如果主浏览器已经存在，直接返回
+    if (this.mainBrowser && this.mainContext) {
+      return { browser: this.mainBrowser, context: this.mainContext };
+    }
+
     const config = this.configManager.getConfig();
     let playwrightBrowser;
 
@@ -73,7 +80,9 @@ export class BrowserManager {
       headless,
       args: config.args,
     };
+    
     if (!userDataDir) userDataDir = './browser-data';
+    
     // 如果启用了用户数据目录
     if (userDataDir && userDataDir.trim() !== '') {
       const fullPath = path.isAbsolute(userDataDir)
@@ -186,12 +195,25 @@ export class BrowserManager {
         '--window-size=1280,720',
       ];
     }
+
     const context = await playwrightBrowser.launchPersistentContext(userDataDir, {
       ...launchOptions,
       viewport: config.viewport,
       userAgent: config.userAgent,
     });
-    return context;
+    
+    const browser = await context.browser();
+    if (!browser) throw '打开浏览器失败';
+
+    // 应用反检测措施
+    if (antiDetection) {
+      await StealthUtils.applyStealthToContext(context, config);
+    }
+
+    this.mainBrowser = browser;
+    this.mainContext = context;
+
+    return { browser, context };
   }
 
   public async createSession(
@@ -218,38 +240,29 @@ export class BrowserManager {
       }
     }
 
-    // 如果会话已存在，先关闭
+    // 如果会话已存在，先关闭该会话的页面
     if (this.sessions.has(browserId)) {
       await this.closeSession(browserId);
     }
 
-    const context = await this.createBrowser(
+    // 获取或创建主浏览器
+    const { browser, context } = await this.getOrCreateMainBrowser(
       finalBrowserType,
       finalHeadless,
       finalAntiDetection,
       finalUserDataDir
     );
-    const browser = await context.browser();
-    if (!browser) throw '打开浏览器失败';
-    // const contextOptions: BrowserContextOptions = {
-    //   viewport: config.viewport,
-    //   userAgent: config.userAgent,
-    // };
-    // const context = await browser.newContext(contextOptions);
 
-    // 应用反检测措施
-    if (finalAntiDetection) {
-      await StealthUtils.applyStealthToContext(context, config);
-    }
-
+    // 创建新页面（新标签页）
     const page = await context.newPage();
+    
     // 应用反检测措施到页面
     if (finalAntiDetection) {
       await StealthUtils.applyStealthToPage(page, config);
     }
 
     const session: BrowserSession = {
-      browser: browser!,
+      browser,
       context,
       page,
       createdAt: new Date(),
@@ -273,6 +286,7 @@ export class BrowserManager {
       antiDetection: finalAntiDetection,
       stealthEnabled: stealthStatus.enabled,
       stealthFeatures: stealthStatus.features.length,
+      totalSessions: this.sessions.size,
     });
 
     return session;
@@ -290,12 +304,26 @@ export class BrowserManager {
     const session = this.sessions.get(browserId);
     if (session) {
       try {
-        await session.context.close();
-        await session.browser.close();
+        // 只关闭页面，不关闭浏览器
+        await session.page.close();
       } catch (error) {
         console.error(`关闭浏览器会话 ${browserId} 时出错:`, error);
       }
       this.sessions.delete(browserId);
+      
+      // 如果这是最后一个会话，关闭浏览器
+      if (this.sessions.size === 0 && this.mainBrowser) {
+        try {
+          await this.mainContext?.close();
+          await this.mainBrowser.close();
+          this.mainBrowser = null;
+          this.mainContext = null;
+          console.log('所有会话已关闭，浏览器已关闭');
+        } catch (error) {
+          console.error('关闭主浏览器时出错:', error);
+        }
+      }
+      
       return true;
     }
     return false;
