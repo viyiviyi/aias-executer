@@ -52,11 +52,11 @@ export const interactWithPageTool: Tool = {
           type: 'string',
           description: '要导航到的URL（对于goto操作需要）',
         },
-        // wait_for_navigation: {
-        //   type: 'boolean',
-        //   description: '操作后是否等待页面导航完成',
-        //   default: true,
-        // },
+        wait_for_navigation: {
+          type: 'boolean',
+          description: '操作后是否等待页面导航完成，无效参数，所以操作都会等待页面加载完成',
+          default: true,
+        },
         timeout: {
           type: 'integer',
           description: '超时时间（秒）',
@@ -72,7 +72,6 @@ export const interactWithPageTool: Tool = {
           type: 'integer',
           description: 'Y坐标（对于click_coordinate操作需要）',
         },
-        description: '所有操作都会等待页面加载完成，无需单独等待',
       },
       required: ['action'],
     },
