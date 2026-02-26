@@ -126,7 +126,6 @@ export class BrowserManager {
         '--disable-breakpad',
         '--disable-crash-reporter',
         '--disable-ipc-flooding-protection',
-        '--disable-notifications',
         '--disable-logging',
         '--disable-hang-monitor',
         '--disable-extensions',

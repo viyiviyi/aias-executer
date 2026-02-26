@@ -20,10 +20,12 @@ export class StealthUtils {
 
     // 注入反检测脚本
     await context.addInitScript(`
-      // 删除webdriver属性
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => undefined
-      });
+      // 删除webdriver属性 - 只在未定义时定义
+      if (!Object.getOwnPropertyDescriptor(navigator, 'webdriver')) {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined
+        });
+      }
 
       // 修改plugins属性
       Object.defineProperty(navigator, 'plugins', {
@@ -56,16 +58,18 @@ export class StealthUtils {
       }
 
       // 覆盖webgl属性
-      const getParameter = WebGLRenderingContext.prototype.getParameter;
-      WebGLRenderingContext.prototype.getParameter = function(parameter) {
-        if (parameter === 37445) {
-          return ${JSON.stringify(options.webglVendor || 'Intel Inc.')};
-        }
-        if (parameter === 37446) {
-          return ${JSON.stringify(options.renderer || 'Intel Iris OpenGL Engine')};
-        }
-        return getParameter.call(this, parameter);
-      };
+      if (WebGLRenderingContext && WebGLRenderingContext.prototype.getParameter) {
+        const getParameter = WebGLRenderingContext.prototype.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(parameter) {
+          if (parameter === 37445) {
+            return ${JSON.stringify(options.webglVendor || 'Intel Inc.')};
+          }
+          if (parameter === 37446) {
+            return ${JSON.stringify(options.renderer || 'Intel Iris OpenGL Engine')};
+          }
+          return getParameter.call(this, parameter);
+        };
+      }
 
       // 覆盖屏幕分辨率
       Object.defineProperty(window.screen, 'width', {
@@ -88,48 +92,56 @@ export class StealthUtils {
       });
 
       // 覆盖时区
-      Object.defineProperty(Intl.DateTimeFormat.prototype, 'resolvedOptions', {
-        get: function() {
-          const original = this.__proto__.__proto__.resolvedOptions.call(this);
-          return {
-            ...original,
-            timeZone: 'Asia/Shanghai'
-          };
-        }
-      });
-
-      // 覆盖canvas指纹
-      const originalGetContext = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function(contextType, contextAttributes) {
-        const context = originalGetContext.call(this, contextType, contextAttributes);
-        if (contextType === '2d') {
-          const originalFillText = context.fillText;
-          context.fillText = function(...args) {
-            args[0] = args[0] + ' ';
-            return originalFillText.apply(this, args);
-          };
-        }
-        return context;
-      };
-
-      // 覆盖音频指纹
-      const originalCreateOscillator = AudioContext.prototype.createOscillator;
-      AudioContext.prototype.createOscillator = function() {
-        const oscillator = originalCreateOscillator.call(this);
-        const originalFrequency = oscillator.frequency;
-        Object.defineProperty(oscillator.frequency, 'value', {
+      if (Intl && Intl.DateTimeFormat && Intl.DateTimeFormat.prototype.resolvedOptions) {
+        Object.defineProperty(Intl.DateTimeFormat.prototype, 'resolvedOptions', {
           get: function() {
-            return originalFrequency.value + 0.0001;
+            const original = this.__proto__.__proto__.resolvedOptions.call(this);
+            return {
+              ...original,
+              timeZone: 'Asia/Shanghai'
+            };
           }
         });
-        return oscillator;
-      };
+      }
+
+      // 覆盖canvas指纹
+      if (HTMLCanvasElement && HTMLCanvasElement.prototype.getContext) {
+        const originalGetContext = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function(contextType, contextAttributes) {
+          const context = originalGetContext.call(this, contextType, contextAttributes);
+          if (contextType === '2d') {
+            const originalFillText = context.fillText;
+            context.fillText = function(...args) {
+              args[0] = args[0] + ' ';
+              return originalFillText.apply(this, args);
+            };
+          }
+          return context;
+        };
+      // 覆盖音频指纹
+      if (AudioContext && AudioContext.prototype.createOscillator) {
+        const originalCreateOscillator = AudioContext.prototype.createOscillator;
+        AudioContext.prototype.createOscillator = function() {
+          const oscillator = originalCreateOscillator.call(this);
+          const originalFrequency = oscillator.frequency;
+          Object.defineProperty(oscillator.frequency, 'value', {
+            get: function() {
+              return originalFrequency.value + 0.0001;
+            }
+          });
+          return oscillator;
+        };
+      }
 
       // 覆盖字体指纹
-      const originalMeasureText = CanvasRenderingContext2D.prototype.measureText;
-      CanvasRenderingContext2D.prototype.measureText = function(text) {
-        const metrics = originalMeasureText.call(this, text);
-        metrics.width = metrics.width + 0.01;
+      if (CanvasRenderingContext2D && CanvasRenderingContext2D.prototype.measureText) {
+        const originalMeasureText = CanvasRenderingContext2D.prototype.measureText;
+        CanvasRenderingContext2D.prototype.measureText = function(text) {
+          const metrics = originalMeasureText.call(this, text);
+          metrics.width = metrics.width + 0.01;
+          return metrics;
+        };
+      }
         return metrics;
       };
 
@@ -158,11 +170,12 @@ export class StealthUtils {
         Object.defineProperty(navigator.connection, 'downlink', {
           get: () => 10
         });
-        Object.defineProperty(navigator.connection, 'effectiveType', {
-          get: () => '4g'
+      // 覆盖通知API
+      if (typeof Notification !== 'undefined' && Notification.permission) {
+        Object.defineProperty(Notification, 'permission', {
+          get: () => 'denied'
         });
-        Object.defineProperty(navigator.connection, 'rtt', {
-          get: () => 50
+      }
         });
       }
 
@@ -211,22 +224,28 @@ export class StealthUtils {
       });
 
       // 覆盖性能API
-      const originalNow = performance.now;
-      performance.now = function() {
-        return originalNow.call(this) + Math.random() * 10;
-      };
+      if (performance && performance.now) {
+        const originalNow = performance.now;
+        performance.now = function() {
+          return originalNow.call(this) + Math.random() * 10;
+        };
+      }
 
       // 覆盖时间API
-      const originalDateNow = Date.now;
-      Date.now = function() {
-        return originalDateNow.call(this) + Math.random() * 100;
-      };
+      if (Date && Date.now) {
+        const originalDateNow = Date.now;
+        Date.now = function() {
+          return originalDateNow.call(this) + Math.random() * 100;
+        };
+      }
 
       // 覆盖Math.random
-      const originalRandom = Math.random;
-      Math.random = function() {
-        return originalRandom.call(this) + 0.0000000001;
-      };
+      if (Math && Math.random) {
+        const originalRandom = Math.random;
+        Math.random = function() {
+          return originalRandom.call(this) + 0.0000000001;
+        };
+      }
 
       console.log('反检测脚本已注入');
     `);
@@ -258,10 +277,12 @@ export class StealthUtils {
 
     // 覆盖navigator属性
     await page.addInitScript((options: any) => {
-      // 删除自动化标志
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => false
-      });
+      // 删除自动化标志 - 只在未定义时定义
+      if (!Object.getOwnPropertyDescriptor(navigator, 'webdriver')) {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false
+        });
+      }
 
       // 覆盖chrome运行时
       const win = window as any;
