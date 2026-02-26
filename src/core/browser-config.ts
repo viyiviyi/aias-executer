@@ -75,10 +75,10 @@ export class BrowserConfigManager {
       antiDetection: true,
       userDataDir: path.join(process.cwd(), 'browser-data'),
       viewport: {
-        width: 1280,
-        height: 720
+        width: 1920,
+        height: 1080
       },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36',
       args: [
         '--no-sandbox',
         '--disable-dev-shm-usage',
@@ -107,13 +107,13 @@ export class BrowserConfigManager {
           ],
           webdriver: false,
           chrome: {
-            runtime: '120.0.0.0',
+            runtime: '145.0.7632.6',
             cdc: false
           }
         }
       },
       timeout: 30,
-      maxSessions: 5,
+      maxSessions: 30,
       sessionTimeout: 30
     };
 

@@ -34,6 +34,13 @@ export class BrowserManager {
   private mainContext: BrowserContext | null = null;
 
   private constructor() {
+    // 设置Playwright浏览器安装路径到项目目录
+    // 这样无论是普通模式还是服务模式都能使用同一个浏览器
+    const browsersPath = path.join(process.cwd(), 'playwright-browsers');
+    if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+      process.env.PLAYWRIGHT_BROWSERS_PATH = browsersPath;
+      console.log(`设置PLAYWRIGHT_BROWSERS_PATH环境变量: ${browsersPath}`);
+    }
     // 定期清理过期会话
     setInterval(() => this.cleanupExpiredSessions(), 5 * 60 * 1000); // 每5分钟清理一次
   }
@@ -79,10 +86,11 @@ export class BrowserManager {
     const launchOptions: LaunchOptions = {
       headless,
       args: config.args,
+      executablePath: path.join(process.cwd(), 'playwright-browsers')
     };
-    
+
     if (!userDataDir) userDataDir = './browser-data';
-    
+
     // 如果启用了用户数据目录
     if (userDataDir && userDataDir.trim() !== '') {
       const fullPath = path.isAbsolute(userDataDir)
@@ -199,7 +207,7 @@ export class BrowserManager {
       viewport: config.viewport,
       userAgent: config.userAgent,
     });
-    
+
     const browser = await context.browser();
     if (!browser) throw '打开浏览器失败';
 
@@ -253,7 +261,7 @@ export class BrowserManager {
 
     // 创建新页面（新标签页）
     const page = await context.newPage();
-    
+
     // 应用反检测措施到页面
     if (finalAntiDetection) {
       await StealthUtils.applyStealthToPage(page, config);
@@ -308,7 +316,7 @@ export class BrowserManager {
         console.error(`关闭浏览器会话 ${browserId} 时出错:`, error);
       }
       this.sessions.delete(browserId);
-      
+
       // 如果这是最后一个会话，关闭浏览器
       if (this.sessions.size === 0 && this.mainBrowser) {
         try {
@@ -321,7 +329,7 @@ export class BrowserManager {
           console.error('关闭主浏览器时出错:', error);
         }
       }
-      
+
       return true;
     }
     return false;
