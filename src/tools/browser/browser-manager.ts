@@ -190,7 +190,7 @@ export class BrowserManager {
         '--safebrowsing-disable-auto-update',
         '--test-type',
         '--use-mock-keychain',
-        '--window-size=1875,980',
+        '--window-size=1920,1080',
       ];
     }
 
