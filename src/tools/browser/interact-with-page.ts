@@ -52,11 +52,11 @@ export const interactWithPageTool: Tool = {
           type: 'string',
           description: '要导航到的URL（对于goto操作需要）',
         },
-        wait_for_navigation: {
-          type: 'boolean',
-          description: '操作后是否等待页面导航完成',
-          default: true,
-        },
+        // wait_for_navigation: {
+        //   type: 'boolean',
+        //   description: '操作后是否等待页面导航完成',
+        //   default: true,
+        // },
         timeout: {
           type: 'integer',
           description: '超时时间（秒）',
@@ -72,6 +72,7 @@ export const interactWithPageTool: Tool = {
           type: 'integer',
           description: 'Y坐标（对于click_coordinate操作需要）',
         },
+        description: '所有操作都会等待页面加载完成，无需单独等待',
       },
       required: ['action'],
     },
@@ -203,7 +204,7 @@ export const interactWithPageTool: Tool = {
         default:
           throw new Error(`不支持的操作类型: ${action}`);
       }
-
+      await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
       // 获取操作后的页面状态
       const currentUrl = page.url();
       const currentTitle = await page.title();
