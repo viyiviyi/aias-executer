@@ -6,7 +6,7 @@ const browserManager = BrowserManager.getInstance();
 // 配置：需要包含的属性（移除style，因为我们会单独处理有用的样式属性）
 const INCLUDE_ATTRIBUTES = [
   'id',
-  //   'class',
+  'class',
   'type',
   'name',
   'value',
@@ -388,29 +388,20 @@ export const getPageContentTool: Tool = {
 
           for (const prop of usefulStyleProperties) {
             const value = style[prop as keyof CSSStyleDeclaration];
-            if (value && value !== '' && value !== 'initial' && value !== 'inherit') {
+            if (value && value !== '' && value !== 'initial' && value !== 'inherit' && (!element.parentElement || value != window.getComputedStyle(element.parentElement)[prop as keyof CSSStyleDeclaration])) {
               // 获取该属性的默认值
               const defaultValue = elementDefaults[prop] || '';
-
               // 只有当值不是默认值时才显示
               if (value !== defaultValue) {
                 // 特殊处理一些属性值的格式
                 let displayValue = value;
 
-                // 对于flex和grid属性，如果值很复杂，可以简化显示
-                if (prop === 'flex' && (value as string).includes(' ')) {
-                  displayValue = 'flex'; // 简化显示
-                } else if (prop === 'grid' && (value as string).includes('/')) {
-                  displayValue = 'grid'; // 简化显示
-                }
-                // cursor 只显示
-                else if (
+                // 只显cursor 
+                if (
                   prop == 'cursor' &&
-                  !['pointer', 'grab', 'not-allowed'].includes(displayValue as string)
+                  ['pointer', 'grab', 'not-allowed'].includes(displayValue as string)
                 )
-                  continue;
-
-                attrs.push(`style.${prop}=${displayValue}`);
+                  attrs.push(`style.${prop}=${displayValue}`);
               }
             }
           }
@@ -437,6 +428,17 @@ export const getPageContentTool: Tool = {
                 if (match) {
                   attrs.push(`src=data:image/${match[1]};base64,...`);
                 }
+              }
+              // 如果是class，清除一些特定格式的css
+              else if (attrName == 'class') {
+                const classNames = value.split(' ').filter(f => {
+                  if (/-\d+$|-data-|^data-|\[|\]|sc-|^[a-zA-z0-9]{1,2}-|bg-|^flex$|^grid$/.test(f)) return false;
+                  if (/-(full|center|aria|left|right|top|bottom|text|max|min|fill|row|col|auto)\b/.test(f)) return false;
+                  if (/\b(flex|aria|border|text|loading|row|col|auto|react)-/.test(f)) return false;
+                  return true;
+                })
+                if (classNames.length)
+                  attrs.push(`${attrName}=${classNames.join(' ')}`);
               } else {
                 attrs.push(`${attrName}=${value}`);
               }

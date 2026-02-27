@@ -1,11 +1,14 @@
 import { ToolDefinition, ToolExecutionResult, OpenAIFunctionCall, ToolCallRequest } from '../types';
 import { ToolRegistry } from './tool-registry';
+import { PasswordManager } from './password-manager';
 
 export class ToolExecutor {
   private toolRegistry: ToolRegistry;
+  private passwordManager: PasswordManager;
 
   constructor() {
     this.toolRegistry = ToolRegistry.getInstance();
+    this.passwordManager = PasswordManager.getInstance();
   }
 
   public async executeTool(toolName: string, parameters: Record<string, any>): Promise<ToolExecutionResult> {
@@ -18,7 +21,10 @@ export class ToolExecutor {
         };
       }
 
-      const result = await tool.execute(parameters);
+      // 在执行前替换参数中的占位符
+      const processedParameters = this.passwordManager.replacePlaceholders(parameters);
+
+      const result = await tool.execute(processedParameters);
       return {
         success: true,
         result

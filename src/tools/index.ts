@@ -16,6 +16,7 @@ import { updateFileTool } from './file/update-file';
 import { readCodeTool } from './file/read-code';
 import { moveFileTool } from './file/move-file';
 import { deleteFilesTool } from './file/delete-files';
+import { readCodeObjectTreeTool } from './file/read-code-object-tree';
 import { copyFileTool } from './file/copy-file';
 
 // 系统工具
@@ -31,6 +32,8 @@ import {
 import { restartServiceTool } from './system/restart-service';
 
 // 文档工具
+// 密码工具
+import { getPasswordsInfoTool } from './system/get-passwords-info';
 import { getToolsDocumentationTool } from './system/get-tools-documentation';
 
 // 网络工具
@@ -46,6 +49,7 @@ const toolList: Tool[] = [
   updateFileTool,
   moveFileTool,
   copyFileTool,
+  readCodeObjectTreeTool,
   deleteFilesTool,
   // 命令行
   executeCommandTool,
@@ -65,6 +69,8 @@ const toolList: Tool[] = [
   httpRequestTool,
   // 重启服务
   restartServiceTool,
+  // 密码工具
+  getPasswordsInfoTool,
 ];
 
 // 导出所有基础工具定义
