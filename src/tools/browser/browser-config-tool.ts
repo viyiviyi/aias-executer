@@ -97,6 +97,121 @@ export const browserConfigTool: Tool = {
               timeout: currentConfig.timeout,
               maxSessions: currentConfig.maxSessions,
               sessionTimeout: currentConfig.sessionTimeout,
+    
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: false,      // 非只读操作（管理配置）
+      destructiveHint: false,   // 非破坏性操作（配置管理）
+      idempotentHint: true,     // 幂等操作（相同配置产生相同结果）
+      openWorldHint: false,     // 不是开放世界操作
+      category: 'browser',      // 浏览器操作类别
+      version: '1.0.0',        // 工具版本
+      tags: ['browser', 'config', 'management', 'settings'] // 工具标签
+    },
+    
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        action: { type: 'string', description: '执行的操作' },
+        config: {
+          type: 'object',
+          description: '浏览器配置',
+          properties: {
+            defaultBrowser: { type: 'string', description: '默认浏览器类型' },
+            defaultHeadless: { type: 'boolean', description: '是否无头模式' },
+            antiDetection: { type: 'boolean', description: '是否启用反检测' },
+            userDataDir: { type: 'string', description: '用户数据目录' },
+            viewport: {
+              type: 'object',
+              properties: {
+                width: { type: 'integer', description: '视口宽度' },
+                height: { type: 'integer', description: '视口高度' }
+              }
+            },
+            stealthOptions: {
+              type: 'object',
+              properties: {
+                enable: { type: 'boolean', description: '是否启用隐身模式' },
+                features: { type: 'array', items: { type: 'string' }, description: '隐身功能列表' }
+              }
+            },
+            maxSessions: { type: 'integer', description: '最大会话数' },
+            sessionTimeout: { type: 'integer', description: '会话超时时间（秒）' }
+          },
+          required: ['defaultBrowser', 'defaultHeadless', 'antiDetection', 'maxSessions', 'sessionTimeout']
+        },
+        message: { type: 'string', description: '操作结果消息' },
+        timestamp: { type: 'string', description: '操作时间戳' }
+      },
+      required: ['success', 'action', 'config', 'message', 'timestamp']
+    },
+    
+    // 示例用法
+    examples: [
+      {
+        description: '获取当前浏览器配置',
+        parameters: { action: 'get' },
+        expectedOutput: {
+          success: true,
+          action: 'get',
+          config: {
+            defaultBrowser: 'chrome',
+            defaultHeadless: false,
+            antiDetection: true,
+            userDataDir: './browser-data',
+            viewport: { width: 1280, height: 720 },
+            stealthOptions: {
+              enable: true,
+              features: ['webdriver属性隐藏', '用户代理伪装', 'WebGL指纹修改']
+            },
+            maxSessions: 5,
+            sessionTimeout: 3600
+          },
+          message: '配置获取成功',
+          timestamp: '2024-01-01T00:00:00.000Z'
+        }
+      },
+      {
+        description: '更新浏览器配置',
+        parameters: {
+          action: 'update',
+          config: {
+            defaultHeadless: true,
+            viewport: { width: 1920, height: 1080 }
+          }
+        },
+        expectedOutput: {
+          success: true,
+          action: 'update',
+          config: {
+            defaultBrowser: 'chrome',
+            defaultHeadless: true,
+            antiDetection: true,
+            userDataDir: './browser-data',
+            viewport: { width: 1920, height: 1080 },
+            stealthOptions: {
+              enable: true,
+              features: ['webdriver属性隐藏', '用户代理伪装', 'WebGL指纹修改']
+            },
+            maxSessions: 5,
+            sessionTimeout: 3600
+          },
+          message: '配置更新成功',
+          timestamp: '2024-01-01T00:00:00.000Z'
+        }
+      }
+    ],
+    
+    // 使用指南
+    guidelines: [
+      '支持三种操作：get（获取配置）、update（更新配置）、reload（重新加载配置）',
+      '更新配置时只更新提供的字段，其他字段保持不变',
+      '配置会持久化保存到配置文件',
+      '返回完整的配置信息，包括默认值和更新后的值',
+      '配置更改会影响新创建的浏览器会话'
+    ],
               stealthEnabled: currentConfig.stealthOptions.enable,
               stealthFeatures: currentConfig.stealthOptions.options
             },

@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import { ConfigManager } from '../../core/config';
-import { ToolDefinition } from '../../types';
+import { Tool } from '@/core/tool-registry';
 
 const configManager = ConfigManager.getInstance();
 
@@ -21,11 +21,11 @@ interface ReadCodeResult {
   end_line: number;
 }
 
-const readCodeTool = {
+const readCodeTool: Tool = {
   definition: {
     name: 'read_code',
     description: '读取代码文件内容，支持行号显示和行范围选择。返回的内容包括行号信息。',
-    
+
     parameters: {
       type: 'object',
       properties: {
@@ -58,8 +58,98 @@ const readCodeTool = {
         }
       },
       required: ['path']
-    }
-  } as ToolDefinition,
+    },
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: true,      // 只读操作
+      destructiveHint: false,  // 非破坏性操作
+      idempotentHint: true,    // 幂等操作（相同输入总是相同输出）
+      openWorldHint: false,    // 不是开放世界操作
+      category: 'file',        // 文件操作类别
+      version: '1.0.0',       // 工具版本
+      tags: ['file', 'code', 'read', 'source', 'programming'] // 工具标签
+    },
+
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        result: {
+          type: 'object',
+          properties: {
+            content: { type: 'string', description: '代码内容（可能包含行号 1-based）' },
+            total_lines: { type: 'integer', description: '文件总行数' },
+            start_line: { type: 'integer', description: '实际起始行号' },
+            end_line: { type: 'integer', description: '实际结束行号' }
+          },
+          required: ['content', 'total_lines', 'start_line', 'end_line']
+        }
+      },
+      required: ['success', 'result']
+    },
+
+    // 示例用法
+    examples: [
+      {
+        description: '读取整个代码文件',
+        parameters: { path: 'example.js' },
+        expectedOutput: {
+          success: true,
+          result: {
+            content: '1┆function example() {\n2┆  return "Hello";\n3┆}',
+            total_lines: 3,
+            start_line: 1,
+            end_line: 3
+          }
+        }
+      },
+      {
+        description: '读取代码文件的部分行',
+        parameters: {
+          path: 'example.js',
+          start_line: 2,
+          end_line: 3,
+          show_line_numbers: false
+        },
+        expectedOutput: {
+          success: true,
+          result: {
+            content: '  return "Hello";\n}',
+            total_lines: 3,
+            start_line: 2,
+            end_line: 3
+          }
+        }
+      },
+      {
+        description: '使用自定义行号格式',
+        parameters: {
+          path: 'example.js',
+          line_number_format: '[{line}] '
+        },
+        expectedOutput: {
+          success: true,
+          result: {
+            content: '[1] function example() {\n[2]   return "Hello";\n[3] }',
+            total_lines: 3,
+            start_line: 1,
+            end_line: 3
+          }
+        }
+      }
+    ],
+
+    // 使用指南
+    guidelines: [
+      '专为读取代码文件设计，支持行号(1-based)显示',
+      '可以指定行范围，支持负数表示从末尾开始',
+      '可以自定义行号格式',
+      '默认显示行号，可以关闭',
+      '文件大小受配置限制'
+    ],
+
+  },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const {
@@ -100,28 +190,28 @@ const readCodeTool = {
       }
       return lineNum;
     };
-    
+
     const start = startLine ? normalizeLineNumber(startLine, totalLines) : 1;
     const end = endLine ? normalizeLineNumber(endLine, totalLines) : totalLines;
-    
+
     // 确保行号在有效范围内
     const clampedStart = Math.max(1, Math.min(start, totalLines));
     const clampedEnd = Math.max(1, Math.min(end, totalLines));
-    
+
     if (clampedStart > clampedEnd) {
       throw new Error('起始行号不能大于结束行号');
     }
 
     // 提取指定行的内容
     const selectedLines = lines.slice(clampedStart - 1, clampedEnd);
-    
+
     // 构建带行号的内容
     let formattedContent = '';
-    
+
     for (let i = 0; i < selectedLines.length; i++) {
       const lineNumber = clampedStart + i;
       const lineContent = selectedLines[i];
-      
+
       if (showLineNumbers) {
         const formattedLineNumber = lineNumberFormat.replace('{line}', lineNumber.toString());
         formattedContent += formattedLineNumber + lineContent + '\n';
@@ -129,7 +219,7 @@ const readCodeTool = {
         formattedContent += lineContent + '\n';
       }
     }
-    
+
     // 移除最后一个多余的换行符
     if (formattedContent.endsWith('\n')) {
       formattedContent = formattedContent.slice(0, -1);
@@ -142,7 +232,7 @@ const readCodeTool = {
       start_line: clampedStart,
       end_line: clampedEnd
     };
-    
+
     return {
       success: true,
       result: result

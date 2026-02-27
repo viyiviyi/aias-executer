@@ -75,6 +75,115 @@ export const interactWithPageTool: Tool = {
       },
       required: ['action'],
     },
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: false,      // 非只读操作（交互操作）
+      destructiveHint: true,    // 破坏性操作（可能修改页面状态）
+      idempotentHint: false,    // 非幂等操作（多次交互可能产生不同结果）
+      openWorldHint: true,      // 开放世界操作（与外部网页交互）
+      category: 'browser',      // 浏览器操作类别
+      version: '1.0.0',        // 工具版本
+      tags: ['browser', 'interact', 'click', 'fill', 'navigate', 'automation'] // 工具标签
+    },
+
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        session_id: { type: 'string', description: '浏览器会话ID' },
+        action: { type: 'string', description: '执行的操作类型' },
+        result: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', description: '操作结果消息' }
+          },
+          required: ['message']
+        },
+        page_state: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: '操作后的页面URL' },
+            title: { type: 'string', description: '操作后的页面标题' }
+          },
+          required: ['url', 'title']
+        },
+        timestamp: { type: 'string', description: '操作时间戳' }
+      },
+      required: ['success', 'session_id', 'action', 'result', 'page_state', 'timestamp']
+    },
+
+    // 示例用法
+    examples: [
+      {
+        description: '点击页面元素',
+        parameters: {
+          browser_id: 'default',
+          action: 'click',
+          selector: '#submit-button'
+        },
+        expectedOutput: {
+          success: true,
+          session_id: 'default',
+          action: 'click',
+          result: { message: '已点击元素: #submit-button' },
+          page_state: {
+            url: 'https://example.com/submitted',
+            title: '提交成功'
+          },
+          timestamp: '2024-01-01T00:00:00.000Z'
+        }
+      },
+      {
+        description: '在输入框中填写文本',
+        parameters: {
+          browser_id: 'default',
+          action: 'fill',
+          selector: '#search-input',
+          text: '人工智能'
+        },
+        expectedOutput: {
+          success: true,
+          session_id: 'default',
+          action: 'fill',
+          result: { message: '已填充 #search-input 内容: 人工智能' },
+          page_state: {
+            url: 'https://example.com/search',
+            title: '搜索页面'
+          },
+          timestamp: '2024-01-01T00:00:00.000Z'
+        }
+      },
+      {
+        description: '导航到新页面',
+        parameters: {
+          browser_id: 'default',
+          action: 'goto',
+          url: 'https://newsite.com'
+        },
+        expectedOutput: {
+          success: true,
+          session_id: 'default',
+          action: 'goto',
+          result: { message: '已导航到: https://newsite.com' },
+          page_state: {
+            url: 'https://newsite.com/',
+            title: '新网站'
+          },
+          timestamp: '2024-01-01T00:00:00.000Z'
+        }
+      }
+    ],
+
+    // 使用指南
+    guidelines: [
+      '支持多种交互操作：点击、填写、悬停、选择等',
+      '不同操作需要不同的参数组合',
+      '操作后会等待页面加载完成',
+      '返回操作后的页面状态信息',
+      '默认超时时间为30秒，可以自定义'
+    ],
+
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {

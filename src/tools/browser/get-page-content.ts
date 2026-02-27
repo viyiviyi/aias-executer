@@ -237,6 +237,81 @@ export const getPageContentTool: Tool = {
       },
       required: [],
     },
+    
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: true,      // 只读操作
+      destructiveHint: false,  // 非破坏性操作
+      idempotentHint: false,   // 非幂等操作（页面内容可能变化）
+      openWorldHint: true,     // 开放世界操作（访问外部网页）
+      category: 'browser',     // 浏览器操作类别
+      version: '1.0.0',       // 工具版本
+      tags: ['browser', 'page', 'content', 'dom', 'scraping'] // 工具标签
+    },
+    
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        session_id: { type: 'string', description: '浏览器会话ID' },
+        page_info: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: '页面标题' },
+            url: { type: 'string', description: '页面URL' },
+            root_selector: { type: 'string', description: '使用的根选择器' }
+          },
+          required: ['title', 'url']
+        },
+        dom_tree: { type: 'string', description: 'DOM树内容' }
+      },
+      required: ['success', 'session_id', 'page_info', 'dom_tree']
+    },
+    
+    // 示例用法
+    examples: [
+      {
+        description: '获取当前页面内容',
+        parameters: { browser_id: 'default' },
+        expectedOutput: {
+          success: true,
+          session_id: 'default',
+          page_info: {
+            title: '示例页面',
+            url: 'https://example.com',
+            root_selector: ''
+          },
+          dom_tree: '- HTML:\n  - HEAD:\n    - TITLE: 示例页面\n  - BODY:\n    - H1: 欢迎来到示例页面'
+        }
+      },
+      {
+        description: '获取页面特定区域的内容',
+        parameters: { 
+          browser_id: 'default',
+          root_selector: '#main-content'
+        },
+        expectedOutput: {
+          success: true,
+          session_id: 'default',
+          page_info: {
+            title: '示例页面',
+            url: 'https://example.com',
+            root_selector: '#main-content'
+          },
+          dom_tree: '- DIV [id=main-content]:\n  - H2: 主要内容\n  - P: 这是主要内容区域'
+        }
+      }
+    ],
+    
+    // 使用指南
+    guidelines: [
+      '只返回一次结果，需要的信息需自行整理记录在上下文',
+      '默认不显示不可见的DOM元素',
+      '可以指定根选择器来获取特定区域的内容',
+      '支持自定义包含的属性和事件属性',
+      '返回的DOM树经过优化，只包含有用的内容'
+    ],
 
     result_use_type: 'last',
   },

@@ -28,7 +28,117 @@ export const openBrowserTool: Tool = {
         }
       },
       required: ['url']
-    }
+    },
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: false,      // 非只读操作（创建浏览器会话）
+      destructiveHint: false,   // 非破坏性操作
+      idempotentHint: false,    // 非幂等操作（多次调用可能创建多个会话）
+      openWorldHint: true,      // 开放世界操作（访问外部网页）
+      category: 'browser',      // 浏览器操作类别
+      version: '1.0.0',        // 工具版本
+      tags: ['browser', 'open', 'navigate', 'session'] // 工具标签
+    },
+
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        session_id: { type: 'string', description: '浏览器会话ID' },
+        config: {
+          type: 'object',
+          properties: {
+            browser_type: { type: 'string', description: '浏览器类型' },
+            headless: { type: 'boolean', description: '是否无头模式' },
+            anti_detection: { type: 'boolean', description: '是否启用反检测' },
+            user_data_dir: { type: 'string', description: '用户数据目录' },
+            stealth_enabled: { type: 'boolean', description: '是否启用隐身模式' },
+            stealth_features_count: { type: 'integer', description: '隐身功能数量' }
+          },
+          required: ['browser_type', 'headless', 'anti_detection', 'stealth_enabled', 'stealth_features_count']
+        },
+        page_info: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: '页面标题' },
+            url: { type: 'string', description: '页面URL' },
+            original_url: { type: 'string', description: '原始请求URL' }
+          },
+          required: ['title', 'url', 'original_url']
+        },
+        message: { type: 'string', description: '操作结果消息' },
+        sessions_count: { type: 'integer', description: '当前会话总数' }
+      },
+      required: ['success', 'session_id', 'config', 'page_info', 'message', 'sessions_count']
+    },
+
+    // 示例用法
+    examples: [
+      {
+        description: '打开浏览器并导航到网站',
+        parameters: {
+          url: 'https://example.com',
+          session_name: 'default'
+        },
+        expectedOutput: {
+          success: true,
+          session_id: 'default',
+          config: {
+            browser_type: 'chromium',
+            headless: false,
+            anti_detection: true,
+            user_data_dir: '/path/to/user/data',
+            stealth_enabled: true,
+            stealth_features_count: 6
+          },
+          page_info: {
+            title: '示例网站',
+            url: 'https://example.com/',
+            original_url: 'https://example.com'
+          },
+          message: '浏览器已成功打开并导航到 https://example.com',
+          sessions_count: 1
+        }
+      },
+      {
+        description: '使用自定义会话名称打开浏览器',
+        parameters: {
+          url: 'https://google.com',
+          session_name: 'search-session',
+          timeout: 60
+        },
+        expectedOutput: {
+          success: true,
+          session_id: 'search-session',
+          config: {
+            browser_type: 'chromium',
+            headless: false,
+            anti_detection: true,
+            user_data_dir: '/path/to/user/data',
+            stealth_enabled: true,
+            stealth_features_count: 6
+          },
+          page_info: {
+            title: 'Google',
+            url: 'https://www.google.com/',
+            original_url: 'https://google.com'
+          },
+          message: '浏览器已成功打开并导航到 https://google.com',
+          sessions_count: 2
+        }
+      }
+    ],
+
+    // 使用指南
+    guidelines: [
+      '默认使用配置文件中的浏览器设置',
+      '可以指定会话名称来管理多个浏览器会话',
+      '支持反检测功能，避免被网站识别为自动化工具',
+      '默认超时时间为30秒，可以自定义',
+      '会自动验证URL格式'
+    ],
+
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -50,7 +160,7 @@ export const openBrowserTool: Tool = {
     try {
       // 获取配置
       const config = browserManager.getConfig();
-      
+
       // 创建浏览器会话（使用配置文件中的默认设置）
       const session = await browserManager.createSession(
         sessionName,
@@ -59,7 +169,7 @@ export const openBrowserTool: Tool = {
         config.antiDetection,
         config.userDataDir
       );
-      
+
       // 导航到指定URL
       await browserManager.navigateTo(sessionName, url, timeout * 1000);
 
@@ -102,8 +212,8 @@ export const openBrowserTool: Tool = {
       };
     } catch (error: any) {
       // 如果创建会话失败，确保清理
-      await browserManager.closeSession(sessionName).catch(() => {});
-      
+      await browserManager.closeSession(sessionName).catch(() => { });
+
       throw new Error(`打开浏览器失败: ${error.message}`);
     }
   }

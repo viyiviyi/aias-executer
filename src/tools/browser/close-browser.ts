@@ -34,7 +34,93 @@ export const closeBrowserTool: Tool = {
         }
       },
       required: []
-    }
+    },
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: false,      // 非只读操作（关闭浏览器）
+      destructiveHint: true,    // 破坏性操作（关闭浏览器会话）
+      idempotentHint: true,     // 幂等操作（多次关闭相同会话效果相同）
+      openWorldHint: false,     // 不是开放世界操作
+      category: 'browser',      // 浏览器操作类别
+      version: '1.0.0',        // 工具版本
+      tags: ['browser', 'close', 'session', 'cleanup'] // 工具标签
+    },
+    
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        message: { type: 'string', description: '操作结果消息' },
+        session_id: { type: 'string', description: '浏览器会话ID' },
+        closed: { type: 'boolean', description: '是否成功关闭' },
+        delete_data: { type: 'boolean', description: '是否删除浏览器数据' },
+        remaining_sessions: { type: 'integer', description: '剩余会话数量' },
+        remaining_session_ids: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: '剩余会话ID列表'
+        },
+        closed_sessions: { type: 'integer', description: '关闭的会话数量（关闭所有时）' },
+        force_kill: { type: 'boolean', description: '是否强制杀死进程' }
+      },
+      required: ['success', 'message']
+    },
+    
+    // 示例用法
+    examples: [
+      {
+        description: '关闭默认浏览器会话',
+        parameters: { browser_id: 'default' },
+        expectedOutput: {
+          success: true,
+          message: '已关闭浏览器会话: default',
+          session_id: 'default',
+          closed: true,
+          delete_data: false,
+          remaining_sessions: 0,
+          remaining_session_ids: []
+        }
+      },
+      {
+        description: '关闭所有浏览器会话',
+        parameters: { browser_id: 'all' },
+        expectedOutput: {
+          success: true,
+          message: '已关闭所有浏览器会话（共 3 个）',
+          closed_sessions: 3,
+          remaining_sessions: 0,
+          force_kill: false,
+          delete_data: false
+        }
+      },
+      {
+        description: '关闭会话并删除数据',
+        parameters: { 
+          browser_id: 'test-session',
+          delete_data: true
+        },
+        expectedOutput: {
+          success: true,
+          message: '已关闭浏览器会话: test-session',
+          session_id: 'test-session',
+          closed: true,
+          delete_data: true,
+          remaining_sessions: 2,
+          remaining_session_ids: ['default', 'session2']
+        }
+      }
+    ],
+    
+    // 使用指南
+    guidelines: [
+      '可以关闭单个会话或所有会话',
+      '删除数据会清除cookies和localStorage',
+      '强制杀死仅在所有会话关闭时有效',
+      '如果会话不存在，返回成功但closed为false',
+      '返回剩余会话信息以便管理'
+    ],
+    
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {

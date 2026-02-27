@@ -37,7 +37,100 @@ export const copyFileTool: Tool = {
         }
       },
       required: ['source', 'destination']
-    }
+    },
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: false,      // 非只读操作（复制文件）
+      destructiveHint: false,   // 非破坏性操作（不修改源文件）
+      idempotentHint: true,     // 幂等操作（相同输入产生相同输出）
+      openWorldHint: false,     // 不是开放世界操作
+      category: 'file',         // 文件操作类别
+      version: '1.0.0',        // 工具版本
+      tags: ['file', 'copy', 'duplicate', 'backup'] // 工具标签
+    },
+
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        result: { type: 'string', description: '操作结果消息' },
+        source: { type: 'string', description: '源路径' },
+        destination: { type: 'string', description: '目标路径' },
+        overwrite: { type: 'boolean', description: '是否覆盖' },
+        recursive: { type: 'boolean', description: '是否递归' },
+        create_parents: { type: 'boolean', description: '是否创建父目录' },
+        operation_type: { type: 'string', enum: ['file', 'directory'], description: '操作类型' }
+      },
+      required: ['success', 'result', 'source', 'destination', 'operation_type']
+    },
+
+    // 示例用法
+    examples: [
+      {
+        description: '复制文件',
+        parameters: {
+          source: 'source.txt',
+          destination: 'backup/source.txt'
+        },
+        expectedOutput: {
+          success: true,
+          result: '文件从 source.txt 复制到 backup/source.txt 成功',
+          source: 'source.txt',
+          destination: 'backup/source.txt',
+          overwrite: false,
+          recursive: true,
+          create_parents: true,
+          operation_type: 'file'
+        }
+      },
+      {
+        description: '复制目录',
+        parameters: {
+          source: 'src',
+          destination: 'backup/src',
+          recursive: true
+        },
+        expectedOutput: {
+          success: true,
+          result: '目录从 src 复制到 backup/src 成功',
+          source: 'src',
+          destination: 'backup/src',
+          overwrite: false,
+          recursive: true,
+          create_parents: true,
+          operation_type: 'directory'
+        }
+      },
+      {
+        description: '覆盖已存在的文件',
+        parameters: {
+          source: 'new-version.txt',
+          destination: 'existing.txt',
+          overwrite: true
+        },
+        expectedOutput: {
+          success: true,
+          result: '文件从 new-version.txt 复制到 existing.txt 成功',
+          source: 'new-version.txt',
+          destination: 'existing.txt',
+          overwrite: true,
+          recursive: true,
+          create_parents: true,
+          operation_type: 'file'
+        }
+      }
+    ],
+
+    // 使用指南
+    guidelines: [
+      '支持复制文件和目录',
+      '默认递归复制目录内容',
+      '默认不覆盖已存在的目标文件',
+      '自动创建目标目录的父目录',
+      '返回详细的操作信息'
+    ],
+
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -49,7 +142,7 @@ export const copyFileTool: Tool = {
 
     // 验证源路径
     const resolvedSource = configManager.validatePath(sourcePath, true);
-    
+
     // 验证目标路径
     const resolvedDestination = configManager.validatePath(destinationPath);
 
@@ -87,12 +180,12 @@ export const copyFileTool: Tool = {
       if (!recursive) {
         throw new Error(`源路径是目录: ${sourcePath}。使用 recursive=true 来复制目录`);
       }
-      
+
       // 使用cp命令递归复制目录
       const { exec } = await import('child_process');
       const { promisify } = await import('util');
       const execAsync = promisify(exec);
-      
+
       await execAsync(`cp -r "${resolvedSource}" "${resolvedDestination}"`);
       return {
         success: true,

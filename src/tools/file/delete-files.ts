@@ -48,7 +48,134 @@ export const deleteFilesTool: Tool = {
         },
       },
       required: ['items']
-    }
+    },
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: false,      // 非只读操作（删除文件）
+      destructiveHint: true,    // 破坏性操作（删除文件）
+      idempotentHint: false,    // 非幂等操作（多次删除可能产生不同结果）
+      openWorldHint: false,     // 不是开放世界操作
+      category: 'file',         // 文件操作类别
+      version: '1.0.0',        // 工具版本
+      tags: ['file', 'delete', 'remove', 'cleanup'] // 工具标签
+    },
+
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '整体操作是否成功' },
+        total_items: { type: 'integer', description: '总项目数' },
+        successful_items: { type: 'integer', description: '成功项目数' },
+        failed_items: { type: 'integer', description: '失败项目数' },
+        results: {
+          type: 'array',
+          description: '每个项目的删除结果',
+          items: {
+            type: 'object',
+            properties: {
+              index: { type: 'integer', description: '项目索引' },
+              path: { type: 'string', description: '文件路径' },
+              success: { type: 'boolean', description: '是否成功' },
+              message: { type: 'string', description: '结果消息' },
+              recursive: { type: 'boolean', description: '是否递归删除' },
+              force: { type: 'boolean', description: '是否强制删除' },
+              type: { type: 'string', enum: ['file', 'directory'], description: '文件类型' }
+            },
+            required: ['index', 'path', 'success', 'message']
+          }
+        },
+        continue_on_error: { type: 'boolean', description: '是否在错误时继续' }
+      },
+      required: ['success', 'total_items', 'successful_items', 'failed_items', 'results']
+    },
+
+    // 示例用法
+    examples: [
+      {
+        description: '删除单个文件',
+        parameters: {
+          items: [
+            { path: 'temp.txt' }
+          ]
+        },
+        expectedOutput: {
+          success: true,
+          total_items: 1,
+          successful_items: 1,
+          failed_items: 0,
+          results: [
+            {
+              index: 0,
+              path: 'temp.txt',
+              success: true,
+              message: '文件删除成功',
+              recursive: false,
+              force: false,
+              type: 'file'
+            }
+          ],
+          continue_on_error: false
+        }
+      },
+      {
+        description: '批量删除文件和目录',
+        parameters: {
+          items: [
+            { path: 'file1.txt' },
+            { path: 'temp-dir', recursive: true },
+            { path: 'non-existent.txt', force: true }
+          ],
+          continue_on_error: true
+        },
+        expectedOutput: {
+          success: true,
+          total_items: 3,
+          successful_items: 3,
+          failed_items: 0,
+          results: [
+            {
+              index: 0,
+              path: 'file1.txt',
+              success: true,
+              message: '文件删除成功',
+              recursive: false,
+              force: false,
+              type: 'file'
+            },
+            {
+              index: 1,
+              path: 'temp-dir',
+              success: true,
+              message: '目录删除成功',
+              recursive: true,
+              force: false,
+              type: 'directory'
+            },
+            {
+              index: 2,
+              path: 'non-existent.txt',
+              success: true,
+              message: '文件不存在，强制删除跳过',
+              recursive: false,
+              force: true,
+              type: 'file'
+            }
+          ],
+          continue_on_error: true
+        }
+      }
+    ],
+
+    // 使用指南
+    guidelines: [
+      '支持批量删除文件和目录',
+      '可以配置递归删除目录',
+      '可以强制删除忽略不存在的文件错误',
+      '可以配置在错误时继续处理其他项目',
+      '返回每个项目的详细删除结果'
+    ],
+
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -151,7 +278,7 @@ export const deleteFilesTool: Tool = {
         }
       } catch (error: any) {
         const errorMessage = error.message || '未知错误';
-        
+
         if (continueOnError) {
           results.push({
             index: i,

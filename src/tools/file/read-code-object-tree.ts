@@ -41,7 +41,7 @@ const readCodeObjectTreeTool = {
   definition: {
     name: 'read_code_object_tree',
     description: '读取代码文件对象树，包含对象的注释。支持提取函数、类、接口、类型、常量、变量、导入、导出等代码对象。',
-    
+
     parameters: {
       type: 'object',
       properties: {
@@ -102,6 +102,149 @@ const readCodeObjectTreeTool = {
           default: 'utf-8'
         }
       },
+
+      // MCP构建器建议的元数据
+      metadata: {
+        readOnlyHint: true,      // 只读操作
+        destructiveHint: false,  // 非破坏性操作
+        idempotentHint: true,    // 幂等操作（相同输入总是相同输出）
+        openWorldHint: false,    // 不是开放世界操作
+        category: 'file',        // 文件操作类别
+        version: '1.0.0',       // 工具版本
+        tags: ['file', 'code', 'analysis', 'ast', 'structure', 'programming'] // 工具标签
+      },
+
+      // 结构化输出模式
+      outputSchema: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', description: '操作是否成功' },
+          result: {
+            type: 'object',
+            properties: {
+              objects: {
+                type: 'array',
+                description: '代码对象列表',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: '对象名称' },
+                    type: {
+                      type: 'string',
+                      enum: ['function', 'class', 'interface', 'type', 'constant', 'variable', 'import', 'export'],
+                      description: '对象类型'
+                    },
+                    line: { type: 'integer', description: '所在行号' },
+                    comment: { type: 'string', description: '注释内容' },
+                    signature: { type: 'string', description: '签名信息' },
+                    children: {
+                      type: 'array',
+                      items: { $ref: '#/properties/result/properties/objects/items' },
+                      description: '子对象列表'
+                    }
+                  },
+                  required: ['name', 'type', 'line']
+                }
+              },
+              total_objects: { type: 'integer', description: '对象总数' },
+              file_path: { type: 'string', description: '文件路径' },
+              file_name: { type: 'string', description: '文件名' },
+              file_size: { type: 'integer', description: '文件大小（字节）' },
+              last_modified: { type: 'string', description: '最后修改时间' }
+            },
+            required: ['objects', 'total_objects', 'file_path', 'file_name', 'file_size', 'last_modified']
+          }
+        },
+        required: ['success', 'result']
+      },
+
+      // 示例用法
+      examples: [
+        {
+          description: '分析TypeScript文件的结构',
+          parameters: { path: 'example.ts' },
+          expectedOutput: {
+            success: true,
+            result: {
+              objects: [
+                {
+                  name: 'ExampleClass',
+                  type: 'class',
+                  line: 5,
+                  comment: '示例类',
+                  signature: 'class ExampleClass',
+                  children: [
+                    {
+                      name: 'exampleMethod',
+                      type: 'function',
+                      line: 10,
+                      comment: '示例方法',
+                      signature: 'exampleMethod(param: string): void'
+                    }
+                  ]
+                },
+                {
+                  name: 'exampleFunction',
+                  type: 'function',
+                  line: 20,
+                  comment: '示例函数',
+                  signature: 'function exampleFunction(): string'
+                }
+              ],
+              total_objects: 3,
+              file_path: '/path/to/example.ts',
+              file_name: 'example.ts',
+              file_size: 1024,
+              last_modified: '2024-01-01T00:00:00.000Z'
+            }
+          }
+        },
+        {
+          description: '只提取函数和类',
+          parameters: {
+            path: 'example.ts',
+            include_functions: true,
+            include_classes: true,
+            include_interfaces: false,
+            include_types: false
+          },
+          expectedOutput: {
+            success: true,
+            result: {
+              objects: [
+                {
+                  name: 'ExampleClass',
+                  type: 'class',
+                  line: 5,
+                  comment: '示例类',
+                  signature: 'class ExampleClass'
+                },
+                {
+                  name: 'exampleFunction',
+                  type: 'function',
+                  line: 20,
+                  comment: '示例函数',
+                  signature: 'function exampleFunction(): string'
+                }
+              ],
+              total_objects: 2,
+              file_path: '/path/to/example.ts',
+              file_name: 'example.ts',
+              file_size: 1024,
+              last_modified: '2024-01-01T00:00:00.000Z'
+            }
+          }
+        }
+      ],
+
+      // 使用指南
+      guidelines: [
+        '支持提取多种代码对象：函数、类、接口、类型、常量、变量、导入、导出',
+        '可以配置要提取的对象类型',
+        '包含对象的注释和签名信息',
+        '支持嵌套对象结构',
+        '文件大小受配置限制'
+      ],
       required: ['path']
     }
   } as ToolDefinition,
@@ -123,7 +266,7 @@ const readCodeObjectTreeTool = {
 
     // 验证路径
     const resolvedPath = configManager.validatePath(filePath, true);
-    
+
     // 检查文件是否为文本文件
     if (!configManager.isTextFile(resolvedPath)) {
       throw new Error(`不支持读取此类文件: ${filePath}，该文件可能不是文本文件`);
@@ -139,7 +282,7 @@ const readCodeObjectTreeTool = {
     // 读取文件内容
     const content = await fs.readFile(resolvedPath, { encoding: encoding as BufferEncoding });
     const lines = content.split('\n');
-    
+
     // 获取文件信息
     const fileName = path.basename(resolvedPath);
     const fileSize = stats.size;
@@ -170,7 +313,7 @@ const readCodeObjectTreeTool = {
       file_size: fileSize,
       last_modified: lastModified
     };
-    
+
     return {
       success: true,
       result: result
@@ -257,7 +400,7 @@ async function parseCodeObjects(
     // 解析导出语句
     if (options.includeExports && line.startsWith('export ')) {
       const exportLine = line.substring(7).trim();
-      
+
       // 导出函数
       if (options.includeFunctions && exportLine.startsWith('function ')) {
         const funcMatch = exportLine.match(/function\s+(\w+)/);
@@ -272,7 +415,7 @@ async function parseCodeObjects(
           currentComment = [];
         }
       }
-      
+
       // 导出类
       if (options.includeClasses && exportLine.startsWith('class ')) {
         const classMatch = exportLine.match(/class\s+(\w+)/);
@@ -287,7 +430,7 @@ async function parseCodeObjects(
           currentComment = [];
         }
       }
-      
+
       // 导出接口
       if (options.includeInterfaces && exportLine.startsWith('interface ')) {
         const interfaceMatch = exportLine.match(/interface\s+(\w+)/);
@@ -302,7 +445,7 @@ async function parseCodeObjects(
           currentComment = [];
         }
       }
-      
+
       // 导出类型
       if (options.includeTypes && exportLine.startsWith('type ')) {
         const typeMatch = exportLine.match(/type\s+(\w+)/);
@@ -317,7 +460,7 @@ async function parseCodeObjects(
           currentComment = [];
         }
       }
-      
+
       // 导出常量
       if (options.includeConstants && exportLine.startsWith('const ')) {
         const constMatch = exportLine.match(/const\s+(\w+)/);
@@ -332,7 +475,7 @@ async function parseCodeObjects(
           currentComment = [];
         }
       }
-      
+
       continue;
     }
 
