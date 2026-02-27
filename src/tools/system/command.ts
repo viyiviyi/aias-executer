@@ -93,14 +93,13 @@ export const executeCommandTool: Tool = {
         encoding: 'utf-8',
       });
 
-      // 应用截断功能
-      const truncatedStdout = truncateText(stdout);
-      const truncatedStderr = truncateText(stderr);
+      // 合并stdout和stderr，应用截断功能
+      const combinedOutput = stdout + (stderr ? '\n' + stderr : '');
+      const truncatedOutput = truncateText(combinedOutput);
 
-      // 返回精简的结果，只包含必要信息
+      // 返回简洁的结果，只包含执行结果输出
       return {
-        stdout: truncatedStdout.trim(),
-        stderr: truncatedStderr.trim(),
+        result: truncatedOutput.trim(),
         success: true,
       };
     } catch (error: any) {
@@ -108,14 +107,15 @@ export const executeCommandTool: Tool = {
         throw new Error(`命令执行超时 (${timeout}秒)`);
       }
 
-      // 应用截断功能到错误信息
-      const errorStdout = truncateText(error.stdout?.trim() || '');
-      const errorStderr = truncateText(error.stderr?.trim() || error.message);
+      // 合并错误信息，应用截断功能
+      const errorOutput = (error.stdout?.trim() || '') + 
+                         (error.stderr?.trim() ? '\n' + error.stderr.trim() : '') + 
+                         (error.message ? '\n' + error.message : '');
+      const truncatedErrorOutput = truncateText(errorOutput);
 
-      // 返回错误信息，但不包含过多细节
+      // 返回错误信息
       return {
-        stdout: errorStdout,
-        stderr: errorStderr,
+        result: truncatedErrorOutput.trim(),
         success: false,
       };
     }
