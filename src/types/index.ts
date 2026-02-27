@@ -116,9 +116,3 @@ export interface TerminalInfo {
   outputBuffer: string[]; // 输出缓冲区
   isReading: boolean; // 是否正在读取
 }
-
-// 导出MCP相关类型
-
-// 导出行号映射相关类型
-export * from './line-mapping';
-export * from './mcp';
