@@ -6,6 +6,7 @@ import {
   interactWithPageTool,
   closeBrowserTool,
   browserConfigTool,
+  downloadFileTool,
 } from './browser';
 
 // 文件工具
@@ -64,6 +65,7 @@ const toolList: Tool[] = [
   getPageContentTool,
   interactWithPageTool,
   closeBrowserTool,
+  downloadFileTool,
   browserConfigTool,
   // 网络工具
   httpRequestTool,
