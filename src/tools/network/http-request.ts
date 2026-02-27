@@ -86,13 +86,41 @@ export const httpRequestTool: Tool = {
     try {
       const response = await axios(config);
 
+      // 检查响应内容类型，防止二进制数据
+      const contentType = response.headers['content-type'] || '';
+      const isBinaryContent = isBinaryContentType(contentType);
+      
+      // 获取响应数据
+      let responseData = response.data;
+      
+      // 如果是二进制内容类型，返回截断信息
+      if (isBinaryContent) {
+        responseData = `[二进制数据已截断，内容类型: ${contentType}]`;
+      } else if (typeof responseData === 'string') {
+        // 对文本数据进行长度限制，防止上下文爆炸
+        const maxLength = 10000; // 最大10KB
+        if (responseData.length > maxLength) {
+          responseData = responseData.substring(0, maxLength) + 
+            `\n...[数据已截断，原始长度: ${responseData.length} 字符，截断后: ${maxLength} 字符]`;
+        }
+      } else if (typeof responseData === 'object') {
+        // 如果是对象，转换为JSON并限制长度
+        const jsonStr = JSON.stringify(responseData);
+        const maxLength = 10000; // 最大10KB
+        if (jsonStr.length > maxLength) {
+          responseData = JSON.stringify(responseData, null, 2).substring(0, maxLength) + 
+            `\n...[JSON数据已截断，原始长度: ${jsonStr.length} 字符，截断后: ${maxLength} 字符]`;
+        }
+      }
+
       // 返回精简的响应信息
       return {
         status: response.status,
         status_text: response.statusText,
         response_headers: response.headers,
-        data: response.data,
-        success: response.status >= 200 && response.status < 300
+        data: responseData,
+        success: response.status >= 200 && response.status < 300,
+        truncated: isBinaryContent || (typeof responseData === 'string' && responseData.includes('[数据已截断]'))
       };
     } catch (error: any) {
       if (error.response) {
@@ -115,3 +143,44 @@ export const httpRequestTool: Tool = {
     }
   }
 };
+
+// 辅助函数：检查是否为二进制内容类型
+function isBinaryContentType(contentType: string): boolean {
+  if (!contentType) return false;
+  
+  const binaryTypes = [
+    // 图片
+    'image/',
+    // 音频
+    'audio/',
+    // 视频
+    'video/',
+    // 压缩文件
+    'application/zip',
+    'application/x-rar-compressed',
+    'application/x-7z-compressed',
+    'application/x-tar',
+    'application/gzip',
+    // PDF
+    'application/pdf',
+    // Office文档
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    // 可执行文件
+    'application/x-msdownload',
+    'application/x-executable',
+    // 其他二进制
+    'application/octet-stream',
+    'binary/',
+    // 字体
+    'font/',
+    // 模型文件
+    'model/',
+  ];
+  
+  return binaryTypes.some(type => contentType.toLowerCase().includes(type));
+}
