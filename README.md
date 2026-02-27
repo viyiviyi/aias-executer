@@ -35,6 +35,32 @@ AIAS Executor 是一个用Node.js和TypeScript重写的工具执行器，为[htt
 - 提供符合OpenAI规范的tools列表
 - 支持批量工具调用
 
+### 使用PM2快速启动（推荐）
+
+```bash
+# 安装PM2（如果尚未安装）
+npm install -g pm2
+
+# 安装项目依赖
+npm install
+
+# 构建项目
+npm run build
+
+# 使用PM2启动服务
+pm2 start npm --name "aias-executor" -- start
+
+# 设置开机自启
+pm2 save
+pm2 startup
+```
+
+对于Windows用户，可以使用我们提供的批处理脚本：
+```
+# 以管理员身份运行
+setup-pm2-windows.bat
+```
+
 ## 快速开始
 
 ### 安装依赖
@@ -53,6 +79,146 @@ npm run dev
 npm run build
 npm start
 ```
+## PM2进程管理（推荐用于生产环境）
+
+PM2是一个强大的Node.js进程管理器，支持自动重启、日志管理、集群模式等功能。我们提供了便捷的安装脚本：
+
+- **Windows用户**: 运行 `setup-pm2-windows.bat`（需要管理员权限）
+- **Linux/Mac用户**: 运行 `./setup-pm2-linux.sh`
+
+或者按照以下步骤手动安装：
+
+### 安装PM2
+
+```bash
+# 全局安装PM2
+npm install -g pm2
+
+# 或者使用yarn
+npm install -g pm2
+```
+
+### 使用PM2启动服务
+
+#### 开发模式
+```bash
+# 使用PM2启动开发服务器（自动重启）
+pm2 start npm --name "aias-executor-dev" -- run dev
+```
+
+#### 生产模式
+```bash
+# 1. 构建项目
+npm run build
+
+# 2. 使用PM2启动生产服务器
+pm2 start npm --name "aias-executor" -- start
+```
+
+### PM2常用命令
+
+```bash
+# 查看所有进程
+pm2 list
+
+# 查看进程日志
+pm2 logs aias-executor
+
+# 查看特定进程的详细信息
+pm2 show aias-executor
+
+# 重启进程
+pm2 restart aias-executor
+
+# 停止进程
+pm2 stop aias-executor
+
+# 删除进程
+pm2 delete aias-executor
+
+# 保存当前进程列表（用于开机自启）
+pm2 save
+
+# 查看监控面板
+pm2 monit
+```
+
+### Windows系统开机自启配置
+
+在Windows系统中，PM2需要额外的配置来实现开机自启：
+
+1. **安装PM2 Windows服务**
+```bash
+# 安装pm2-windows-startup
+npm install -g pm2-windows-startup
+
+# 安装PM2作为Windows服务
+pm2-startup install
+```
+
+2. **保存当前进程配置**
+```bash
+# 启动你的应用（如果还没启动）
+pm2 start npm --name "aias-executor" -- start
+
+# 保存当前PM2配置
+pm2 save
+```
+
+### PM2配置文件（可选）
+
+创建 `ecosystem.config.js` 文件进行更详细的配置：
+
+```javascript
+// ecosystem.config.js
+module.exports = {
+  apps: [{
+    name: 'aias-executor',
+    script: 'dist/index.js',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    },
+    env_development: {
+      NODE_ENV: 'development',
+      PORT: 3000
+    },
+    error_file: './logs/pm2-error.log',
+    out_file: './logs/pm2-out.log',
+    log_file: './logs/pm2-combined.log',
+    time: true
+  }]
+};
+```
+
+使用配置文件启动：
+```bash
+# 使用配置文件启动
+pm2 start ecosystem.config.js
+
+# 使用特定环境
+pm2 start ecosystem.config.js --env development
+```
+
+### 日志管理
+
+PM2会自动管理日志，日志文件默认保存在 `~/.pm2/logs/` 目录下。
+
+```bash
+# 查看实时日志
+pm2 logs aias-executor
+
+# 查看最后100行日志
+pm2 logs aias-executor --lines 100
+
+# 清空日志
+pm2 flush aias-executor
+```
+
 ## API接口
 
 ### 1. 获取工具列表
@@ -90,8 +256,6 @@ POST /api/execute
 }
 ```
 
-
-
 ## 可用工具
 
 ### 文件工具
@@ -111,17 +275,6 @@ POST /api/execute
 
 ### 网络工具
 - `http_request`: 代理HTTP请求
-
-### MCP工具 (Model Context Protocol)
-- `mcp_discover_servers`: 自动发现MCP服务器
-- `mcp_scan_server`: 扫描MCP服务器以获取工具列表
-- `mcp_add_server`: 添加MCP服务器
-- `mcp_call_tool`: 调用MCP工具
-- `mcp_list_tools`: 列出所有可用的MCP工具
-- `mcp_list_servers`: 列出所有已配置的MCP服务器
-- `mcp_start_server`: 启动MCP服务器
-- `mcp_stop_server`: 停止MCP服务器
-- `mcp_remove_server`: 移除MCP服务器
 
 ## 工具使用指南
 
@@ -147,21 +300,6 @@ POST /api/execute
 - `insert_content`: 要插入的内容字符串
 - `del_line_count`: 要删除的行数
 - `operation`: 'insert' 或 'delete'
-
-### MCP工具
-用于与Model Context Protocol服务器交互：
-- **发现和扫描**: 自动发现和扫描MCP服务器
-- **服务器管理**: 添加、启动、停止、移除MCP服务器
-- **工具调用**: 调用MCP服务器提供的工具
-
-## 安全特性
-
-1. **路径验证**: 确保所有文件操作都在工作目录内
-2. **命令白名单**: 只允许执行预定义的命令
-3. **文件类型限制**: 只允许操作特定扩展名的文件
-4. **文件大小限制**: 防止读取过大文件
-5. **超时控制**: 所有操作都有超时限制
-6. **MCP安全**: MCP服务器进程隔离
 
 ## 开发
 

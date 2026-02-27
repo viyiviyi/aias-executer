@@ -5,3 +5,4 @@ win-server/*.log
 browser-data/
 playwright-browsers/
 config/browser.yaml
+logs/
