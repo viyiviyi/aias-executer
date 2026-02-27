@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { FileErrors, validateParameters } from '../../core/error-utils';
 import { ConfigManager } from '../../core/config';
 import { Tool } from '../../core/tool-registry';
 
@@ -51,10 +52,99 @@ export const listDirectoryTool: Tool = {
         }
       },
       required: ['path']
-    }
+    },
+    
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: true,      // 只读操作
+      destructiveHint: false,  // 非破坏性操作
+      idempotentHint: true,    // 幂等操作（相同输入总是相同输出）
+      openWorldHint: false,    // 不是开放世界操作
+      category: 'file',        // 文件操作类别
+      version: '1.0.0',       // 工具版本
+      tags: ['file', 'directory', 'list', 'explore'] // 工具标签
+    },
+    
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        result: { 
+          type: 'array', 
+          description: '目录内容列表',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: '文件或目录名' },
+              type: { type: 'string', enum: ['directory', 'file'], description: '类型' },
+              size: { type: 'integer', description: '大小（字节）' },
+              modified: { type: 'string', description: '修改时间' },
+              fullPath: { type: 'string', description: '完整路径' },
+              depth: { type: 'integer', description: '深度（递归时）' },
+              wordCount: { type: 'integer', description: '字数统计' },
+              lineCount: { type: 'integer', description: '行数统计' }
+            },
+            required: ['name', 'type', 'size', 'modified']
+          }
+        },
+        path: { type: 'string', description: '查询的目录路径' },
+        recursive: { type: 'boolean', description: '是否递归查询' },
+        count: { type: 'integer', description: '项目总数' }
+      },
+      required: ['success', 'result', 'path', 'count']
+    },
+    
+    // 示例用法
+    examples: [
+      {
+        description: '列出当前目录内容',
+        parameters: { path: '.' },
+        expectedOutput: {
+          success: true,
+          result: [
+            { name: 'file1.txt', type: 'file', size: 1024, modified: '2024-01-01T00:00:00.000Z' },
+            { name: 'folder1', type: 'directory', size: 0, modified: '2024-01-01T00:00:00.000Z' }
+          ],
+          path: '.',
+          count: 2
+        }
+      },
+      {
+        description: '递归列出目录树',
+        parameters: { path: '.', recursive: true },
+        expectedOutput: {
+          success: true,
+          result: [
+            { name: 'file1.txt', type: 'file', size: 1024, modified: '2024-01-01T00:00:00.000Z', depth: 0 },
+            { name: 'folder1', type: 'directory', size: 0, modified: '2024-01-01T00:00:00.000Z', depth: 0 },
+            { name: 'subfile.txt', type: 'file', size: 512, modified: '2024-01-01T00:00:00.000Z', depth: 1 }
+          ],
+          path: '.',
+          recursive: true,
+          count: 3
+        }
+      }
+    ],
+    
+    // 使用指南
+    guidelines: [
+      '默认跳过隐藏文件和常见开发目录（如node_modules、.git等）',
+      '递归查询可能影响性能，建议只在必要时使用',
+      '可以配置要跳过的目录列表',
+      '可以启用字数统计，但会影响性能'
+    ],
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
+    // 参数验证
+    validateParameters(parameters, ['path'], {
+      recursive: (value) => typeof value === 'boolean',
+      skip_hidden: (value) => typeof value === 'boolean',
+      skip_dirs: (value) => Array.isArray(value),
+      count_stats: (value) => typeof value === 'boolean'
+    });
+
     const dirPath = parameters.path || '.';
     const recursive = parameters.recursive || false;
     const skipHidden = parameters.skip_hidden !== false;
@@ -69,8 +159,9 @@ export const listDirectoryTool: Tool = {
     // 检查是否是目录
     const stats = await fs.stat(resolvedPath);
     if (!stats.isDirectory()) {
-      throw new Error(`路径不是目录: ${dirPath}`);
+      throw FileErrors.invalidType(dirPath, ['directory']);
     }
+    
     if (recursive) {
       const result = await listDirectoryRecursive(resolvedPath, originalPath, skipHidden, skipDirs, countStats);
       return {

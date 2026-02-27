@@ -70,7 +70,6 @@ app.get('/api/health', (_req, res) => {
 
 // API路由 - 简化接口
 app.use('/api', toolsRouter);
-// 静态文件服务路由
 app.use('/api/static', staticRouter);
 
 
@@ -87,14 +86,11 @@ app.get('/', (_req, res) => {
       health: '/api/health',
       autostartStatus: '/api/autostart/status',
       staticFiles: '/api/static/files/*',
-      listDirectory: '/api/static/list/*',
-      fileInfo: '/api/static/info/*'
     },
   });
 });
 // 启动服务器
-// 启动服务器
-const PORT = config.port || 3000;
+const PORT = config.port || 23777;
 const HOST = config.host || '0.0.0.0';
 
 // 异步启动
