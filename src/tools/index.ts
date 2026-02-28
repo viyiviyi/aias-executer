@@ -17,7 +17,7 @@ import { updateFileTool } from './file/update-file';
 import { readCodeTool } from './file/read-code';
 import { moveFileTool } from './file/move-file';
 import { deleteFilesTool } from './file/delete-files';
-import { readCodeObjectTreeTool } from './file/read-code-object-tree';
+import { getDocumentOutlineTool } from './file/get-document-outline';
 import { copyFileTool } from './file/copy-file';
 
 // 系统工具
@@ -50,7 +50,8 @@ const toolList: Tool[] = [
   updateFileTool,
   moveFileTool,
   copyFileTool,
-  readCodeObjectTreeTool,
+  getDocumentOutlineTool,
+  // readCodeObjectTreeTool, // 已升级为getDocumentOutlineTool
   deleteFilesTool,
   // 命令行
   executeCommandTool,

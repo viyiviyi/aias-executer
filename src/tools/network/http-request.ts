@@ -4,7 +4,7 @@ import { Tool } from '../../core/tool-registry';
 export const httpRequestTool: Tool = {
   definition: {
     name: 'http_request',
-    description: '代理HTTP请求，不响应二进制流',
+    description: '直接发起http请求',
     parameters: {
       type: 'object',
       properties: {
@@ -79,7 +79,7 @@ export const httpRequestTool: Tool = {
       '支持所有HTTP方法：GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS',
       '可以设置请求头、查询参数、请求体数据',
       '支持JSON数据和表单数据',
-      '不响应二进制流，只返回文本数据',
+      '可用于调用公共接口或用于测试api',
       '默认超时30秒，可以自定义',
       '返回详细的请求和响应信息'
     ],
