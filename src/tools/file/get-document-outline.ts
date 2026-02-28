@@ -1,9 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { ConfigManager } from '../../core/config';
-import { ToolDefinition } from '../../types';
-import yaml from 'js-yaml';
-import { Tool } from '@/core/tool-registry';
+import yaml from 'js-yaml'
+import { Tool } from '@/types/Tool';
 
 const configManager = ConfigManager.getInstance();
 
@@ -60,159 +59,71 @@ const getDocumentOutlineTool: Tool = {
         }
       },
 
-      // MCP构建器建议的元数据
-      metadata: {
-        readOnlyHint: true,      // 只读操作
-        destructiveHint: false,  // 非破坏性操作
-        idempotentHint: true,    // 幂等操作（相同输入总是相同输出）
-        openWorldHint: false,    // 不是开放世界操作
-        category: 'file',        // 文件操作类别
-        version: '1.0.0',       // 工具版本
-        tags: ['file', 'code', 'analysis', 'outline', 'structure', 'programming', 'documentation'] // 工具标签
-      },
+      required: ['success', 'result']
+    },
 
-      // 结构化输出模式
-      outputSchema: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean', description: '操作是否成功' },
-          result: {
-            type: 'object',
-            properties: {
-              outline: {
-                type: 'array',
-                description: '文档大纲项目列表',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: '项目名称' },
-                    type: { type: 'string', description: '项目类型（如function、class、property、key等）' },
-                    line: { type: 'integer', description: '所在行号' },
-                    level: { type: 'integer', description: '嵌套层级（0为根级）' },
-                    signature: { type: 'string', description: '签名信息（对于代码）' },
-                    comment: { type: 'string', description: '注释内容' },
-                    children: {
-                      type: 'array',
-                      items: { $ref: '#/properties/result/properties/outline/items' },
-                      description: '子项目列表'
-                    }
-                  },
-                  required: ['name', 'type', 'line', 'level']
-                }
-              },
-              total_items: { type: 'integer', description: '大纲项目总数' },
-              file_path: { type: 'string', description: '文件路径' },
-              file_name: { type: 'string', description: '文件名' },
-              file_extension: { type: 'string', description: '文件扩展名' },
-              file_size: { type: 'integer', description: '文件大小（字节）' },
-              last_modified: { type: 'string', description: '最后修改时间' },
-              language: { type: 'string', description: '检测到的编程语言' }
-            },
-            required: ['outline', 'total_items', 'file_path', 'file_name', 'file_extension', 'file_size', 'last_modified']
-          }
-        },
-        required: ['success', 'result']
-      },
+    // MCP构建器建议的元数据
+    metadata: {
+      readOnlyHint: true,      // 只读操作
+      destructiveHint: false,  // 非破坏性操作
+      idempotentHint: true,    // 幂等操作（相同输入总是相同输出）
+      openWorldHint: false,    // 不是开放世界操作
+      category: 'file',        // 文件操作类别
+      version: '1.0.0',       // 工具版本
+      tags: ['file', 'code', 'analysis', 'outline', 'structure', 'programming', 'documentation'] // 工具标签
+    },
 
-      // 示例用法
-      examples: [
-        {
-          description: '获取TypeScript文件的大纲',
-          parameters: { path: 'example.ts' },
-          expectedOutput: {
-            success: true,
-            result: {
-              outline: [
-                {
-                  name: 'ExampleClass',
-                  type: 'class',
-                  line: 5,
-                  level: 0,
-                  signature: 'class ExampleClass',
-                  comment: '示例类',
-                  children: [
-                    {
-                      name: 'exampleMethod',
-                      type: 'method',
-                      line: 10,
-                      level: 1,
-                      signature: 'exampleMethod(param: string): void',
-                      comment: '示例方法'
-                    }
-                  ]
+    // 结构化输出模式
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '操作是否成功' },
+        result: {
+          type: 'object',
+          properties: {
+            outline: {
+              type: 'array',
+              description: '文档大纲项目列表',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', description: '项目名称' },
+                  type: { type: 'string', description: '项目类型（如function、class、property、key等）' },
+                  line: { type: 'integer', description: '所在行号' },
+                  level: { type: 'integer', description: '嵌套层级（0为根级）' },
+                  signature: { type: 'string', description: '签名信息（对于代码）' },
+                  comment: { type: 'string', description: '注释内容' },
+                  children: {
+                    type: 'array',
+                    items: { $ref: '#/properties/result/properties/outline/items' },
+                    description: '子项目列表'
+                  }
                 },
-                {
-                  name: 'exampleFunction',
-                  type: 'function',
-                  line: 20,
-                  level: 0,
-                  signature: 'function exampleFunction(): string',
-                  comment: '示例函数'
-                }
-              ],
-              total_items: 3,
-              file_path: '/path/to/example.ts',
-              file_name: 'example.ts',
-              file_extension: '.ts',
-              file_size: 1024,
-              last_modified: '2024-01-01T00:00:00.000Z',
-              language: 'typescript'
-            }
-          }
-        },
-        {
-          description: '获取JSON文件的大纲（最多3层）',
-          parameters: { path: 'config.json' },
-          expectedOutput: {
-            success: true,
-            result: {
-              outline: [
-                {
-                  name: 'app',
-                  type: 'object',
-                  line: 2,
-                  level: 0,
-                  children: [
-                    {
-                      name: 'name',
-                      type: 'property',
-                      line: 3,
-                      level: 1,
-                      signature: '"name": "MyApp"'
-                    },
-                    {
-                      name: 'version',
-                      type: 'property',
-                      line: 4,
-                      level: 1,
-                      signature: '"version": "1.0.0"'
-                    }
-                  ]
-                }
-              ],
-              total_items: 3,
-              file_path: '/path/to/config.json',
-              file_name: 'config.json',
-              file_extension: '.json',
-              file_size: 512,
-              last_modified: '2024-01-01T00:00:00.000Z',
-              language: 'json'
-            }
-          }
+                required: ['name', 'type', 'line', 'level']
+              }
+            },
+            total_items: { type: 'integer', description: '大纲项目总数' },
+            file_path: { type: 'string', description: '文件路径' },
+            file_name: { type: 'string', description: '文件名' },
+            file_extension: { type: 'string', description: '文件扩展名' },
+            file_size: { type: 'integer', description: '文件大小（字节）' },
+            last_modified: { type: 'string', description: '最后修改时间' },
+            language: { type: 'string', description: '检测到的编程语言' }
+          },
+          required: ['outline', 'total_items', 'file_path', 'file_name', 'file_extension', 'file_size', 'last_modified']
         }
-      ],
-
-      // 使用指南
-      guidelines: [
-        '支持多种编程语言：c#、java、javascript、typescript、python、c、c++、go、kotlin、html、jsx',
-        '支持结构化数据格式：json、yaml（最多读取3层）',
-        '返回详细的行号信息，便于代码定位',
-        '包含嵌套层级信息，便于理解代码结构',
-        '自动检测文件类型和编程语言'
-      ],
+      },
       required: ['path']
-    }
-  } as ToolDefinition,
+    },
+    // 使用指南
+    guidelines: [
+      '支持多种编程语言：c#、java、javascript、typescript、python、c、c++、go、kotlin、html、jsx',
+      '支持结构化数据格式：json、yaml（最多读取3层）',
+      '返回详细的行号信息，便于代码定位',
+      '包含嵌套层级信息，便于理解代码结构',
+      '自动检测文件类型和编程语言'
+    ],
+  },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const {

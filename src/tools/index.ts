@@ -1,4 +1,5 @@
-import { Tool, ToolRegistry } from '../core/tool-registry';
+import { ToolRegistry } from '../core/tool-registry';
+import { Tool } from '@/types/Tool';
 // 浏览器工具
 import {
   openBrowserTool,

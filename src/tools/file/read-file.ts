@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import { ConfigManager } from '../../core/config';
-import { Tool } from '../../core/tool-registry';
 import { FileErrors, ParameterErrors, validateParameters } from '../../core/error-utils';
+import { Tool } from '@/types/Tool';
 
 const configManager = ConfigManager.getInstance();
 

@@ -1,8 +1,8 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { ConfigManager } from '../../core/config';
-import { Tool } from '../../core/tool-registry';
 import path from 'path';
+import { Tool } from '@/types/Tool';
 
 const execAsync = promisify(exec);
 const configManager = ConfigManager.getInstance();

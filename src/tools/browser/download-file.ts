@@ -1,10 +1,12 @@
-import { Tool } from '../../core/tool-registry';
-import { BrowserManager } from './browser-manager';
+import { BrowserManager } from '../../core/browser-manager';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { ConfigManager } from '../../core/config';
+import { Tool } from '@/types/Tool';
 
 const browserManager = BrowserManager.getInstance();
+const configManager = ConfigManager.getInstance();
 
 export const downloadFileTool: Tool = {
   definition: {
@@ -99,7 +101,7 @@ export const downloadFileTool: Tool = {
     const targetDirectory = parameters.target_directory || '.';
     const customFilename = parameters.filename;
     const timeout = parameters.timeout || 60;
-
+    const config = configManager.getConfig();
     if (!url) {
       throw new Error('url参数不能为空');
     }
@@ -115,8 +117,7 @@ export const downloadFileTool: Tool = {
     if (!session) {
       throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 open_browser 打开浏览器`);
     }
-
-    const page = session.page;
+    const page = await session.browser.newPage();
     let downloadPath: string | null = null;
     let originalFilename: string | null = null;
 
@@ -133,7 +134,7 @@ export const downloadFileTool: Tool = {
 
           try {
             // 获取建议的文件名
-            const suggestedFilename = download.suggestedFilename();
+            const suggestedFilename = (Date.now() + customFilename) || (Date.now() + '.tmp');
 
             // 创建临时下载目录
             const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playwright-downloads-'));
@@ -194,7 +195,7 @@ export const downloadFileTool: Tool = {
         await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
         // 等待下载开始
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(20000);
       }
 
       // 等待下载完成
@@ -208,7 +209,7 @@ export const downloadFileTool: Tool = {
       // 确保目标目录存在
       const fullTargetDir = path.isAbsolute(targetDirectory)
         ? targetDirectory
-        : path.join(process.cwd(), targetDirectory);
+        : path.join(process.cwd(), config.workspaceDir, targetDirectory);
 
       if (!fs.existsSync(fullTargetDir)) {
         fs.mkdirSync(fullTargetDir, { recursive: true });
@@ -228,7 +229,7 @@ export const downloadFileTool: Tool = {
 
       // 获取文件信息
       const fileStats = fs.statSync(targetFilePath);
-
+      page.close();
       return {
         success: true,
         session_id: browserId,

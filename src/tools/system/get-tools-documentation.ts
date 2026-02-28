@@ -1,14 +1,14 @@
 import fs from 'fs/promises';
-import { ToolDefinition } from '../../types';
 import { ConfigManager } from '../../core/config';
 import os from 'os';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { Tool } from '@/types/Tool';
 
 const execAsync = promisify(exec);
 
-export const getToolsDocumentationTool = {
+export const getToolsDocumentationTool: Tool = {
   definition: {
     name: 'get_tools_documentation',
     description: '获取工具使用建议文档，包含操作系统基本信息、当前时间、工作空间绝对路径（工作前必看这个）',
@@ -44,7 +44,7 @@ export const getToolsDocumentationTool = {
       '包含操作系统基本信息、当前时间、工作空间路径',
     ],
 
-  } as ToolDefinition,
+  },
 
   execute: async (): Promise<any> => {
     try {

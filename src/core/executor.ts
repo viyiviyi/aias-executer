@@ -1,6 +1,7 @@
-import { ToolDefinition, ToolExecutionResult, OpenAIFunctionCall, ToolCallRequest } from '../types';
+import { ToolExecutionResult, OpenAIFunctionCall, ToolCallRequest } from '../types';
 import { ToolRegistry } from './tool-registry';
 import { PasswordManager } from './password-manager';
+import { ToolDefinition } from '@/types/ToolDefinition';
 
 export class ToolExecutor {
   private toolRegistry: ToolRegistry;
@@ -42,7 +43,7 @@ export class ToolExecutor {
     if ('function' in request) {
       const functionData = request.function;
       let parameters: Record<string, any>;
-      
+
       if (typeof functionData.arguments === 'string') {
         try {
           parameters = JSON.parse(functionData.arguments);

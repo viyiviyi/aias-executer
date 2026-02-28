@@ -1,12 +1,12 @@
-import { Tool } from '../../core/tool-registry';
-import { BrowserManager } from './browser-manager';
+import { Tool } from '@/types/Tool';
+import { BrowserManager } from '../../core/browser-manager';
 
 const browserManager = BrowserManager.getInstance();
 
 // 配置：需要包含的属性（移除style，因为我们会单独处理有用的样式属性）
 const INCLUDE_ATTRIBUTES = [
   'id',
-  'class',
+  // 'class',
   'type',
   'name',
   'value',
@@ -25,6 +25,8 @@ const INCLUDE_ATTRIBUTES = [
   'contenteditable',
   'draggable',
   'hidden',
+  'src',
+  'href'
 ] as const;
 
 // 配置：事件属性
@@ -237,7 +239,7 @@ export const getPageContentTool: Tool = {
       },
       required: [],
     },
-    
+
     // MCP构建器建议的元数据
     metadata: {
       readOnlyHint: true,      // 只读操作
@@ -248,7 +250,7 @@ export const getPageContentTool: Tool = {
       version: '1.0.0',       // 工具版本
       tags: ['browser', 'page', 'content', 'dom', 'scraping'] // 工具标签
     },
-    
+
     // 结构化输出模式
     outputSchema: {
       type: 'object',
@@ -268,7 +270,7 @@ export const getPageContentTool: Tool = {
       },
       required: ['success', 'session_id', 'page_info', 'dom_tree']
     },
-    
+
     // 使用指南
     guidelines: [
       '只有最后一次查看的页面在上下文可见',
@@ -383,6 +385,8 @@ export const getPageContentTool: Tool = {
             tagName === 'button' ||
             tagName === 'input' ||
             tagName === 'textarea' ||
+            tagName === 'a' ||
+            tagName === 'img' ||
             tagName === 'select'
           ) {
             return true;
@@ -435,7 +439,6 @@ export const getPageContentTool: Tool = {
               if (value !== defaultValue) {
                 // 特殊处理一些属性值的格式
                 let displayValue = value;
-
                 // 只显cursor 
                 if (
                   prop == 'cursor' &&
@@ -468,6 +471,9 @@ export const getPageContentTool: Tool = {
                 if (match) {
                   attrs.push(`src=data:image/${match[1]};base64,...`);
                 }
+              }
+              else if (attrName === 'href') {
+                attrs.push(`href=${value}`);
               }
               // 如果是class，清除一些特定格式的css
               else if (attrName == 'class') {
@@ -508,8 +514,8 @@ export const getPageContentTool: Tool = {
             });
 
           if (isPositionElement) {
-            attrs.push(`width=${Math.round(rect.width)}`);
-            attrs.push(`height=${Math.round(rect.height)}`);
+            attrs.push(`w=${Math.round(rect.width)}`);
+            attrs.push(`h=${Math.round(rect.height)}`);
             attrs.push(`x=${Math.round(rect.left + window.scrollX)}`);
             attrs.push(`y=${Math.round(rect.top + window.scrollY)}`);
           }

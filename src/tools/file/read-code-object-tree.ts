@@ -1,7 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { ConfigManager } from '../../core/config';
-import { ToolDefinition } from '../../types';
 
 const configManager = ConfigManager.getInstance();
 
@@ -168,7 +167,7 @@ const readCodeObjectTreeTool = {
       ],
       required: ['path']
     }
-  } as ToolDefinition,
+  },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const {

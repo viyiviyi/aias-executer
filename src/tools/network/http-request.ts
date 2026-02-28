@@ -1,5 +1,5 @@
+import { Tool } from '@/types/Tool';
 import axios, { AxiosRequestConfig } from 'axios';
-import { Tool } from '../../core/tool-registry';
 
 export const httpRequestTool: Tool = {
   definition: {

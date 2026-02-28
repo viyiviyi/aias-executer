@@ -1,7 +1,8 @@
-import { ToolDefinition } from '../../types';
+
+import { Tool } from '@/types/Tool';
 import { PasswordManager } from '../../core/password-manager';
 
-export const getPasswordsInfoTool = {
+export const getPasswordsInfoTool: Tool = {
   definition: {
     name: 'get_passwords_info',
     description: '获取所有可用的账号密码和对应的占位符信息',
@@ -14,7 +15,7 @@ export const getPasswordsInfoTool = {
     guidelines: [
       '用于重启当前执行tool的服务，用于在维护自身代码时安全的重启',
     ],
-  } as ToolDefinition,
+  },
 
   execute: async (): Promise<any> => {
     try {

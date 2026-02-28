@@ -7,4 +7,4 @@ export { browserConfigTool } from './browser-config-tool';
 export { downloadFileTool } from './download-file';
 
 // 浏览器管理器导出
-export { BrowserManager } from './browser-manager';
+export { BrowserManager } from '../../core/browser-manager';

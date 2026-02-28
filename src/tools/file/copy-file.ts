@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { ConfigManager } from '../../core/config';
-import { Tool } from '../../core/tool-registry';
+import { Tool } from '@/types/Tool';
 
 const configManager = ConfigManager.getInstance();
 

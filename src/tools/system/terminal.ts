@@ -2,8 +2,8 @@ import { spawn } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { platform } from 'os';
 import { ConfigManager } from '../../core/config';
-import { Tool } from '../../core/tool-registry';
 import { TerminalInfo } from '../../types';
+import { Tool } from '@/types/Tool';
 
 const configManager = ConfigManager.getInstance();
 

@@ -1,9 +1,6 @@
-import { ToolDefinition } from '../types';
+import { Tool } from "@/types/Tool";
+import { ToolDefinition } from "@/types/ToolDefinition";
 
-export interface Tool {
-  definition: ToolDefinition;
-  execute: (parameters: Record<string, any>) => Promise<any>;
-}
 
 export class ToolRegistry {
   private static instance: ToolRegistry;
