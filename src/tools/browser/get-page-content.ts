@@ -269,44 +269,9 @@ export const getPageContentTool: Tool = {
       required: ['success', 'session_id', 'page_info', 'dom_tree']
     },
     
-    // 示例用法
-    examples: [
-      {
-        description: '获取当前页面内容',
-        parameters: { browser_id: 'default' },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          page_info: {
-            title: '示例页面',
-            url: 'https://example.com',
-            root_selector: ''
-          },
-          dom_tree: '- HTML:\n  - HEAD:\n    - TITLE: 示例页面\n  - BODY:\n    - H1: 欢迎来到示例页面'
-        }
-      },
-      {
-        description: '获取页面特定区域的内容',
-        parameters: { 
-          browser_id: 'default',
-          root_selector: '#main-content'
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          page_info: {
-            title: '示例页面',
-            url: 'https://example.com',
-            root_selector: '#main-content'
-          },
-          dom_tree: '- DIV [id=main-content]:\n  - H2: 主要内容\n  - P: 这是主要内容区域'
-        }
-      }
-    ],
-    
     // 使用指南
     guidelines: [
-      '只返回一次结果，需要的信息需自行整理记录在上下文',
+      '只有最后一次查看的页面在上下文可见',
       '默认不显示不可见的DOM元素',
       '可以指定根选择器来获取特定区域的内容',
       '支持自定义包含的属性和事件属性',

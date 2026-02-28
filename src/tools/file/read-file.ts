@@ -57,43 +57,6 @@ export const readFileTool: Tool = {
       required: ['content', 'total_lines', 'start_line', 'end_line', 'encoding']
     },
     
-    // 示例用法
-    examples: [
-      {
-        description: '读取整个文件',
-        parameters: { path: 'example.txt' },
-        expectedOutput: {
-          content: '文件内容...',
-          total_lines: 10,
-          start_line: 1,
-          end_line: 10,
-          encoding: 'utf-8'
-        }
-      },
-      {
-        description: '读取文件的部分行',
-        parameters: { path: 'example.txt', start_line: 5, end_line: 8 },
-        expectedOutput: {
-          content: '第5-8行内容...',
-          total_lines: 10,
-          start_line: 5,
-          end_line: 8,
-          encoding: 'utf-8'
-        }
-      },
-      {
-        description: '从末尾开始读取',
-        parameters: { path: 'example.txt', start_line: -5 },
-        expectedOutput: {
-          content: '最后5行内容...',
-          total_lines: 10,
-          start_line: 6,
-          end_line: 10,
-          encoding: 'utf-8'
-        }
-      }
-    ],
-    
     // 使用指南
     guidelines: [
       '文件大小受配置中的maxFileSize限制',

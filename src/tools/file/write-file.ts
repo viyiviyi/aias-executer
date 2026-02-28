@@ -59,39 +59,6 @@ export const writeFileTool: Tool = {
       required: ['success', 'result', 'path', 'char_count', 'line_count']
     },
 
-    // 示例用法
-    examples: [
-      {
-        description: '创建新文件',
-        parameters: {
-          path: 'new-file.txt',
-          content: '这是新文件的内容\n第二行内容'
-        },
-        expectedOutput: {
-          success: true,
-          result: '文件写入成功',
-          path: 'new-file.txt',
-          char_count: 23,
-          line_count: 2
-        }
-      },
-      {
-        description: '追加内容到现有文件',
-        parameters: {
-          path: 'existing-file.txt',
-          content: '追加的内容',
-          append: true
-        },
-        expectedOutput: {
-          success: true,
-          result: '文件写入成功',
-          path: 'existing-file.txt',
-          char_count: 5,
-          line_count: 1
-        }
-      }
-    ],
-
     // 使用指南
     guidelines: [
       '如果文件已存在且append为false，则会覆盖原文件',

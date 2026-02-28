@@ -34,81 +34,14 @@ export const getToolsDocumentationTool = {
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
         result: { type: 'string', description: '工具文档内容' },
-        system_info: {
-          type: 'object',
-          properties: {
-            platform: { type: 'string', description: '操作系统平台' },
-            arch: { type: 'string', description: '系统架构' },
-            type: { type: 'string', description: '系统类型' },
-            release: { type: 'string', description: '系统版本' },
-            hostname: { type: 'string', description: '主机名' },
-            cpus: { type: 'integer', description: 'CPU核心数' },
-            totalMemory: { type: 'string', description: '总内存' },
-            freeMemory: { type: 'string', description: '可用内存' },
-            uptime: { type: 'string', description: '运行时间' }
-          },
-          required: ['platform', 'arch', 'type', 'release', 'cpus', 'totalMemory', 'freeMemory']
-        },
-        environment_info: {
-          type: 'object',
-          properties: {
-            current_time: { type: 'string', description: '当前时间' },
-            utc_time: { type: 'string', description: 'UTC时间' },
-            launch_directory: { type: 'string', description: '启动目录' },
-            service_port: { type: 'integer', description: '服务端口' },
-            workspace_dir: { type: 'string', description: '工作目录' },
-            node_version: { type: 'string', description: 'Node.js版本' },
-            package_manager: { type: 'string', description: '包管理器' },
-            package_manager_version: { type: 'string', description: '包管理器版本' },
-            process_id: { type: 'integer', description: '进程ID' }
-          },
-          required: ['current_time', 'utc_time', 'launch_directory', 'service_port', 'workspace_dir', 'node_version', 'process_id']
-        }
       },
       required: ['success', 'result']
     },
-
-    // 示例用法
-    examples: [
-      {
-        description: '获取工具文档',
-        parameters: {},
-        expectedOutput: {
-          success: true,
-          result: '# 重要信息\n\n## 系统信息\n- **操作系统**: Windows_NT win32 x64\n- **系统版本**: 10.0.19045\n- **总内存**: 16 GB\n- **可用内存**: 8 GB\n\n## 环境信息\n- **当前时间**: 2024/01/01 12:00:00 UTC: 2024-01-01T12:00:00.000Z\n- **启动目录**: /path/to/project\n- **服务端口**: 3000\n- **工作目录**: /path/to/workspace\n- **Node.js版本**: v18.17.0\n- **包管理器**: yarn 1.22.19\n- **进程ID**: 1234',
-          system_info: {
-            platform: 'win32',
-            arch: 'x64',
-            type: 'Windows_NT',
-            release: '10.0.19045',
-            hostname: 'DESKTOP-ABC123',
-            cpus: 8,
-            totalMemory: '16 GB',
-            freeMemory: '8 GB',
-            uptime: '24 小时'
-          },
-          environment_info: {
-            current_time: '2024/01/01 12:00:00',
-            utc_time: '2024-01-01T12:00:00.000Z',
-            launch_directory: '/path/to/project',
-            service_port: 3000,
-            workspace_dir: '/path/to/workspace',
-            node_version: 'v18.17.0',
-            package_manager: 'yarn',
-            package_manager_version: '1.22.19',
-            process_id: 1234
-          }
-        }
-      }
-    ],
 
     // 使用指南
     guidelines: [
       '工作前必看此文档，了解系统环境和工具使用建议',
       '包含操作系统基本信息、当前时间、工作空间路径',
-      '提供工具使用原则和最佳实践',
-      '动态加载文档内容，支持自定义',
-      '返回结构化系统信息和环境信息'
     ],
 
   } as ToolDefinition,

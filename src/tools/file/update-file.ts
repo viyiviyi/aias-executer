@@ -78,98 +78,13 @@ export const updateFileTool: Tool = {
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
         path: { type: 'string', description: '文件路径' },
-        original_line_count: { type: 'integer', description: '原始行数' },
-        new_line_count: { type: 'integer', description: '新行数' },
-        changes: {
+        changed_code_context: {
           type: 'array',
-          description: '变更列表',
-          items: {
-            type: 'object',
-            properties: {
-              type: { type: 'string', enum: ['insert', 'delete'], description: '变更类型' },
-              original_line: { type: 'integer', description: '原始行号' },
-              line_count: { type: 'integer', description: '涉及的行数' },
-              content_preview: { type: 'string', description: '内容预览' }
-            },
-            required: ['type', 'original_line', 'line_count']
-          }
+          description: '被修改行加前后3行，用于展示修改结果，如果多个变更在同一个范围，会合并成一块展示',
         },
-        line_mapping: {
-          type: 'array',
-          description: '行号映射',
-          items: {
-            type: 'object',
-            properties: {
-              original_line: { type: 'integer', description: '原始行号' },
-              new_line: { type: 'integer', description: '新行号' },
-              operation: { type: 'string', enum: ['insert', 'delete', 'unchanged'], description: '操作类型' },
-              content: { type: 'string', description: '内容' }
-            },
-            required: ['original_line', 'new_line', 'operation']
-          }
-        }
       },
       required: ['success', 'path', 'original_line_count', 'new_line_count', 'changes']
     },
-
-    // 示例用法
-    examples: [
-      {
-        description: '在文件第5行前插入内容',
-        parameters: {
-          path: 'example.txt',
-          updates: [
-            {
-              operation: 'insert',
-              start_line_index: 5,
-              insert_content: '这是新插入的内容\n第二行新内容'
-            }
-          ]
-        },
-        expectedOutput: {
-          success: true,
-          path: 'example.txt',
-          original_line_count: 10,
-          new_line_count: 12,
-          changes: [
-            {
-              type: 'insert',
-              original_line: 5,
-              line_count: 2,
-              content_preview: '这是新插入的内容...'
-            }
-          ]
-        }
-      },
-      {
-        description: '删除文件第3-5行',
-        parameters: {
-          path: 'example.txt',
-          updates: [
-            {
-              operation: 'delete',
-              start_line_index: 3,
-              del_line_count: 3
-            }
-          ]
-        },
-        expectedOutput: {
-          success: true,
-          path: 'example.txt',
-          original_line_count: 10,
-          new_line_count: 7,
-          changes: [
-            {
-              type: 'delete',
-              original_line: 3,
-              line_count: 3,
-              content_preview: '被删除的内容...'
-            }
-          ]
-        }
-      }
-    ],
-
     // 使用指南
     guidelines: [
       '支持批量操作，按原始行号从后往前处理',

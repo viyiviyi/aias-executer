@@ -67,51 +67,6 @@ export const closeBrowserTool: Tool = {
       required: ['success', 'message']
     },
     
-    // 示例用法
-    examples: [
-      {
-        description: '关闭默认浏览器会话',
-        parameters: { browser_id: 'default' },
-        expectedOutput: {
-          success: true,
-          message: '已关闭浏览器会话: default',
-          session_id: 'default',
-          closed: true,
-          delete_data: false,
-          remaining_sessions: 0,
-          remaining_session_ids: []
-        }
-      },
-      {
-        description: '关闭所有浏览器会话',
-        parameters: { browser_id: 'all' },
-        expectedOutput: {
-          success: true,
-          message: '已关闭所有浏览器会话（共 3 个）',
-          closed_sessions: 3,
-          remaining_sessions: 0,
-          force_kill: false,
-          delete_data: false
-        }
-      },
-      {
-        description: '关闭会话并删除数据',
-        parameters: { 
-          browser_id: 'test-session',
-          delete_data: true
-        },
-        expectedOutput: {
-          success: true,
-          message: '已关闭浏览器会话: test-session',
-          session_id: 'test-session',
-          closed: true,
-          delete_data: true,
-          remaining_sessions: 2,
-          remaining_session_ids: ['default', 'session2']
-        }
-      }
-    ],
-    
     // 使用指南
     guidelines: [
       '可以关闭单个会话或所有会话',

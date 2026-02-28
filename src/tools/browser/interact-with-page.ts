@@ -113,68 +113,6 @@ export const interactWithPageTool: Tool = {
       required: ['success', 'session_id', 'action', 'result', 'page_state', 'timestamp']
     },
 
-    // 示例用法
-    examples: [
-      {
-        description: '点击页面元素',
-        parameters: {
-          browser_id: 'default',
-          action: 'click',
-          selector: '#submit-button'
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          action: 'click',
-          result: { message: '已点击元素: #submit-button' },
-          page_state: {
-            url: 'https://example.com/submitted',
-            title: '提交成功'
-          },
-          timestamp: '2024-01-01T00:00:00.000Z'
-        }
-      },
-      {
-        description: '在输入框中填写文本',
-        parameters: {
-          browser_id: 'default',
-          action: 'fill',
-          selector: '#search-input',
-          text: '人工智能'
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          action: 'fill',
-          result: { message: '已填充 #search-input 内容: 人工智能' },
-          page_state: {
-            url: 'https://example.com/search',
-            title: '搜索页面'
-          },
-          timestamp: '2024-01-01T00:00:00.000Z'
-        }
-      },
-      {
-        description: '导航到新页面',
-        parameters: {
-          browser_id: 'default',
-          action: 'goto',
-          url: 'https://newsite.com'
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          action: 'goto',
-          result: { message: '已导航到: https://newsite.com' },
-          page_state: {
-            url: 'https://newsite.com/',
-            title: '新网站'
-          },
-          timestamp: '2024-01-01T00:00:00.000Z'
-        }
-      }
-    ],
-
     // 使用指南
     guidelines: [
       '支持多种交互操作：点击、填写、悬停、选择等',

@@ -53,7 +53,7 @@ export const listDirectoryTool: Tool = {
       },
       required: ['path']
     },
-    
+
     // MCP构建器建议的元数据
     metadata: {
       readOnlyHint: true,      // 只读操作
@@ -64,14 +64,14 @@ export const listDirectoryTool: Tool = {
       version: '1.0.0',       // 工具版本
       tags: ['file', 'directory', 'list', 'explore'] // 工具标签
     },
-    
+
     // 结构化输出模式
     outputSchema: {
       type: 'object',
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
-        result: { 
-          type: 'array', 
+        result: {
+          type: 'array',
           description: '目录内容列表',
           items: {
             type: 'object',
@@ -85,48 +85,13 @@ export const listDirectoryTool: Tool = {
               wordCount: { type: 'integer', description: '字数统计' },
               lineCount: { type: 'integer', description: '行数统计' }
             },
-            required: ['name', 'type', 'size', 'modified']
+            required: ['name', 'fullPath', 'type', 'size', 'modified']
           }
-        },
-        path: { type: 'string', description: '查询的目录路径' },
-        recursive: { type: 'boolean', description: '是否递归查询' },
-        count: { type: 'integer', description: '项目总数' }
+        }
       },
-      required: ['success', 'result', 'path', 'count']
+      required: ['success', 'result']
     },
-    
-    // 示例用法
-    examples: [
-      {
-        description: '列出当前目录内容',
-        parameters: { path: '.' },
-        expectedOutput: {
-          success: true,
-          result: [
-            { name: 'file1.txt', type: 'file', size: 1024, modified: '2024-01-01T00:00:00.000Z' },
-            { name: 'folder1', type: 'directory', size: 0, modified: '2024-01-01T00:00:00.000Z' }
-          ],
-          path: '.',
-          count: 2
-        }
-      },
-      {
-        description: '递归列出目录树',
-        parameters: { path: '.', recursive: true },
-        expectedOutput: {
-          success: true,
-          result: [
-            { name: 'file1.txt', type: 'file', size: 1024, modified: '2024-01-01T00:00:00.000Z', depth: 0 },
-            { name: 'folder1', type: 'directory', size: 0, modified: '2024-01-01T00:00:00.000Z', depth: 0 },
-            { name: 'subfile.txt', type: 'file', size: 512, modified: '2024-01-01T00:00:00.000Z', depth: 1 }
-          ],
-          path: '.',
-          recursive: true,
-          count: 3
-        }
-      }
-    ],
-    
+
     // 使用指南
     guidelines: [
       '默认跳过隐藏文件和常见开发目录（如node_modules、.git等）',
@@ -161,7 +126,7 @@ export const listDirectoryTool: Tool = {
     if (!stats.isDirectory()) {
       throw FileErrors.invalidType(dirPath, ['directory']);
     }
-    
+
     if (recursive) {
       const result = await listDirectoryRecursive(resolvedPath, originalPath, skipHidden, skipDirs, countStats);
       return {
@@ -179,7 +144,7 @@ export const listDirectoryTool: Tool = {
 };
 
 // 辅助函数 - 计算文件字数和行数
-async function calculateFileStats(filePath: string): Promise<{wordCount: number, lineCount: number}> {
+async function calculateFileStats(filePath: string): Promise<{ wordCount: number, lineCount: number }> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     const lineCount = content.split('\n').length;
@@ -198,7 +163,7 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
   const result: DirectoryItem[] = [];
   for (const item of items) {
     const itemName = item.name;
-    
+
     // 跳过隐藏文件/目录
     if (skipHidden && itemName.startsWith('.')) {
       continue;
@@ -216,7 +181,7 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
     const relativePath = path.relative(dirPath, fullPath);
     // 如果相对路径为空（当前目录），使用文件名
     const displayPath = relativePath === '' ? itemName : relativePath;
-    
+
     const itemInfo: DirectoryItem = {
       name: itemName,
       fullPath: displayPath,
@@ -229,7 +194,7 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
       itemInfo.wordCount = wordCount;
       itemInfo.lineCount = lineCount;
     }
-    
+
     result.push(itemInfo);
   }
 
@@ -271,7 +236,7 @@ async function listDirectoryRecursive(dirPath: string, originalPath: string, ski
       const relativePath = path.relative(dirPath, fullPath);
       // 如果相对路径为空（当前目录），使用文件名
       const displayPath = relativePath === '' ? itemName : relativePath;
-      
+
       const itemInfo: DirectoryItem = {
         name: itemName,
         fullPath: displayPath,
@@ -280,13 +245,13 @@ async function listDirectoryRecursive(dirPath: string, originalPath: string, ski
         modified: stats.mtime.toISOString(),
         depth
       };
-      
+
       if (item.isFile() && countStats) {
         const { wordCount, lineCount } = await calculateFileStats(fullPath);
         itemInfo.wordCount = wordCount;
         itemInfo.lineCount = lineCount;
       }
-      
+
       result.items.push(itemInfo);
 
       if (item.isDirectory()) {

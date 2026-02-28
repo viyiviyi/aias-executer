@@ -73,63 +73,6 @@ export const openBrowserTool: Tool = {
       required: ['success', 'session_id', 'config', 'page_info', 'message', 'sessions_count']
     },
 
-    // 示例用法
-    examples: [
-      {
-        description: '打开浏览器并导航到网站',
-        parameters: {
-          url: 'https://example.com',
-          session_name: 'default'
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          config: {
-            browser_type: 'chromium',
-            headless: false,
-            anti_detection: true,
-            user_data_dir: '/path/to/user/data',
-            stealth_enabled: true,
-            stealth_features_count: 6
-          },
-          page_info: {
-            title: '示例网站',
-            url: 'https://example.com/',
-            original_url: 'https://example.com'
-          },
-          message: '浏览器已成功打开并导航到 https://example.com',
-          sessions_count: 1
-        }
-      },
-      {
-        description: '使用自定义会话名称打开浏览器',
-        parameters: {
-          url: 'https://google.com',
-          session_name: 'search-session',
-          timeout: 60
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'search-session',
-          config: {
-            browser_type: 'chromium',
-            headless: false,
-            anti_detection: true,
-            user_data_dir: '/path/to/user/data',
-            stealth_enabled: true,
-            stealth_features_count: 6
-          },
-          page_info: {
-            title: 'Google',
-            url: 'https://www.google.com/',
-            original_url: 'https://google.com'
-          },
-          message: '浏览器已成功打开并导航到 https://google.com',
-          sessions_count: 2
-        }
-      }
-    ],
-
     // 使用指南
     guidelines: [
       '默认使用配置文件中的浏览器设置',

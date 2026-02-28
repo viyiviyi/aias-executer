@@ -70,80 +70,9 @@ export const httpRequestTool: Tool = {
           description: '响应头'
         },
         data: { type: 'string', description: '响应数据（文本格式）' },
-        request_info: {
-          type: 'object',
-          properties: {
-            url: { type: 'string', description: '请求URL' },
-            method: { type: 'string', description: 'HTTP方法' },
-            timeout: { type: 'integer', description: '超时时间（秒）' },
-            timestamp: { type: 'string', description: '请求时间戳' }
-          },
-          required: ['url', 'method', 'timestamp']
-        },
-        response_time_ms: { type: 'integer', description: '响应时间（毫秒）' }
       },
-      required: ['success', 'status', 'statusText', 'headers', 'data', 'request_info', 'response_time_ms']
+      required: ['success', 'status', 'statusText', 'headers', 'data',]
     },
-
-    // 示例用法
-    examples: [
-      {
-        description: '发送GET请求',
-        parameters: {
-          url: 'https://api.example.com/data',
-          method: 'GET',
-          timeout: 10
-        },
-        expectedOutput: {
-          success: true,
-          status: 200,
-          statusText: 'OK',
-          headers: {
-            'content-type': 'application/json',
-            'server': 'nginx'
-          },
-          data: '{"result": "success", "data": [1, 2, 3]}',
-          request_info: {
-            url: 'https://api.example.com/data',
-            method: 'GET',
-            timeout: 10,
-            timestamp: '2024-01-01T00:00:00.000Z'
-          },
-          response_time_ms: 150
-        }
-      },
-      {
-        description: '发送POST请求',
-        parameters: {
-          url: 'https://api.example.com/create',
-          method: 'POST',
-          json_data: {
-            name: 'test',
-            value: 123
-          },
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        },
-        expectedOutput: {
-          success: true,
-          status: 201,
-          statusText: 'Created',
-          headers: {
-            'content-type': 'application/json',
-            'location': '/items/123'
-          },
-          data: '{"id": 123, "name": "test", "status": "created"}',
-          request_info: {
-            url: 'https://api.example.com/create',
-            method: 'POST',
-            timeout: 30,
-            timestamp: '2024-01-01T00:00:00.000Z'
-          },
-          response_time_ms: 200
-        }
-      }
-    ],
 
     // 使用指南
     guidelines: [

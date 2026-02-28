@@ -71,33 +71,8 @@ export const browserConfigTool: Tool = {
         }
       },
       required: ['action']
-    }
-  },
 
-  async execute(parameters: Record<string, any>): Promise<any> {
-    const action = parameters.action || 'get';
-    const config = parameters.config;
-
-    try {
-      switch (action) {
-        case 'get': {
-          const currentConfig = browserManager.getConfig();
-          const sessions = browserManager.listSessions();
-          
-          return {
-            success: true,
-            action: 'get',
-            config: {
-              defaultBrowser: currentConfig.defaultBrowser,
-              defaultHeadless: currentConfig.defaultHeadless,
-              antiDetection: currentConfig.antiDetection,
-              userDataDir: currentConfig.userDataDir,
-              viewport: currentConfig.viewport,
-              userAgent: currentConfig.userAgent,
-              timeout: currentConfig.timeout,
-              maxSessions: currentConfig.maxSessions,
-              sessionTimeout: currentConfig.sessionTimeout,
-    
+    },
     // MCP构建器建议的元数据
     metadata: {
       readOnlyHint: false,      // 非只读操作（管理配置）
@@ -108,7 +83,7 @@ export const browserConfigTool: Tool = {
       version: '1.0.0',        // 工具版本
       tags: ['browser', 'config', 'management', 'settings'] // 工具标签
     },
-    
+
     // 结构化输出模式
     outputSchema: {
       type: 'object',
@@ -147,63 +122,7 @@ export const browserConfigTool: Tool = {
       },
       required: ['success', 'action', 'config', 'message', 'timestamp']
     },
-    
-    // 示例用法
-    examples: [
-      {
-        description: '获取当前浏览器配置',
-        parameters: { action: 'get' },
-        expectedOutput: {
-          success: true,
-          action: 'get',
-          config: {
-            defaultBrowser: 'chrome',
-            defaultHeadless: false,
-            antiDetection: true,
-            userDataDir: './browser-data',
-            viewport: { width: 1280, height: 720 },
-            stealthOptions: {
-              enable: true,
-              features: ['webdriver属性隐藏', '用户代理伪装', 'WebGL指纹修改']
-            },
-            maxSessions: 5,
-            sessionTimeout: 3600
-          },
-          message: '配置获取成功',
-          timestamp: '2024-01-01T00:00:00.000Z'
-        }
-      },
-      {
-        description: '更新浏览器配置',
-        parameters: {
-          action: 'update',
-          config: {
-            defaultHeadless: true,
-            viewport: { width: 1920, height: 1080 }
-          }
-        },
-        expectedOutput: {
-          success: true,
-          action: 'update',
-          config: {
-            defaultBrowser: 'chrome',
-            defaultHeadless: true,
-            antiDetection: true,
-            userDataDir: './browser-data',
-            viewport: { width: 1920, height: 1080 },
-            stealthOptions: {
-              enable: true,
-              features: ['webdriver属性隐藏', '用户代理伪装', 'WebGL指纹修改']
-            },
-            maxSessions: 5,
-            sessionTimeout: 3600
-          },
-          message: '配置更新成功',
-          timestamp: '2024-01-01T00:00:00.000Z'
-        }
-      }
-    ],
-    
+
     // 使用指南
     guidelines: [
       '支持三种操作：get（获取配置）、update（更新配置）、reload（重新加载配置）',
@@ -212,6 +131,32 @@ export const browserConfigTool: Tool = {
       '返回完整的配置信息，包括默认值和更新后的值',
       '配置更改会影响新创建的浏览器会话'
     ],
+  },
+
+  async execute(parameters: Record<string, any>): Promise<any> {
+    const action = parameters.action || 'get';
+    const config = parameters.config;
+
+    try {
+      switch (action) {
+        case 'get': {
+          const currentConfig = browserManager.getConfig();
+          const sessions = browserManager.listSessions();
+
+          return {
+            success: true,
+            action: 'get',
+            config: {
+              defaultBrowser: currentConfig.defaultBrowser,
+              defaultHeadless: currentConfig.defaultHeadless,
+              antiDetection: currentConfig.antiDetection,
+              userDataDir: currentConfig.userDataDir,
+              viewport: currentConfig.viewport,
+              userAgent: currentConfig.userAgent,
+              timeout: currentConfig.timeout,
+              maxSessions: currentConfig.maxSessions,
+              sessionTimeout: currentConfig.sessionTimeout,
+
               stealthEnabled: currentConfig.stealthOptions.enable,
               stealthFeatures: currentConfig.stealthOptions.options
             },

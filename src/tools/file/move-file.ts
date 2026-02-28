@@ -50,68 +50,9 @@ export const moveFileTool: Tool = {
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
         result: { type: 'string', description: '操作结果消息' },
-        source: { type: 'string', description: '源路径' },
-        destination: { type: 'string', description: '目标路径' },
-        overwrite: { type: 'boolean', description: '是否覆盖' },
-        create_parents: { type: 'boolean', description: '是否创建父目录' },
-        operation_type: { type: 'string', enum: ['file', 'directory'], description: '操作类型' }
       },
-      required: ['success', 'result', 'source', 'destination', 'operation_type']
+      required: ['success', 'result']
     },
-
-    // 示例用法
-    examples: [
-      {
-        description: '移动文件',
-        parameters: {
-          source: 'old-location.txt',
-          destination: 'new-location.txt'
-        },
-        expectedOutput: {
-          success: true,
-          result: '文件/目录从 old-location.txt 移动到 new-location.txt 成功',
-          source: 'old-location.txt',
-          destination: 'new-location.txt',
-          overwrite: false,
-          create_parents: true,
-          operation_type: 'file'
-        }
-      },
-      {
-        description: '移动目录',
-        parameters: {
-          source: 'old-folder',
-          destination: 'new-folder'
-        },
-        expectedOutput: {
-          success: true,
-          result: '文件/目录从 old-folder 移动到 new-folder 成功',
-          source: 'old-folder',
-          destination: 'new-folder',
-          overwrite: false,
-          create_parents: true,
-          operation_type: 'directory'
-        }
-      },
-      {
-        description: '覆盖已存在的文件',
-        parameters: {
-          source: 'new-file.txt',
-          destination: 'existing.txt',
-          overwrite: true
-        },
-        expectedOutput: {
-          success: true,
-          result: '文件/目录从 new-file.txt 移动到 existing.txt 成功',
-          source: 'new-file.txt',
-          destination: 'existing.txt',
-          overwrite: true,
-          create_parents: true,
-          operation_type: 'file'
-        }
-      }
-    ],
-
     // 使用指南
     guidelines: [
       '支持移动文件和目录',

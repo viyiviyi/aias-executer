@@ -55,6 +55,11 @@ export const executeCommandTool: Tool = {
       },
       required: ['command'],
     },
+    // 使用指南
+    guidelines: [
+      '用于执行命令行，执行前需要确定操作系统信息',
+      '请勿执行危险操作，除非用户明确要求',
+    ],
     result_use_type: 'once'
   },
 
@@ -108,9 +113,9 @@ export const executeCommandTool: Tool = {
       }
 
       // 合并错误信息，应用截断功能
-      const errorOutput = (error.stdout?.trim() || '') + 
-                         (error.stderr?.trim() ? '\n' + error.stderr.trim() : '') + 
-                         (error.message ? '\n' + error.message : '');
+      const errorOutput = (error.stdout?.trim() || '') +
+        (error.stderr?.trim() ? '\n' + error.stderr.trim() : '') +
+        (error.message ? '\n' + error.message : '');
       const truncatedErrorOutput = truncateText(errorOutput);
 
       // 返回错误信息

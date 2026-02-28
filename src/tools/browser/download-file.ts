@@ -81,57 +81,6 @@ export const downloadFileTool: Tool = {
       required: ['success', 'session_id', 'download_info', 'message']
     },
 
-    // 示例用法
-    examples: [
-      {
-        description: '直接下载文件',
-        parameters: {
-          browser_id: 'default',
-          url: 'https://example.com/file.pdf'
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          download_info: {
-            original_url: 'https://example.com/file.pdf',
-            original_filename: 'file.pdf',
-            saved_filename: 'file.pdf',
-            target_directory: '/path/to/workspace',
-            file_path: '/path/to/workspace/file.pdf',
-            file_size: 1048576,
-            file_size_human: '1.00 MB',
-            created_at: '2024-01-01T00:00:00.000Z'
-          },
-          message: '文件下载成功: file.pdf (1.00 MB)'
-        }
-      },
-      {
-        description: '通过点击元素下载文件',
-        parameters: {
-          browser_id: 'default',
-          url: 'https://example.com/download-page',
-          selector: '#download-button',
-          target_directory: './downloads',
-          filename: 'custom-name.pdf'
-        },
-        expectedOutput: {
-          success: true,
-          session_id: 'default',
-          download_info: {
-            original_url: 'https://example.com/download-page',
-            original_filename: 'document.pdf',
-            saved_filename: 'custom-name.pdf',
-            target_directory: '/path/to/workspace/downloads',
-            file_path: '/path/to/workspace/downloads/custom-name.pdf',
-            file_size: 2097152,
-            file_size_human: '2.00 MB',
-            created_at: '2024-01-01T00:00:00.000Z'
-          },
-          message: '文件下载成功: custom-name.pdf (2.00 MB)'
-        }
-      }
-    ],
-
     // 使用指南
     guidelines: [
       '可以直接下载文件或通过点击页面元素触发下载',

@@ -88,58 +88,6 @@ const readCodeTool: Tool = {
       },
       required: ['success', 'result']
     },
-
-    // 示例用法
-    examples: [
-      {
-        description: '读取整个代码文件',
-        parameters: { path: 'example.js' },
-        expectedOutput: {
-          success: true,
-          result: {
-            content: '1┆function example() {\n2┆  return "Hello";\n3┆}',
-            total_lines: 3,
-            start_line: 1,
-            end_line: 3
-          }
-        }
-      },
-      {
-        description: '读取代码文件的部分行',
-        parameters: {
-          path: 'example.js',
-          start_line: 2,
-          end_line: 3,
-          show_line_numbers: false
-        },
-        expectedOutput: {
-          success: true,
-          result: {
-            content: '  return "Hello";\n}',
-            total_lines: 3,
-            start_line: 2,
-            end_line: 3
-          }
-        }
-      },
-      {
-        description: '使用自定义行号格式',
-        parameters: {
-          path: 'example.js',
-          line_number_format: '[{line}] '
-        },
-        expectedOutput: {
-          success: true,
-          result: {
-            content: '[1] function example() {\n[2]   return "Hello";\n[3] }',
-            total_lines: 3,
-            start_line: 1,
-            end_line: 3
-          }
-        }
-      }
-    ],
-
     // 使用指南
     guidelines: [
       '专为读取代码文件设计，支持行号(1-based)显示',

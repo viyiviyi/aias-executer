@@ -9,21 +9,25 @@ export const getPasswordsInfoTool = {
       type: 'object',
       properties: {},
       required: []
-    }
+    },
+    // 使用指南
+    guidelines: [
+      '用于重启当前执行tool的服务，用于在维护自身代码时安全的重启',
+    ],
   } as ToolDefinition,
 
   execute: async (): Promise<any> => {
     try {
       const passwordManager = PasswordManager.getInstance();
       const items = passwordManager.getPasswordItems();
-      
+
       // 只返回必要的信息：占位符和描述
       const result = items.map(item => ({
         placeholder: item.placeholder,
         description: item.description || '无描述',
         sensitive: item.sensitive || false
       }));
-      
+
       return {
         success: true,
         items: result,
