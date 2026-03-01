@@ -13,7 +13,7 @@ const browserManager = BrowserManager.getInstance();
 
 // 参数类型定义
 interface GetPageContentParameters {
-  browser_id?: string;
+  browser_session_id?: string;
   show_no_visibility?: boolean;
   timeout?: number;
   include_attributes?: string[];
@@ -144,7 +144,7 @@ export const getPageContentTool: Tool = {
   },
 
   async execute(parameters: GetPageContentParameters): Promise<GetPageContentResult> {
-    const browserId = parameters.browser_id || 'default';
+    const browserId = parameters.browser_session_id || 'default';
     const timeout = parameters.timeout || 30;
     const show_no_visibility = parameters.show_no_visibility || false;
     const includeAttributes = parameters.include_attributes || [...INCLUDE_ATTRIBUTES];
