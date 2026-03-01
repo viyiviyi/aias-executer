@@ -405,7 +405,7 @@ export const getPageContentTool: Tool = {
             const text = node.textContent?.trim();
             if (text && text.length > 0) {
               // lines.push(`${indent}- TEXT： ${text}:`);
-              lines.push({ tag: text, text });
+              lines.push({ tag: 'text', text });
             }
           } else if (node.nodeType === Node.ELEMENT_NODE) {
             const element = node as Element;
