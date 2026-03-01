@@ -63,7 +63,7 @@ export const writeFileTool: Tool = {
     guidelines: [
       '如果文件已存在且append为false，则会覆盖原文件',
       '使用append: true可以在文件末尾追加内容',
-      '会自动创建不存在的目录',
+      '只能创建文件，会自动创建不存在的目录',
       '支持各种编码格式，默认为utf-8'
     ],
   },
