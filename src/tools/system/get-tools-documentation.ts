@@ -11,7 +11,7 @@ const execAsync = promisify(exec);
 export const getToolsDocumentationTool: Tool = {
   definition: {
     name: 'get_tools_documentation',
-    description: '获取工具使用建议文档，包含操作系统基本信息、当前时间、工作空间绝对路径（工作前必看这个）',
+    description: '获取工作环境，首次使用tool前先调用这个',
     parameters: {
       type: 'object',
       properties: {},
@@ -40,8 +40,7 @@ export const getToolsDocumentationTool: Tool = {
 
     // 使用指南
     guidelines: [
-      '工作前必看此文档，了解系统环境和工具使用建议',
-      '包含操作系统基本信息、当前时间、工作空间路径',
+      '获取tool运行状态和操作系统基本信息、当前时间、工作空间绝对路径',
     ],
 
   },
