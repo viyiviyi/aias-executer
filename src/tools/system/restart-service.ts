@@ -15,8 +15,8 @@ async function checkCompilation(timeout: number): Promise<{ success: boolean; er
     // 执行编译命令
     const result = await execAsync('yarn build', {
       cwd: process.cwd(),
-      env: {},
-      timeout: timeout,
+      env: { ...process.env },
+      timeout: timeout * 1000,
       encoding: 'utf-8',
     });
 
@@ -224,7 +224,7 @@ export const restartServiceTool: Tool = {
           error: '编译检查失败',
           details: compileResult.errors,
           output: compileResult.output,
-          suggestion: '修复编译错误后重试，或使用force参数跳过检查'
+          suggestion: '修复编译错误后重试'
         };
       }
       // 2. 如果仅检查，返回结果

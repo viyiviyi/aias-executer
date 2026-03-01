@@ -64,7 +64,7 @@ export const executeCommandTool: Tool = {
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const command = parameters.command;
-    const workdir = parameters.workdir || '.';
+    const workdir = parameters.workdir || configManager.getConfig().workspaceDir;
     const timeout = parameters.timeout || 300;
     const env = parameters.env || {};
 
