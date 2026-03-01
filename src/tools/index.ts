@@ -3,7 +3,6 @@ import { ToolRegistry } from '../core/tool-registry';
 // 浏览器工具
 import { browserConfigTool } from './browser/browser-config-tool';
 import { closeBrowserTool } from './browser/close-browser';
-import { downloadFileTool } from './browser/download-file';
 import { getPageContentTool } from './browser/get-page-content';
 import { interactWithPageTool } from './browser/interact-with-page';
 import { openBrowserTool } from './browser/open-browser';
@@ -65,7 +64,6 @@ const toolList: Tool[] = [
   getPageContentTool,
   interactWithPageTool,
   closeBrowserTool,
-  downloadFileTool,
   browserConfigTool,
   // 网络工具
   httpRequestTool,
