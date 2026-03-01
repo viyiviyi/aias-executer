@@ -5,7 +5,7 @@ const browserManager = BrowserManager.getInstance();
 
 export const interactWithPageTool: Tool = {
   definition: {
-    name: 'interact_with_page',
+    name: 'browser_interact_with_page',
     description: 'playwright操作浏览器，输入、点击、滚动等',
     parameters: {
       type: 'object',

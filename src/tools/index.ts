@@ -3,8 +3,8 @@ import { ToolRegistry } from '../core/tool-registry';
 // 浏览器工具
 import { browserConfigTool } from './browser/browser-config-tool';
 import { closeBrowserTool } from './browser/close-browser';
-import { getPageContentTool } from './browser/get-page-content';
-import { interactWithPageTool } from './browser/interact-with-page';
+import { getPageContentTool } from './browser/browser-get-page-content';
+import { interactWithPageTool } from './browser/browser-interact-with-page';
 import { openBrowserTool } from './browser/open-browser';
 // 文件工具
 import { readFileTool } from './file/read-file';

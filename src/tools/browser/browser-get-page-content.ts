@@ -52,17 +52,17 @@ interface GetPageContentResult {
     url: string;
     root_selector?: string;
   };
-  dom_tree: string;
+  dom_tree: any;
 }
 
 export const getPageContentTool: Tool = {
   definition: {
-    name: 'get_page_content',
+    name: 'browser_get_page_content',
     description: 'playwright读取页面dom树，只展示一次结果，需要的信息需自行整理记录在上下文',
     parameters: {
       type: 'object',
       properties: {
-        browser_id: {
+        browser_session_id: {
           type: 'string',
           description: '浏览器ID（会话名称）',
           default: 'default',
@@ -186,7 +186,7 @@ export const getPageContentTool: Tool = {
           positionElements,
           iconElements,
           usefulStyleProperties,
-          defaultStyleValues,
+          // defaultStyleValues,
           rootSelector,
         } = options;
 
@@ -197,7 +197,7 @@ export const getPageContentTool: Tool = {
           }
 
           const style = window.getComputedStyle(element);
-
+          if (!style) return false;
           // 检查display
           if (style.display === 'none') {
             return false;
@@ -283,29 +283,24 @@ export const getPageContentTool: Tool = {
 
         // 获取有用的样式属性（过滤默认值）
         const getUsefulStyleAttributes = (element: Element): string[] => {
+          if (!element) return []
           const attrs: string[] = [];
           const style = window.getComputedStyle(element);
-          const tagName = element.tagName.toLowerCase();
-
-          // 获取该元素的默认样式值
-          const elementDefaults = defaultStyleValues[tagName] || defaultStyleValues['default'];
-
+          if (!style) return []
           for (const prop of usefulStyleProperties) {
+            if (prop! in style) continue;
             const value = style[prop as keyof CSSStyleDeclaration];
-            if (value && value !== '' && value !== 'initial' && value !== 'inherit' && (!element.parentElement || value != window.getComputedStyle(element.parentElement)[prop as keyof CSSStyleDeclaration])) {
-              // 获取该属性的默认值
-              const defaultValue = elementDefaults[prop] || '';
-              // 只有当值不是默认值时才显示
-              if (value !== defaultValue) {
-                // 特殊处理一些属性值的格式
-                let displayValue = value;
-                // 只显cursor 
-                if (
-                  prop == 'cursor' &&
-                  ['pointer', 'grab', 'not-allowed'].includes(displayValue as string)
-                )
-                  attrs.push(`style.${prop}=${displayValue}`);
+            if (value && value !== '' && value !== 'initial' && value !== 'inherit') {
+              let displayValue = value;
+              if (
+                prop == 'cursor' &&
+                ['pointer', 'grab', 'not-allowed'].includes(displayValue as string)
+              ) {
+                attrs.push(`style.${prop}=${displayValue}`);
+              } else {
+                attrs.push(`style.${prop}=${displayValue}`);
               }
+
             }
           }
 
@@ -315,11 +310,9 @@ export const getPageContentTool: Tool = {
         // 获取元素属性字符串
         const getAttributesString = (element: Element): string => {
           const attrs: string[] = [];
-
           // 添加有用的样式属性（已过滤默认值）
           const styleAttrs = getUsefulStyleAttributes(element);
           attrs.push(...styleAttrs);
-
           // 处理包含的属性
           for (const attrName of includeAttributes) {
             const value = element.getAttribute(attrName);
@@ -333,7 +326,7 @@ export const getPageContentTool: Tool = {
                 }
               }
               else if (attrName === 'href') {
-                attrs.push(`href=${value}`);
+                attrs.push(`href=${decodeURIComponent(value)}`);
               }
               // 如果是class，清除一些特定格式的css
               else if (attrName == 'class') {
@@ -384,34 +377,35 @@ export const getPageContentTool: Tool = {
         };
 
         // 检查是否是图标元素
-        const isIconElement = (element: Element): boolean => {
-          const tagName = element.tagName.toLowerCase();
-          if (tagName === 'svg') {
-            return true;
-          }
+        // const isIconElement = (element: Element): boolean => {
+        //   const tagName = element.tagName.toLowerCase();
+        //   if (tagName === 'svg') {
+        //     return true;
+        //   }
 
-          // 检查类名或属性是否包含icon
-          const className = element.className?.toString().toLowerCase() || '';
-          const alt = element.getAttribute('alt')?.toLowerCase() || '';
-          const src = element.getAttribute('src')?.toLowerCase() || '';
+        //   // 检查类名或属性是否包含icon
+        //   const className = element.className?.toString().toLowerCase() || '';
+        //   const alt = element.getAttribute('alt')?.toLowerCase() || '';
+        //   const src = element.getAttribute('src')?.toLowerCase() || '';
 
-          return (
-            className.includes('icon') ||
-            alt.includes('icon') ||
-            src.includes('icon') ||
-            element.getAttribute('role') === 'img'
-          );
-        };
-
+        //   return (
+        //     className.includes('icon') ||
+        //     alt.includes('icon') ||
+        //     src.includes('icon') ||
+        //     element.getAttribute('role') === 'img'
+        //   );
+        // };
+        type Dom = { tag: string, attr?: string, child?: Dom[], text?: string };
         // 递归构建DOM树
-        const buildDomTree = (node: Node, depth: number = 0): string[] => {
-          const lines: string[] = [];
-          const indent = '  '.repeat(depth);
+        const buildDomTree = (node: Node, depth: number = 0): Dom[] => {
+          const lines: Dom[] = [];
+          // const indent = ' '.repeat(depth);
 
           if (node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent?.trim();
             if (text && text.length > 0) {
-              lines.push(`${indent}- TEXT ${text}`);
+              // lines.push(`${indent}- TEXT： ${text}:`);
+              lines.push({ tag: text, text });
             }
           } else if (node.nodeType === Node.ELEMENT_NODE) {
             const element = node as Element;
@@ -429,17 +423,17 @@ export const getPageContentTool: Tool = {
             const tagName = element.tagName.toUpperCase();
             const attrsStr = getAttributesString(element);
 
-            // 对于svg图标，不显示path
-            if (tagName === 'SVG' && isIconElement(element)) {
-              lines.push(`${indent}- ${tagName}${attrsStr}:`);
-            } else {
-              lines.push(`${indent}- ${tagName}${attrsStr}:`);
-            }
-
+            const dom: Dom = { tag: tagName, attr: attrsStr || undefined }
+            lines.push(dom)
             // 处理子节点
             for (const child of Array.from(node.childNodes)) {
               const childLines = buildDomTree(child, depth + 1);
-              lines.push(...childLines);
+              if (!dom.child) dom.child = []
+              if (childLines.length)
+                dom.child.push(...childLines)
+            }
+            if (dom.child && dom.child.length == 1) {
+              Object.assign(dom, dom.child[0])
             }
           }
 
@@ -464,7 +458,7 @@ export const getPageContentTool: Tool = {
         // 从根节点开始构建
         const treeLines = buildDomTree(rootElement);
 
-        return treeLines.join('\n');
+        return treeLines;
       }, evaluateOptions);
 
       return {
