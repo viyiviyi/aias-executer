@@ -1,14 +1,15 @@
-import { Tool } from "@/types/Tool";
-import { ToolDefinition } from "@/types/ToolDefinition";
+/**
+ * 工具注册表 - 管理所有可用工具
+ */
 
+import { Tool } from '@/types/tools/Tool';
+import { ToolDefinition } from '@/types/tools/ToolDefinition';
 
 export class ToolRegistry {
   private static instance: ToolRegistry;
   private tools: Map<string, Tool> = new Map();
 
-  private constructor() {
-    this.registerDefaultTools();
-  }
+  private constructor() {}
 
   public static getInstance(): ToolRegistry {
     if (!ToolRegistry.instance) {
@@ -17,49 +18,49 @@ export class ToolRegistry {
     return ToolRegistry.instance;
   }
 
-  // 注册工具（支持两种方式）
-  public registerTool(name: string, tool: Tool): void;
-  public registerTool(definition: ToolDefinition, execute: (parameters: Record<string, any>) => Promise<any>): void;
-  public registerTool(
-    arg1: string | ToolDefinition,
-    arg2?: Tool | ((parameters: Record<string, any>) => Promise<any>)
-  ): void {
-    if (typeof arg1 === 'string') {
-      // 第一种方式：registerTool(name, tool)
-      this.tools.set(arg1, arg2 as Tool);
-    } else {
-      // 第二种方式：registerTool(definition, execute)
-      const definition = arg1 as ToolDefinition;
-      const execute = arg2 as (parameters: Record<string, any>) => Promise<any>;
-      this.tools.set(definition.name, { definition, execute });
-    }
+  /**
+   * 注册工具
+   */
+  public registerTool(name: string, tool: Tool): void {
+    this.tools.set(name, tool);
   }
 
-  // 注销工具
-  public unregisterTool(name: string): boolean {
-    return this.tools.delete(name);
-  }
-
+  /**
+   * 获取工具
+   */
   public getTool(name: string): Tool | undefined {
     return this.tools.get(name);
   }
 
+  /**
+   * 获取所有工具定义
+   */
   public getAllToolDefinitions(): ToolDefinition[] {
-    return Array.from(this.tools.values()).map(tool => tool.definition);
+    const definitions: ToolDefinition[] = [];
+    for (const [, tool] of this.tools) {
+      definitions.push(tool.definition);
+    }
+    return definitions;
   }
 
+  /**
+   * 获取所有可用工具名称
+   */
   public getAvailableTools(): string[] {
     return Array.from(this.tools.keys());
   }
 
-  private registerDefaultTools(): void {
-    // 这里会注册所有默认工具
-    // 工具的具体实现在各自的模块中注册
+  /**
+   * 检查工具是否存在
+   */
+  public hasTool(name: string): boolean {
+    return this.tools.has(name);
   }
 
-  public registerToolsFromModule(moduleTools: Record<string, Tool>): void {
-    for (const [name, tool] of Object.entries(moduleTools)) {
-      this.registerTool(name, tool);
-    }
+  /**
+   * 清除所有工具
+   */
+  public clear(): void {
+    this.tools.clear();
   }
 }

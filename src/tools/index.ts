@@ -1,15 +1,12 @@
+import { Tool } from '../types';
 import { ToolRegistry } from '../core/tool-registry';
-import { Tool } from '@/types/Tool';
 // 浏览器工具
-import {
-  openBrowserTool,
-  getPageContentTool,
-  interactWithPageTool,
-  closeBrowserTool,
-  browserConfigTool,
-  downloadFileTool,
-} from './browser';
-
+import { browserConfigTool } from './browser/browser-config-tool';
+import { closeBrowserTool } from './browser/close-browser';
+import { downloadFileTool } from './browser/download-file';
+import { getPageContentTool } from './browser/get-page-content';
+import { interactWithPageTool } from './browser/interact-with-page';
+import { openBrowserTool } from './browser/open-browser';
 // 文件工具
 import { readFileTool } from './file/read-file';
 import { writeFileTool } from './file/write-file';
@@ -22,14 +19,15 @@ import { getDocumentOutlineTool } from './file/get-document-outline';
 import { copyFileTool } from './file/copy-file';
 
 // 系统工具
-import { executeCommandTool } from './system/command';
+// 系统工具
+import { executeCommandTool } from './system';
 import {
   createTerminalTool,
   terminalInputTool,
   readTerminalOutputTool,
   closeTerminalTool,
   listTerminalsTool,
-} from './system/terminal';
+} from './system';
 // 重启工具
 import { restartServiceTool } from './system/restart-service';
 

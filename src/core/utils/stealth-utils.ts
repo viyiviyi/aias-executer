@@ -1,5 +1,5 @@
 import { BrowserContext, Page } from 'playwright';
-import { BrowserConfig } from './browser-config';
+import { BrowserConfig } from '../browser/browser-config';
 
 export class StealthUtils {
   /**

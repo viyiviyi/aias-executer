@@ -8,7 +8,7 @@ import {
   webkit,
 } from 'playwright';
 import { BrowserConfigManager } from './browser-config';
-import { StealthUtils } from './stealth-utils';
+import { StealthUtils } from '../utils/stealth-utils';
 import * as path from 'path';
 import * as fs from 'fs';
 

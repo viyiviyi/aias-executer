@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { Tool } from '@/types/Tool';
+import { Tool } from '@/types/tools/Tool';
 
 const execAsync = promisify(exec);
 

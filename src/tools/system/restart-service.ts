@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { Tool } from '@/types/Tool';
+import { Tool } from '@/types';
 
 const execAsync = promisify(exec);
 
@@ -12,14 +12,6 @@ const execAsync = promisify(exec);
  */
 async function checkCompilation(timeout: number): Promise<{ success: boolean; errors: string[]; output: string }> {
   try {
-    // 获取execute_command工具
-    const toolRegistry = (await import('../../core/tool-registry')).ToolRegistry.getInstance();
-    const executeCommandTool = toolRegistry.getTool('execute_command');
-
-    if (!executeCommandTool) {
-      throw new Error('无法获取execute_command工具');
-    }
-
     // 执行编译命令
     const result = await execAsync('yarn build', {
       cwd: process.cwd(),

@@ -24,7 +24,7 @@ export class AutostartManager {
     // 优先使用配置的工作目录下的自启动目录
     // 如果不存在，则使用项目根目录的autostart目录
     const workspaceAutoStartDir = path.join(config.workspaceDir, autostartDirName);
-    const projectAutoStartDir = path.join(process.cwd(), 'autostart');
+    const projectAutoStartDir = path.join(config.workspaceDir, 'autostart');
     
     // 检查哪个目录存在
     if (fs.existsSync(workspaceAutoStartDir)) {

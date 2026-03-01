@@ -1,5 +1,5 @@
-import { Tool } from '@/types/Tool';
-import { BrowserManager } from '../../core/browser-manager';
+import { Tool } from '@/types/tools/Tool';
+import { BrowserManager } from '../../core/browser/browser-manager';
 
 const browserManager = BrowserManager.getInstance();
 

@@ -1,9 +1,9 @@
-import { BrowserManager } from '../../core/browser-manager';
+import { ConfigManager } from './../../core/config';
+import { BrowserManager } from '../../core/browser/browser-manager';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { ConfigManager } from '../../core/config';
-import { Tool } from '@/types/Tool';
+import { Tool } from '@/types';
 
 const browserManager = BrowserManager.getInstance();
 const configManager = ConfigManager.getInstance();

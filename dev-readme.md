@@ -24,6 +24,8 @@
 ### 运维文档
 8. **[安全和错误处理](dev-docs/06-security-and-error-handling.md)** - 安全特性、错误处理机制、监控告警
 9. **[故障排除和最佳实践](dev-docs/08-troubleshooting-and-best-practices.md)** - 常见问题解决、维护最佳实践
+### 重构文档
+10. **[工具模块重构总结](dev-docs/工具模块重构总结.md)** - 终端功能拆分、浏览器常量分离、模块化设计
 
 
 ## 开发

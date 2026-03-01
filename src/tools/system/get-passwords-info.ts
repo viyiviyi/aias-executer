@@ -1,5 +1,5 @@
 
-import { Tool } from '@/types/Tool';
+import { Tool } from '@/types/tools/Tool';
 import { PasswordManager } from '../../core/password-manager';
 
 export const getPasswordsInfoTool: Tool = {
@@ -23,7 +23,7 @@ export const getPasswordsInfoTool: Tool = {
       const items = passwordManager.getPasswordItems();
 
       // 只返回必要的信息：占位符和描述
-      const result = items.map(item => ({
+      const result = items.map((item: any) => ({
         placeholder: item.placeholder,
         description: item.description || '无描述',
         sensitive: item.sensitive || false

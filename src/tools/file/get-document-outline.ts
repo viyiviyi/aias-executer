@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { ConfigManager } from '../../core/config';
 import yaml from 'js-yaml'
-import { Tool } from '@/types/Tool';
+import { Tool } from '@/types/tools/Tool';
 
 const configManager = ConfigManager.getInstance();
 

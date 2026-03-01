@@ -1,7 +1,11 @@
-import { Config } from '../types';
+/**
+ * 配置管理器 - 管理应用程序配置
+ */
+
 import path from 'path';
 import fs from 'fs';
 import yaml from 'js-yaml';
+import { Config } from '@/types';
 
 export class ConfigManager {
   private static instance: ConfigManager;
@@ -139,6 +143,7 @@ export class ConfigManager {
 
     return resolvedPath;
   }
+
   public isTextFile(filePath: string): boolean {
     try {
       // 如果所有编码都失败，检查文件扩展名作为后备方案

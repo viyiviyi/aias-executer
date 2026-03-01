@@ -1,7 +1,7 @@
-import { ToolExecutionResult, OpenAIFunctionCall, ToolCallRequest } from '../types';
-import { ToolRegistry } from './tool-registry';
+import { ToolExecutionResult, OpenAIFunctionCall, ToolCallRequest } from '../types/tools';
 import { PasswordManager } from './password-manager';
-import { ToolDefinition } from '@/types/ToolDefinition';
+import { ToolDefinition } from '@/types/tools/ToolDefinition';
+import { ToolRegistry } from './tool-registry';
 
 export class ToolExecutor {
   private toolRegistry: ToolRegistry;

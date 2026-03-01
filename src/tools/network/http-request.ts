@@ -1,4 +1,4 @@
-import { Tool } from '@/types/Tool';
+import { Tool } from '@/types/tools/Tool';
 import axios, { AxiosRequestConfig } from 'axios';
 
 export const httpRequestTool: Tool = {
