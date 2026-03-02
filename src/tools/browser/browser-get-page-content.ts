@@ -194,11 +194,6 @@ export const getPageContentTool: Tool = {
           scroll_height?: number;
           scroll_position?: number;
         }
-        
-        interface EvaluateResult {
-          dom_tree: any;
-          scrollbar?: ScrollbarInfo;
-        }
 
         const {
           showNoVisibility,
