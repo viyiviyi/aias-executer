@@ -63,4 +63,25 @@ export class ToolRegistry {
   public clear(): void {
     this.tools.clear();
   }
+
+  /**
+   * 取消注册工具
+   */
+  public unregisterTool(name: string): boolean {
+    return this.tools.delete(name);
+  }
+
+  /**
+   * 取消注册所有匹配前缀的工具
+   */
+  public unregisterToolsByPrefix(prefix: string): string[] {
+    const removed: string[] = [];
+    for (const [name] of this.tools) {
+      if (name.startsWith(prefix)) {
+        this.tools.delete(name);
+        removed.push(name);
+      }
+    }
+    return removed;
+  }
 }

@@ -6,6 +6,7 @@ import { ConfigManager } from './core/config';
 import { registerAllTools } from './tools';
 import staticRouter from './api/static';
 import toolsRouter from './api/tools';
+import { MCPClientManager } from './core/mcp-client';
 
 // 注册所有基础工具
 registerAllTools();
@@ -98,10 +99,16 @@ async function startServer() {
   try {
     // 初始化自启动脚本管理器
     const autostartManager = AutostartManager.getInstance();
+    const mcpClient = MCPClientManager.getInstance();
+    try {
+      await mcpClient.loadConfig()
+      mcpClient.connectAllServers();
+    } catch (error) {
 
+    }
     // 加载并执行所有自启动脚本
     console.log('🚀 开始加载自启动脚本...');
-    await autostartManager.loadAllScripts();
+    autostartManager.loadAllScripts();
 
     // 然后启动HTTP服务器
     app.listen(PORT, HOST, () => {
@@ -120,24 +127,18 @@ async function startServer() {
 }
 // 进程退出时的清理逻辑
 process.on('SIGINT', async () => {
-  console.log('\n🛑 收到SIGINT信号，正在清理...');
+  console.log('\n🛑 收到SIGINT信号，正在退出...');
   try {
     const autostartManager = AutostartManager.getInstance();
     await autostartManager.cleanup();
   } catch (error) {
     console.error('清理自启动脚本失败:', error);
   }
-  console.log('👋 进程退出');
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 收到SIGTERM信号，正在清理...');
   try {
-    const autostartManager = AutostartManager.getInstance();
-    await autostartManager.cleanup();
+    const mcpClient = MCPClientManager.getInstance();
+    await mcpClient.disconnectAllServers();
   } catch (error) {
-    console.error('清理自启动脚本失败:', error);
+    console.error('关闭所有mcp服务连接失败:', error);
   }
   console.log('👋 进程退出');
   process.exit(0);

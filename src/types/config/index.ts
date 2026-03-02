@@ -5,6 +5,7 @@
 export interface Config {
   workspaceDir: string;
   maxFileSize: number;
+  workspacePath?: string;
   commandTimeout: number;
   maxTerminals: number;
   allowedCommands: string[];

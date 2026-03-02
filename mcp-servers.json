@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "./workspace"
+      ],
+      "description": "工作区文件系统操作"
+    }
+  },
+  "_comments": {
+    "usage": "MCP服务器配置，启动时自动加载并注册工具",
+    "env_vars": "替换YOUR_*_HERE占位符为实际值",
+    "disabling": "设置disabled: true可禁用特定服务器",
+    "types": "支持stdio(命令行)、http、sse三种类型",
+    "testing": "test-stdio和test-http用于测试，无需额外配置"
+  }
+}

@@ -32,15 +32,12 @@ interface PageEvaluateOptions {
   defaultStyleValues: Record<string, Record<string, string>>;
   rootSelector?: string;
 }
-interface PageEvaluateOptions {
-  showNoVisibility: boolean;
-  includeAttributes: string[];
-  eventAttributes: string[];
-  positionElements: readonly string[];
-  iconElements: readonly string[];
-  usefulStyleProperties: readonly string[];
-  defaultStyleValues: Record<string, Record<string, string>>;
-  rootSelector?: string;
+
+// 滚动条信息类型
+interface ScrollbarInfo {
+  has_scrollbar: boolean;
+  scroll_height?: number;
+  scroll_position?: number;
 }
 
 // 返回结果类型
@@ -52,6 +49,7 @@ interface GetPageContentResult {
     url: string;
     root_selector?: string;
   };
+  scrollbar?: ScrollbarInfo;
   dom_tree: any;
 }
 
@@ -126,7 +124,17 @@ export const getPageContentTool: Tool = {
           },
           required: ['title', 'url']
         },
-        dom_tree: { type: 'string', description: 'DOM树内容' }
+        dom_tree: { type: 'string', description: 'DOM树内容' },
+        scrollbar: {
+          type: 'object',
+          description: '滚动条信息',
+          properties: {
+            has_scrollbar: { type: 'boolean', description: '是否有滚动条' },
+            scroll_height: { type: 'number', description: '滚动条高度（仅当有滚动条时存在）' },
+            scroll_position: { type: 'number', description: '滚动条位置（仅当有滚动条时存在）' }
+          },
+          required: ['has_scrollbar']
+        }
       },
       required: ['success', 'session_id', 'page_info', 'dom_tree']
     },
@@ -134,10 +142,11 @@ export const getPageContentTool: Tool = {
     // 使用指南
     guidelines: [
       '只有最后一次查看的页面在上下文可见',
-      '默认不显示不可见的DOM元素',
+      '默认只显示视口内可见的DOM元素（可通过show_no_visibility参数显示所有元素）',
       '可以指定根选择器来获取特定区域的内容',
       '支持自定义包含的属性和事件属性',
-      '返回的DOM树经过优化，只包含有用的内容'
+      '返回的DOM树经过优化，只包含有用的内容',
+      '返回结果包含滚动条信息（如果有滚动条）'
     ],
 
     result_use_type: 'last',
@@ -179,6 +188,18 @@ export const getPageContentTool: Tool = {
 
       // 获取页面内容 - 优化的DOM树
       const bodyDomTree = await page.evaluate((options: PageEvaluateOptions) => {
+        // 页面内使用的类型定义
+        interface ScrollbarInfo {
+          has_scrollbar: boolean;
+          scroll_height?: number;
+          scroll_position?: number;
+        }
+        
+        interface EvaluateResult {
+          dom_tree: any;
+          scrollbar?: ScrollbarInfo;
+        }
+
         const {
           showNoVisibility,
           includeAttributes,
@@ -218,9 +239,30 @@ export const getPageContentTool: Tool = {
             return false;
           }
 
+          // 如果showNoVisibility为true，跳过视口检查
+          if (showNoVisibility) {
+            return true;
+          }
+
+          // 检查是否在视口内
+          const rect = element.getBoundingClientRect();
+          const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+          const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+          
+          // 元素完全或部分在视口内
+          const isInViewport = (
+            rect.top < viewportHeight &&
+            rect.bottom > 0 &&
+            rect.left < viewportWidth &&
+            rect.right > 0
+          );
+
+          if (!isInViewport) {
+            return false;
+          }
+
           return true;
         };
-
         // 检查元素是否有用内容
         const hasUsefulContent = (element: Element): boolean => {
           // 检查是否有文本内容
@@ -458,7 +500,36 @@ export const getPageContentTool: Tool = {
         // 从根节点开始构建
         const treeLines = buildDomTree(rootElement);
 
-        return treeLines;
+        // 获取滚动条信息
+        const getScrollbarInfo = (): ScrollbarInfo => {
+          const htmlElement = document.documentElement;
+          const bodyElement = document.body;
+          
+          // 检查是否有滚动条
+          const hasVerticalScrollbar = htmlElement.scrollHeight > htmlElement.clientHeight || 
+                                      bodyElement.scrollHeight > bodyElement.clientHeight;
+          
+          if (!hasVerticalScrollbar) {
+            return { has_scrollbar: false };
+          }
+          
+          // 获取滚动条信息
+          const scrollHeight = Math.max(htmlElement.scrollHeight, bodyElement.scrollHeight);
+          const scrollPosition = Math.max(htmlElement.scrollTop, bodyElement.scrollTop);
+          
+          return {
+            has_scrollbar: true,
+            scroll_height: scrollHeight,
+            scroll_position: scrollPosition
+          };
+        };
+
+        const scrollbarInfo = getScrollbarInfo();
+        
+        return {
+          dom_tree: treeLines,
+          scrollbar: scrollbarInfo
+        };
       }, evaluateOptions);
 
       return {
@@ -469,7 +540,8 @@ export const getPageContentTool: Tool = {
           url: url,
           root_selector: rootSelector || undefined,
         },
-        dom_tree: bodyDomTree,
+        scrollbar: bodyDomTree.scrollbar,
+        dom_tree: bodyDomTree.dom_tree,
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
