@@ -8,6 +8,7 @@ const configManager = ConfigManager.getInstance();
 export const readFileTool: Tool = {
   definition: {
     name: 'read_file',
+    groupName: '文件工具',
     description: '读取文本文件内容，支持指定文件后缀和读取行范围',
     parameters: {
       type: 'object',

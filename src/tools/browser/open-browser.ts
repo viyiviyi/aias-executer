@@ -6,6 +6,7 @@ const browserManager = BrowserManager.getInstance();
 export const openBrowserTool: Tool = {
   definition: {
     name: 'open_browser',
+    groupName: 'browser',
     description: 'playwright打开浏览器，用于访问互联网、网站、测试网页等，默认可联网',
     parameters: {
       type: 'object',

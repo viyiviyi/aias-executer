@@ -1,6 +1,7 @@
 
 export interface ToolDefinition {
     name: string;
+    groupName?: string,
     description: string;
     parameters: {
         type: 'object';

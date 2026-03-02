@@ -8,6 +8,7 @@ const configManager = ConfigManager.getInstance();
 export const copyFileTool: Tool = {
   definition: {
     name: 'copy_file',
+    groupName: '文件工具',
     description: '复制文件或目录到新位置',
     parameters: {
       type: 'object',

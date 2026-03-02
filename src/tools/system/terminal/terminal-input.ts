@@ -6,6 +6,7 @@ const terminalManager = TerminalManager.getInstance();
 export const terminalInputTool: Tool = {
   definition: {
     name: 'terminal_input',
+    groupName: '终端',
     description: '向终端输入命令并等待输出（用于交互式终端会话）',
     parameters: {
       type: 'object',

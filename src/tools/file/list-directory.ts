@@ -20,6 +20,7 @@ interface DirectoryItem {
 export const listDirectoryTool: Tool = {
   definition: {
     name: 'list_directory',
+    groupName: '文件工具',
     description: '获取目录内容，支持是否获取目录树，跳过隐藏目录和特定目录',
     parameters: {
       type: 'object',

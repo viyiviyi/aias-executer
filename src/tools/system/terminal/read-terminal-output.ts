@@ -6,6 +6,7 @@ const terminalManager = TerminalManager.getInstance();
 export const readTerminalOutputTool: Tool = {
   definition: {
     name: 'read_terminal_output',
+    groupName: '终端',
     description: '主动读取终端输出',
     parameters: {
       type: 'object',

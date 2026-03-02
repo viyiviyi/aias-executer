@@ -24,8 +24,8 @@ interface ReadCodeResult {
 const readCodeTool: Tool = {
   definition: {
     name: 'read_code',
-    description: '读取代码文件内容，支持行号显示和行范围选择。返回的内容包括行号信息。',
-
+    groupName: '文件工具',
+    description: '按行读取文件内容，返回每行内容行号和内容。',
     parameters: {
       type: 'object',
       properties: {

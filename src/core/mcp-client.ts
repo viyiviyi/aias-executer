@@ -1,9 +1,8 @@
-
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/WebSocket.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { ToolRegistry } from './tool-registry';
 import { ConfigManager } from './config';
 import path from 'path';
@@ -119,12 +118,10 @@ export class MCPClientManager {
     try {
       console.log(`🔗 正在连接MCP服务器: ${serverName}`);
 
-      const client = new Client(
-        {
-          name: 'aias-executor',
-          version: '1.0.0',
-        }
-      );
+      const client = new Client({
+        name: 'aias-executor',
+        version: '1.0.0',
+      });
 
       let transport;
 
@@ -145,7 +142,10 @@ export class MCPClientManager {
         }
       } else if (serverConfig.command) {
         // Stdio传输（命令行）
-        const env: Record<string, string> = { ...process.env, ...serverConfig.env } as Record<string, string>;
+        const env: Record<string, string> = { ...process.env, ...serverConfig.env } as Record<
+          string,
+          string
+        >;
 
         // 处理npx命令
         let command = serverConfig.command;
@@ -168,12 +168,12 @@ export class MCPClientManager {
       console.log(`✅ 连接到MCP服务器: ${serverName}, 获取到 ${tools.length} 个工具`);
 
       // 注册工具到工具注册表
+      console.log(`📝 注册工具`);
       for (const tool of tools) {
         await this.registerMCPServerTool(serverName, tool, client);
       }
 
       this.clients.set(serverName, client);
-
     } catch (error) {
       console.error(`❌ 连接MCP服务器 ${serverName} 失败:`, error);
       throw error;
@@ -193,6 +193,7 @@ export class MCPClientManager {
     const tool: Tool = {
       definition: {
         name: toolName,
+        groupName: serverName,
         description: mcpTool.description || `来自 ${serverName} MCP服务器的工具`,
         parameters: mcpTool.inputSchema || {
           type: 'object',
@@ -202,14 +203,18 @@ export class MCPClientManager {
       },
       execute: async (parameters: Record<string, any>) => {
         try {
-          console.log(`🛠️  执行MCP工具: ${toolName}`);
           const result = await client.callTool({
             name: mcpTool.name,
             arguments: parameters,
           });
 
           let resultText: string;
-          if (result.content && Array.isArray(result.content) && result.content[0] && result.content[0].text) {
+          if (
+            result.content &&
+            Array.isArray(result.content) &&
+            result.content[0] &&
+            result.content[0].text
+          ) {
             resultText = result.content[0].text;
           } else if (result.content) {
             resultText = JSON.stringify(result.content);
@@ -234,7 +239,6 @@ export class MCPClientManager {
     };
 
     this.toolRegistry.registerTool(toolName, tool);
-    console.log(`📝 注册MCP工具: ${toolName}`);
   }
 
   /**
@@ -293,7 +297,7 @@ export class MCPClientManager {
 
     for (const [serverName, serverConfig] of this.serverConfigs) {
       const connected = this.clients.has(serverName);
-      const tools = this.getMCPServerTools().filter(tool =>
+      const tools = this.getMCPServerTools().filter((tool) =>
         tool.startsWith(`${serverName}_`)
       ).length;
 

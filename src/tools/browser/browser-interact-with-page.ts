@@ -6,6 +6,7 @@ const browserManager = BrowserManager.getInstance();
 export const interactWithPageTool: Tool = {
   definition: {
     name: 'browser_interact_with_page',
+    groupName: 'browser',
     description: 'playwright操作浏览器，输入、点击、滚动等',
     parameters: {
       type: 'object',
@@ -77,13 +78,13 @@ export const interactWithPageTool: Tool = {
     },
     // MCP构建器建议的元数据
     metadata: {
-      readOnlyHint: false,      // 非只读操作（交互操作）
-      destructiveHint: true,    // 破坏性操作（可能修改页面状态）
-      idempotentHint: false,    // 非幂等操作（多次交互可能产生不同结果）
-      openWorldHint: true,      // 开放世界操作（与外部网页交互）
-      category: 'browser',      // 浏览器操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['browser', 'interact', 'click', 'fill', 'navigate', 'automation'] // 工具标签
+      readOnlyHint: false, // 非只读操作（交互操作）
+      destructiveHint: true, // 破坏性操作（可能修改页面状态）
+      idempotentHint: false, // 非幂等操作（多次交互可能产生不同结果）
+      openWorldHint: true, // 开放世界操作（与外部网页交互）
+      category: 'browser', // 浏览器操作类别
+      version: '1.0.0', // 工具版本
+      tags: ['browser', 'interact', 'click', 'fill', 'navigate', 'automation'], // 工具标签
     },
 
     // 结构化输出模式
@@ -96,21 +97,21 @@ export const interactWithPageTool: Tool = {
         result: {
           type: 'object',
           properties: {
-            message: { type: 'string', description: '操作结果消息' }
+            message: { type: 'string', description: '操作结果消息' },
           },
-          required: ['message']
+          required: ['message'],
         },
         page_state: {
           type: 'object',
           properties: {
             url: { type: 'string', description: '操作后的页面URL' },
-            title: { type: 'string', description: '操作后的页面标题' }
+            title: { type: 'string', description: '操作后的页面标题' },
           },
-          required: ['url', 'title']
+          required: ['url', 'title'],
         },
-        timestamp: { type: 'string', description: '操作时间戳' }
+        timestamp: { type: 'string', description: '操作时间戳' },
       },
-      required: ['success', 'session_id', 'action', 'result', 'page_state', 'timestamp']
+      required: ['success', 'session_id', 'action', 'result', 'page_state', 'timestamp'],
     },
 
     // 使用指南
@@ -119,9 +120,8 @@ export const interactWithPageTool: Tool = {
       '不同操作需要不同的参数组合',
       '操作后会等待页面加载完成',
       '返回操作后的页面状态信息',
-      '默认超时时间为30秒，可以自定义'
+      '默认超时时间为30秒，可以自定义',
     ],
-
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {

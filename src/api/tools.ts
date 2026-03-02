@@ -13,7 +13,7 @@ router.get('/tools', (_req, res) => {
   } catch (error: any) {
     res.status(200).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -23,20 +23,20 @@ router.post('/execute', async (req, res) => {
   try {
     const request = req.body as OpenAIFunctionCall | ToolCallRequest;
     const result = await toolExecutor.executeOpenAIFunctionCall(request);
-    
+
     // 直接返回执行结果，不添加额外包装
     if (result.success) {
       res.json(result.result);
     } else {
       res.status(200).json({
         success: false,
-        error: result.error
+        error: result.error,
       });
     }
   } catch (error: any) {
     res.status(200).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });

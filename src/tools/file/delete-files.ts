@@ -13,6 +13,7 @@ interface DeleteItem {
 export const deleteFilesTool: Tool = {
   definition: {
     name: 'delete_files',
+    groupName: '文件工具',
     description: '批量删除文件或目录，支持递归删除和强制删除',
     parameters: {
       type: 'object',

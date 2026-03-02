@@ -56,6 +56,7 @@ interface GetPageContentResult {
 export const getPageContentTool: Tool = {
   definition: {
     name: 'browser_get_page_content',
+    groupName: 'browser',
     description: 'playwright读取页面dom树，只展示一次结果，需要的信息需自行整理记录在上下文',
     parameters: {
       type: 'object',

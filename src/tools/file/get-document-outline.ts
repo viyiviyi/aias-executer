@@ -36,6 +36,7 @@ interface DocumentOutlineResult {
 const getDocumentOutlineTool: Tool = {
   definition: {
     name: 'get_document_outline',
+    groupName: '文件工具',
     description: '获取文档大纲，支持多种编程语言和文件格式。支持c#、java、js、ts、python、c、c++、go、kotlin、html、jsx、json、yaml等格式，便于快速定位代码位置。对于json和yaml文件，最多读取3层。',
 
     parameters: {

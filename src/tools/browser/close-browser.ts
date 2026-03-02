@@ -6,6 +6,7 @@ const browserManager = BrowserManager.getInstance();
 export const closeBrowserTool: Tool = {
   definition: {
     name: 'close_browser',
+    groupName: 'browser',
     description: 'playwright关闭浏览器',
     parameters: {
       type: 'object',

@@ -6,15 +6,17 @@ const browserManager = BrowserManager.getInstance();
 export const browserConfigTool: Tool = {
   definition: {
     name: 'manage_browser_config',
+    groupName: 'browser',
     description: '管理浏览器配置，包括默认浏览器、无头模式、反检测、用户数据目录等设置',
     parameters: {
       type: 'object',
       properties: {
         action: {
           type: 'string',
-          description: '要执行的操作：get（获取当前配置）、update（更新配置）、reload（重新加载配置）',
+          description:
+            '要执行的操作：get（获取当前配置）、update（更新配置）、reload（重新加载配置）',
           enum: ['get', 'update', 'reload'],
-          default: 'get'
+          default: 'get',
         },
         config: {
           type: 'object',
@@ -23,19 +25,19 @@ export const browserConfigTool: Tool = {
             defaultBrowser: {
               type: 'string',
               description: '默认浏览器类型：chrome、firefox、webkit、msedge',
-              enum: ['chrome', 'firefox', 'webkit', 'msedge']
+              enum: ['chrome', 'firefox', 'webkit', 'msedge'],
             },
             defaultHeadless: {
               type: 'boolean',
-              description: '是否默认以无头模式运行'
+              description: '是否默认以无头模式运行',
             },
             antiDetection: {
               type: 'boolean',
-              description: '是否启用反检测功能'
+              description: '是否启用反检测功能',
             },
             userDataDir: {
               type: 'string',
-              description: '用户数据目录路径（相对或绝对路径）'
+              description: '用户数据目录路径（相对或绝对路径）',
             },
             viewport: {
               type: 'object',
@@ -43,45 +45,44 @@ export const browserConfigTool: Tool = {
               properties: {
                 width: {
                   type: 'integer',
-                  description: '视口宽度'
+                  description: '视口宽度',
                 },
                 height: {
                   type: 'integer',
-                  description: '视口高度'
-                }
-              }
+                  description: '视口高度',
+                },
+              },
             },
             userAgent: {
               type: 'string',
-              description: '用户代理字符串'
+              description: '用户代理字符串',
             },
             timeout: {
               type: 'integer',
-              description: '默认超时时间（秒）'
+              description: '默认超时时间（秒）',
             },
             maxSessions: {
               type: 'integer',
-              description: '最大会话数'
+              description: '最大会话数',
             },
             sessionTimeout: {
               type: 'integer',
-              description: '会话超时时间（分钟）'
-            }
-          }
-        }
+              description: '会话超时时间（分钟）',
+            },
+          },
+        },
       },
-      required: ['action']
-
+      required: ['action'],
     },
     // MCP构建器建议的元数据
     metadata: {
-      readOnlyHint: false,      // 非只读操作（管理配置）
-      destructiveHint: false,   // 非破坏性操作（配置管理）
-      idempotentHint: true,     // 幂等操作（相同配置产生相同结果）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'browser',      // 浏览器操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['browser', 'config', 'management', 'settings'] // 工具标签
+      readOnlyHint: false, // 非只读操作（管理配置）
+      destructiveHint: false, // 非破坏性操作（配置管理）
+      idempotentHint: true, // 幂等操作（相同配置产生相同结果）
+      openWorldHint: false, // 不是开放世界操作
+      category: 'browser', // 浏览器操作类别
+      version: '1.0.0', // 工具版本
+      tags: ['browser', 'config', 'management', 'settings'], // 工具标签
     },
 
     // 结构化输出模式
@@ -102,25 +103,31 @@ export const browserConfigTool: Tool = {
               type: 'object',
               properties: {
                 width: { type: 'integer', description: '视口宽度' },
-                height: { type: 'integer', description: '视口高度' }
-              }
+                height: { type: 'integer', description: '视口高度' },
+              },
             },
             stealthOptions: {
               type: 'object',
               properties: {
                 enable: { type: 'boolean', description: '是否启用隐身模式' },
-                features: { type: 'array', items: { type: 'string' }, description: '隐身功能列表' }
-              }
+                features: { type: 'array', items: { type: 'string' }, description: '隐身功能列表' },
+              },
             },
             maxSessions: { type: 'integer', description: '最大会话数' },
-            sessionTimeout: { type: 'integer', description: '会话超时时间（秒）' }
+            sessionTimeout: { type: 'integer', description: '会话超时时间（秒）' },
           },
-          required: ['defaultBrowser', 'defaultHeadless', 'antiDetection', 'maxSessions', 'sessionTimeout']
+          required: [
+            'defaultBrowser',
+            'defaultHeadless',
+            'antiDetection',
+            'maxSessions',
+            'sessionTimeout',
+          ],
         },
         message: { type: 'string', description: '操作结果消息' },
-        timestamp: { type: 'string', description: '操作时间戳' }
+        timestamp: { type: 'string', description: '操作时间戳' },
       },
-      required: ['success', 'action', 'config', 'message', 'timestamp']
+      required: ['success', 'action', 'config', 'message', 'timestamp'],
     },
 
     // 使用指南
@@ -129,7 +136,7 @@ export const browserConfigTool: Tool = {
       '更新配置时只更新提供的字段，其他字段保持不变',
       '配置会持久化保存到配置文件',
       '返回完整的配置信息，包括默认值和更新后的值',
-      '配置更改会影响新创建的浏览器会话'
+      '配置更改会影响新创建的浏览器会话',
     ],
   },
 
@@ -158,16 +165,16 @@ export const browserConfigTool: Tool = {
               sessionTimeout: currentConfig.sessionTimeout,
 
               stealthEnabled: currentConfig.stealthOptions.enable,
-              stealthFeatures: currentConfig.stealthOptions.options
+              stealthFeatures: currentConfig.stealthOptions.options,
             },
-            sessions: sessions.map(session => ({
+            sessions: sessions.map((session) => ({
               id: session.id,
               createdAt: session.createdAt.toISOString(),
               lastUsed: session.lastUsed.toISOString(),
-              config: session.config
+              config: session.config,
             })),
             sessions_count: sessions.length,
-            message: '浏览器配置获取成功'
+            message: '浏览器配置获取成功',
           };
         }
 
@@ -177,7 +184,10 @@ export const browserConfigTool: Tool = {
           }
 
           // 验证配置
-          if (config.defaultBrowser && !['chrome', 'firefox', 'webkit', 'msedge'].includes(config.defaultBrowser)) {
+          if (
+            config.defaultBrowser &&
+            !['chrome', 'firefox', 'webkit', 'msedge'].includes(config.defaultBrowser)
+          ) {
             throw new Error('defaultBrowser必须是 chrome、firefox、webkit 或 msedge');
           }
 
@@ -190,15 +200,28 @@ export const browserConfigTool: Tool = {
             }
           }
 
-          if (config.timeout && (typeof config.timeout !== 'number' || config.timeout < 5 || config.timeout > 300)) {
+          if (
+            config.timeout &&
+            (typeof config.timeout !== 'number' || config.timeout < 5 || config.timeout > 300)
+          ) {
             throw new Error('timeout必须在5到300之间');
           }
 
-          if (config.maxSessions && (typeof config.maxSessions !== 'number' || config.maxSessions < 1 || config.maxSessions > 20)) {
+          if (
+            config.maxSessions &&
+            (typeof config.maxSessions !== 'number' ||
+              config.maxSessions < 1 ||
+              config.maxSessions > 20)
+          ) {
             throw new Error('maxSessions必须在1到20之间');
           }
 
-          if (config.sessionTimeout && (typeof config.sessionTimeout !== 'number' || config.sessionTimeout < 1 || config.sessionTimeout > 240)) {
+          if (
+            config.sessionTimeout &&
+            (typeof config.sessionTimeout !== 'number' ||
+              config.sessionTimeout < 1 ||
+              config.sessionTimeout > 240)
+          ) {
             throw new Error('sessionTimeout必须在1到240分钟之间');
           }
 
@@ -219,10 +242,10 @@ export const browserConfigTool: Tool = {
               timeout: updatedConfig.timeout,
               maxSessions: updatedConfig.maxSessions,
               sessionTimeout: updatedConfig.sessionTimeout,
-              stealthEnabled: updatedConfig.stealthOptions.enable
+              stealthEnabled: updatedConfig.stealthOptions.enable,
             },
             message: '浏览器配置更新成功',
-            config_file: 'config/browser.yaml'
+            config_file: 'config/browser.yaml',
           };
         }
 
@@ -243,10 +266,10 @@ export const browserConfigTool: Tool = {
               timeout: reloadedConfig.timeout,
               maxSessions: reloadedConfig.maxSessions,
               sessionTimeout: reloadedConfig.sessionTimeout,
-              stealthEnabled: reloadedConfig.stealthOptions.enable
+              stealthEnabled: reloadedConfig.stealthOptions.enable,
             },
             message: '浏览器配置重新加载成功',
-            config_file: 'config/browser.yaml'
+            config_file: 'config/browser.yaml',
           };
         }
 
@@ -256,5 +279,5 @@ export const browserConfigTool: Tool = {
     } catch (error: any) {
       throw new Error(`浏览器配置管理失败: ${error.message}`);
     }
-  }
+  },
 };
