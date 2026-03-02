@@ -6,7 +6,6 @@ import { Tool } from '@/types';
 
 const execAsync = promisify(exec);
 
-
 /**
  * 检查项目编译状态
  */
@@ -18,6 +17,8 @@ async function checkCompilation(timeout: number): Promise<{ success: boolean; er
       env: { ...process.env },
       timeout: timeout * 1000,
       encoding: 'utf-8',
+    }).catch(e => {
+      return e
     });
 
     const output = (result.stdout || '') + (result.stderr || '');

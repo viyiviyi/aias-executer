@@ -7,6 +7,16 @@
         "./workspace"
       ],
       "description": "工作区文件系统操作"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--isolated",
+        "--browser=chrome",
+        "--user-data-dir=./browser-data"
+      ],
+      "description": "工作区文件系统操作"
     }
   },
   "_comments": {
