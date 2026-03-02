@@ -102,7 +102,7 @@ async function startServer() {
       await mcpClient.loadConfig()
       mcpClient.connectAllServers();
     } catch (error) {
-      
+      console.error(error)
     }
     try {
       // 初始化自启动脚本管理器
@@ -111,7 +111,7 @@ async function startServer() {
       console.log('🚀 开始加载自启动脚本...');
       autostartManager.loadAllScripts();
     } catch (error) {
-
+      console.error(error)
     }
 
     // 然后启动HTTP服务器

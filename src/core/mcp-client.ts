@@ -51,7 +51,7 @@ export class MCPClientManager {
   public async loadConfig(configPath?: string): Promise<void> {
     try {
       const config = this.configManager.getConfig();
-      const workspacePath = config.workspacePath || process.cwd();
+      const workspacePath = config.workspaceDir || process.cwd();
 
       // 尝试从多个位置加载配置
       const possiblePaths = [
