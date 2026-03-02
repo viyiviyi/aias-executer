@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "@modelcontextprotocol/server-filesystem": "^2026.1.14",
     "@playwright/mcp": "^0.0.68",
     "axios": "^1.6.2",
     "cors": "^2.8.5",

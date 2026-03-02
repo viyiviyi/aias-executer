@@ -56,9 +56,9 @@ export class MCPClientManager {
       // 尝试从多个位置加载配置
       const possiblePaths = [
         configPath,
-        path.join(workspacePath, 'mcp-configs', 'mcp-servers.json'),
+        path.join(workspacePath, 'config', 'mcp-servers.json'),
         path.join(workspacePath, 'mcp-servers.json'),
-        path.join(process.cwd(), 'mcp-configs', 'mcp-servers.json'),
+        path.join(process.cwd(), 'config', 'mcp-servers.json'),
         path.join(process.cwd(), 'mcp-servers.json'),
       ].filter(Boolean) as string[];
 

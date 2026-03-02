@@ -97,18 +97,22 @@ const HOST = config.host || '0.0.0.0';
 // 异步启动
 async function startServer() {
   try {
-    // 初始化自启动脚本管理器
-    const autostartManager = AutostartManager.getInstance();
-    const mcpClient = MCPClientManager.getInstance();
     try {
+      const mcpClient = MCPClientManager.getInstance();
       await mcpClient.loadConfig()
       mcpClient.connectAllServers();
     } catch (error) {
+      
+    }
+    try {
+      // 初始化自启动脚本管理器
+      const autostartManager = AutostartManager.getInstance();
+      // 加载并执行所有自启动脚本
+      console.log('🚀 开始加载自启动脚本...');
+      autostartManager.loadAllScripts();
+    } catch (error) {
 
     }
-    // 加载并执行所有自启动脚本
-    console.log('🚀 开始加载自启动脚本...');
-    autostartManager.loadAllScripts();
 
     // 然后启动HTTP服务器
     app.listen(PORT, HOST, () => {
