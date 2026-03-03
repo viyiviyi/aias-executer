@@ -1,8 +1,8 @@
 import { platform } from 'os';
 import { TerminalManager } from '../../../core/terminal-manager';
 import { Tool } from '@/types/tools/Tool';
-import { ConfigManager } from '@/core/config';
 import path from 'path';
+import { ConfigManager } from '../../../core/config';
 
 const terminalManager = TerminalManager.getInstance();
 const configManager = ConfigManager.getInstance();
