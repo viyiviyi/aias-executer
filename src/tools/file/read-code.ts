@@ -31,43 +31,43 @@ const readCodeTool: Tool = {
       properties: {
         path: {
           type: 'string',
-          description: '文件路径（相对于工作目录）'
+          description: '文件路径（相对于工作目录）',
         },
         start_line: {
           type: 'integer',
-          description: '起始行号（1-based，支持负数表示从末尾开始计算，如-1表示最后一行，可选）'
+          description: '起始行号（1-based，支持负数表示从末尾开始计算，如-1表示最后一行，可选）',
         },
         end_line: {
           type: 'integer',
-          description: '结束行号（1-based，支持负数表示从末尾开始计算，如-1表示最后一行，可选）'
+          description: '结束行号（1-based，支持负数表示从末尾开始计算，如-1表示最后一行，可选）',
         },
         encoding: {
           type: 'string',
           description: '文件编码（可选）',
-          default: 'utf-8'
+          default: 'utf-8',
         },
         show_line_numbers: {
           type: 'boolean',
           description: '是否在返回的content中包含行号（可选）',
-          default: true
+          default: true,
         },
         line_number_format: {
           type: 'string',
           description: '行号格式（可选），例如："{line}┆" 或 "[{line}] "',
-          default: '{line}┆'
-        }
+          default: '{line}┆',
+        },
       },
-      required: ['path']
+      required: ['path'],
     },
     // MCP构建器建议的元数据
     metadata: {
-      readOnlyHint: true,      // 只读操作
-      destructiveHint: false,  // 非破坏性操作
-      idempotentHint: true,    // 幂等操作（相同输入总是相同输出）
-      openWorldHint: false,    // 不是开放世界操作
-      category: 'file',        // 文件操作类别
-      version: '1.0.0',       // 工具版本
-      tags: ['file', 'code', 'read', 'source', 'programming'] // 工具标签
+      readOnlyHint: true, // 只读操作
+      destructiveHint: false, // 非破坏性操作
+      idempotentHint: true, // 幂等操作（相同输入总是相同输出）
+      openWorldHint: false, // 不是开放世界操作
+      category: 'file', // 文件操作类别
+      version: '1.0.0', // 工具版本
+      tags: ['file', 'code', 'read', 'source', 'programming'], // 工具标签
     },
 
     // 结构化输出模式
@@ -81,12 +81,12 @@ const readCodeTool: Tool = {
             content: { type: 'string', description: '代码内容（可能包含行号 1-based）' },
             total_lines: { type: 'integer', description: '文件总行数' },
             start_line: { type: 'integer', description: '实际起始行号' },
-            end_line: { type: 'integer', description: '实际结束行号' }
+            end_line: { type: 'integer', description: '实际结束行号' },
           },
-          required: ['content', 'total_lines', 'start_line', 'end_line']
-        }
+          required: ['content', 'total_lines', 'start_line', 'end_line'],
+        },
       },
-      required: ['success', 'result']
+      required: ['success', 'result'],
     },
     // 使用指南
     guidelines: [
@@ -94,9 +94,8 @@ const readCodeTool: Tool = {
       '可以指定行范围，支持负数表示从末尾开始',
       '可以自定义行号格式',
       '默认显示行号，可以关闭',
-      '文件大小受配置限制'
+      '文件大小受配置限制',
     ],
-
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -106,7 +105,7 @@ const readCodeTool: Tool = {
       end_line: endLine,
       encoding = 'utf-8',
       show_line_numbers: showLineNumbers = true,
-      line_number_format: lineNumberFormat = '{line}┆'
+      line_number_format: lineNumberFormat = '{line}┆',
     } = parameters as ReadCodeParameters;
 
     // 验证路径
@@ -115,7 +114,6 @@ const readCodeTool: Tool = {
     if (!configManager.isTextFile(resolvedPath)) {
       throw new Error(`不支持读取此类文件: ${filePath}，该文件可能不是文本文件`);
     }
-
 
     // 检查文件大小
     const stats = await fs.stat(resolvedPath);
@@ -169,7 +167,7 @@ const readCodeTool: Tool = {
     }
 
     // 移除最后一个多余的换行符
-    if (formattedContent.endsWith('\n')) {
+    if (!formattedContent.endsWith('\n')) {
       formattedContent = formattedContent.slice(0, -1);
     }
 
@@ -178,14 +176,14 @@ const readCodeTool: Tool = {
       content: formattedContent,
       total_lines: totalLines,
       start_line: clampedStart,
-      end_line: clampedEnd
+      end_line: clampedEnd,
     };
 
     return {
       success: true,
-      result: result
+      result: result,
     };
-  }
+  },
 };
 
 export { readCodeTool };

@@ -27,8 +27,8 @@ async function checkCompilation(
 
     if (result.stderr) {
       // 解析编译错误
-      const errors = parseCompileErrors(output);
-      return { success: false, errors, output };
+      //   const errors = parseCompileErrors(output);
+      return { success: false, errors: [], output };
     }
 
     return { success: true, errors: [], output };
@@ -44,30 +44,30 @@ async function checkCompilation(
 /**
  * 解析编译错误信息
  */
-function parseCompileErrors(output: string): string[] {
-  const errors: string[] = [];
+// function parseCompileErrors(output: string): string[] {
+//   const errors: string[] = [];
 
-  // 匹配TypeScript错误格式
-  const tsErrorRegex = /error TS\d+: .*?(?=\n|$)/g;
-  const matches = output.match(tsErrorRegex);
+//   // 匹配TypeScript错误格式
+//   const tsErrorRegex = /error TS\d+: .*?(?=\n|$)/g;
+//   const matches = output.match(tsErrorRegex);
 
-  if (matches) {
-    errors.push(...matches.slice(0, 10)); // 最多返回10个错误
-  } else if (output.includes('error') || output.includes('Error')) {
-    // 如果没有匹配到标准格式，提取包含error的行
-    const lines = output.split('\n');
-    const errorLines = lines
-      .filter(
-        (line) => line.toLowerCase().includes('error') && !line.toLowerCase().includes('warning')
-      )
-      .slice(0, 10);
-    errors.push(...errorLines);
-  } else if (output.trim()) {
-    errors.push('编译失败，但无法解析具体错误信息');
-  }
+//   if (matches) {
+//     errors.push(...matches.slice(0, 10)); // 最多返回10个错误
+//   } else if (output.includes('error') || output.includes('Error')) {
+//     // 如果没有匹配到标准格式，提取包含error的行
+//     const lines = output.split('\n');
+//     const errorLines = lines
+//       .filter(
+//         (line) => line.toLowerCase().includes('error') && !line.toLowerCase().includes('warning')
+//       )
+//       .slice(0, 10);
+//     errors.push(...errorLines);
+//   } else if (output.trim()) {
+//     errors.push('编译失败，但无法解析具体错误信息');
+//   }
 
-  return errors.length > 0 ? errors : ['未知编译错误'];
-}
+//   return errors.length > 0 ? errors : ['未知编译错误'];
+// }
 
 /**
  * 检测当前运行环境

@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "@modelcontextprotocol/server-filesystem",
-        "./workspace"
+        "./"
       ],
       "description": "工作区文件系统操作"
     },

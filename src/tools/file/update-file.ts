@@ -6,17 +6,17 @@ const configManager = ConfigManager.getInstance();
 
 interface FileUpdateItem {
   operation: 'insert' | 'delete';
-  start_line_index: number;      // 起始行索引（1-based）
-  insert_content?: string;       // 要插入的内容（用于insert操作）
-  del_line_count?: number;       // 要删除的行数（用于delete操作）
+  start_line_index: number; // 起始行索引（1-based）
+  insert_content?: string; // 要插入的内容（用于insert操作）
+  del_line_count?: number; // 要删除的行数（用于delete操作）
 }
 
-interface LineMapping {
-  originalLine: number;  // 原始行号
-  newLine: number;       // 新行号
-  operation: 'insert' | 'delete' | 'unchanged';
-  content: string;
-}
+// interface LineMapping {
+//   originalLine: number; // 原始行号
+//   newLine: number; // 新行号
+//   operation: 'insert' | 'delete' | 'unchanged';
+//   content: string;
+// }
 
 export const updateFileTool: Tool = {
   definition: {
@@ -28,7 +28,7 @@ export const updateFileTool: Tool = {
       properties: {
         path: {
           type: 'string',
-          description: '文件路径'
+          description: '文件路径',
         },
         updates: {
           type: 'array',
@@ -38,39 +38,41 @@ export const updateFileTool: Tool = {
               operation: {
                 type: 'string',
                 enum: ['insert', 'delete'],
-                description: '操作类型：insert（插入内容）或 delete（删除行）'
+                description: '操作类型：insert（插入内容）或 delete（删除行）',
               },
               start_line_index: {
                 type: 'integer',
-                description: '起始行号（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除（包括此行）。所有操作都基于原行号。',
-                minimum: 1
+                description:
+                  '起始行号（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除（包括此行）。所有操作都基于原行号，使用大于所有行号的值在最后添加行。',
+                minimum: 1,
               },
               insert_content: {
                 type: 'string',
-                description: '要插入的内容字符串（用于insert操作）'
+                description: '要插入的内容字符串（用于insert操作）',
               },
               del_line_count: {
                 type: 'integer',
                 description: '要删除的行数（用于delete操作）',
-                minimum: 1
-              }
+                minimum: 1,
+              },
             },
-            required: ['operation', 'start_line_index']
+            required: ['operation', 'start_line_index'],
           },
-          description: '更新操作列表，所有操作都基于原行号（1-based）。如果要替换内容，先使用delete操作删除旧内容，再使用insert操作插入新内容。'
-        }
+          description:
+            '更新操作列表，所有操作都基于原行号（1-based）。如果要替换内容，先使用delete操作删除旧内容，再使用insert操作插入新内容。',
+        },
       },
       required: ['path', 'updates'],
     },
     // MCP构建器建议的元数据
     metadata: {
-      readOnlyHint: false,      // 非只读操作（更新文件）
-      destructiveHint: true,    // 破坏性操作（修改文件内容）
-      idempotentHint: false,    // 非幂等操作（多次更新可能产生不同结果）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'file',         // 文件操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['file', 'update', 'modify', 'edit', 'patch'] // 工具标签
+      readOnlyHint: false, // 非只读操作（更新文件）
+      destructiveHint: true, // 破坏性操作（修改文件内容）
+      idempotentHint: false, // 非幂等操作（多次更新可能产生不同结果）
+      openWorldHint: false, // 不是开放世界操作
+      category: 'file', // 文件操作类别
+      version: '1.0.0', // 工具版本
+      tags: ['file', 'update', 'modify', 'edit', 'patch'], // 工具标签
     },
 
     // 结构化输出模式
@@ -81,10 +83,11 @@ export const updateFileTool: Tool = {
         path: { type: 'string', description: '文件路径' },
         changed_code_context: {
           type: 'array',
-          description: '被修改行加前后3行，用于展示修改结果，如果多个变更在同一个范围，会合并成一块展示',
+          description:
+            '被修改行加前后3行，用于展示修改结果，如果多个变更在同一个范围，会合并成一块展示',
         },
       },
-      required: ['success', 'path', 'original_line_count', 'new_line_count', 'changes']
+      required: ['success', 'path', 'original_line_count', 'new_line_count', 'changes'],
     },
     // 使用指南
     guidelines: [
@@ -92,16 +95,16 @@ export const updateFileTool: Tool = {
       '行号从1开始，基于原始文件行号',
       '如果要替换内容，先删除再插入',
       '通过read_code读取行号后再基于读取到的行号更新文件',
-      '返回详细的变更信息和行号映射'
+      '返回详细的变更信息和行号映射',
     ],
 
-    result_use_type: 'last'
+    result_use_type: 'last',
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const filePath = parameters.path;
     const updates = parameters.updates as FileUpdateItem[];
-    const contextLines = parameters.context_lines || 3;
+    // const contextLines = parameters.context_lines || 3;
 
     if (!updates || updates.length === 0) {
       throw new Error('updates参数不能为空');
@@ -109,7 +112,6 @@ export const updateFileTool: Tool = {
 
     // 验证路径
     const resolvedPath = configManager.validatePath(filePath, true);
-
 
     // 验证更新操作
     validateUpdates(updates);
@@ -147,12 +149,21 @@ export const updateFileTool: Tool = {
       }> = [];
 
       let currentLines = [...originalLines];
-
+      let minChangeLine = 99999;
+      let maxChangeLine = 0;
+      let pushCount = 0;
       // 应用所有更新
       for (const update of sortedUpdates) {
+        if (update.start_line_index < minChangeLine) minChangeLine = update.start_line_index;
+        if (maxChangeLine < update.start_line_index) maxChangeLine = update.start_line_index;
         const result = applyUpdate(currentLines, update);
+        if (update.operation == 'delete') {
+          pushCount -= result.change?.lines?.length || 0;
+        }
+        if (update.operation == 'insert') {
+          pushCount += result.change?.lines?.length || 0;
+        }
         currentLines = result.lines;
-
         if (result.change) {
           changes.push(result.change);
         }
@@ -162,17 +173,16 @@ export const updateFileTool: Tool = {
       const newContent = currentLines.join('\n');
       await fs.writeFile(resolvedPath, newContent, 'utf-8');
 
-      // 生成行号映射
-      const lineMappings = generateLineMappings(originalLines, changes);
-
-      // 生成代码块
-      const codeBlock = generateEnhancedCodeBlock(lineMappings, changes, contextLines);
-
       // 返回简洁的结果
+      const startChangeLine = Math.min(currentLines.length, Math.max(0, minChangeLine));
+      const endChangeLine = Math.min(currentLines.length, maxChangeLine + pushCount + 1);
       return {
         success: true,
         path: filePath,
-        changed_code_context: codeBlock ? [codeBlock] : []
+        new_content: currentLines
+          .slice(startChangeLine - 1, endChangeLine + 1)
+          .map((v, i) => `${i + startChangeLine}┆${v}`)
+          .join('\n'),
       };
     } catch (error: any) {
       if (error.code === 'EACCES') {
@@ -180,7 +190,7 @@ export const updateFileTool: Tool = {
       }
       throw error;
     }
-  }
+  },
 };
 
 // 验证更新操作
@@ -214,7 +224,10 @@ function validateUpdates(updates: FileUpdateItem[]): void {
 }
 
 // 应用单个更新操作
-function applyUpdate(lines: string[], update: FileUpdateItem): {
+function applyUpdate(
+  lines: string[],
+  update: FileUpdateItem
+): {
   lines: string[];
   change?: {
     type: 'insert' | 'delete';
@@ -231,7 +244,10 @@ function applyUpdate(lines: string[], update: FileUpdateItem): {
 }
 
 // 插入内容
-function insertContent(lines: string[], update: FileUpdateItem): {
+function insertContent(
+  lines: string[],
+  update: FileUpdateItem
+): {
   lines: string[];
   change?: {
     type: 'insert' | 'delete';
@@ -265,13 +281,16 @@ function insertContent(lines: string[], update: FileUpdateItem): {
     change: {
       type: 'insert',
       originalLine: startLineIndex,
-      lines: insertLines
-    }
+      lines: insertLines,
+    },
   };
 }
 
 // 删除行
-function deleteLines(lines: string[], update: FileUpdateItem): {
+function deleteLines(
+  lines: string[],
+  update: FileUpdateItem
+): {
   lines: string[];
   change?: {
     type: 'insert' | 'delete';
@@ -306,164 +325,166 @@ function deleteLines(lines: string[], update: FileUpdateItem): {
     change: {
       type: 'delete',
       originalLine: startLineIndex,
-      lines: deletedLines
-    }
+      lines: deletedLines,
+    },
   };
 }
 
 // 生成行号映射
-function generateLineMappings(
-  originalLines: string[],
-  changes: Array<{
-    type: 'insert' | 'delete';
-    originalLine: number;
-    lines: string[];
-  }>
-): LineMapping[] {
-  const mappings: LineMapping[] = [];
+// function generateLineMappings(
+//   originalLines: string[],
+//   changes: Array<{
+//     type: 'insert' | 'delete';
+//     originalLine: number;
+//     lines: string[];
+//   }>
+// ): LineMapping[] {
+//   const mappings: LineMapping[] = [];
 
-  // 收集所有删除的行
-  const deletedLines = new Set<number>();
-  for (const change of changes) {
-    if (change.type === 'delete') {
-      // 对于删除操作，记录被删除的原始行号
-      for (let i = 0; i < change.lines.length; i++) {
-        const originalLine = change.originalLine + i;
-        if (originalLine <= originalLines.length) {
-          deletedLines.add(originalLine);
-        }
-      }
-    }
-  }
+//   // 收集所有删除的行
+//   const deletedLines = new Set<number>();
+//   for (const change of changes) {
+//     if (change.type === 'delete') {
+//       // 对于删除操作，记录被删除的原始行号
+//       for (let i = 0; i < change.lines.length; i++) {
+//         const originalLine = change.originalLine + i;
+//         if (originalLine <= originalLines.length) {
+//           deletedLines.add(originalLine);
+//         }
+//       }
+//     }
+//   }
 
-  // 收集插入操作的位置
-  const insertions = new Map<number, string[]>();
-  for (const change of changes) {
-    if (change.type === 'insert') {
-      insertions.set(change.originalLine, change.lines);
-    }
-  }
+//   // 收集插入操作的位置
+//   const insertions = new Map<number, string[]>();
+//   for (const change of changes) {
+//     if (change.type === 'insert') {
+//       insertions.set(change.originalLine, change.lines);
+//     }
+//   }
 
-  // 生成映射
-  let newLineCounter = 1;
+//   // 生成映射
+//   let newLineCounter = 1;
 
-  for (let originalLine = 1; originalLine <= originalLines.length; originalLine++) {
-    // 检查是否有插入在这个位置之前
-    const insertedLines = insertions.get(originalLine);
-    if (insertedLines) {
-      // 添加插入的行
-      for (let i = 0; i < insertedLines.length; i++) {
-        mappings.push({
-          originalLine: originalLine,
-          newLine: newLineCounter,
-          operation: 'insert',
-          content: insertedLines[i]
-        });
-        newLineCounter++;
-      }
-    }
+//   for (let originalLine = 1; originalLine <= originalLines.length; originalLine++) {
+//     // 检查是否有插入在这个位置之前
+//     const insertedLines = insertions.get(originalLine);
+//     if (insertedLines) {
+//       // 添加插入的行
+//       for (let i = 0; i < insertedLines.length; i++) {
+//         mappings.push({
+//           originalLine: originalLine,
+//           newLine: newLineCounter,
+//           operation: 'insert',
+//           content: insertedLines[i],
+//         });
+//         newLineCounter++;
+//       }
+//     }
 
-    // 检查当前行是否被删除
-    if (deletedLines.has(originalLine)) {
-      // 被删除的行
-      mappings.push({
-        originalLine,
-        newLine: -1,
-        operation: 'delete',
-        content: originalLines[originalLine - 1]
-      });
-    } else {
-      // 未被删除的行
-      mappings.push({
-        originalLine,
-        newLine: newLineCounter,
-        operation: 'unchanged',
-        content: originalLines[originalLine - 1]
-      });
-      newLineCounter++;
-    }
-  }
+//     // 检查当前行是否被删除
+//     if (deletedLines.has(originalLine)) {
+//       // 被删除的行
+//       mappings.push({
+//         originalLine,
+//         newLine: -1,
+//         operation: 'delete',
+//         content: originalLines[originalLine - 1],
+//       });
+//     } else {
+//       // 未被删除的行
+//       mappings.push({
+//         originalLine,
+//         newLine: newLineCounter,
+//         operation: 'unchanged',
+//         content: originalLines[originalLine - 1],
+//       });
+//       newLineCounter++;
+//     }
+//   }
 
-  // 处理文件末尾的插入
-  for (const change of changes) {
-    if (change.type === 'insert' && change.originalLine > originalLines.length) {
-      for (let i = 0; i < change.lines.length; i++) {
-        mappings.push({
-          originalLine: change.originalLine,
-          newLine: newLineCounter,
-          operation: 'insert',
-          content: change.lines[i]
-        });
-        newLineCounter++;
-      }
-    }
-  }
+//   // 处理文件末尾的插入
+//   for (const change of changes) {
+//     if (change.type === 'insert' && change.originalLine > originalLines.length) {
+//       for (let i = 0; i < change.lines.length; i++) {
+//         mappings.push({
+//           originalLine: change.originalLine,
+//           newLine: newLineCounter,
+//           operation: 'insert',
+//           content: change.lines[i],
+//         });
+//         newLineCounter++;
+//       }
+//     }
+//   }
 
-  return mappings;
-}
+//   return mappings;
+// }
 
-// 生成增强的代码块
-function generateEnhancedCodeBlock(
-  lineMappings: LineMapping[],
-  changes: Array<{
-    type: 'insert' | 'delete';
-    originalLine: number;
-    lines: string[];
-  }>,
-  contextLines: number
-): string {
-  if (lineMappings.length === 0) {
-    return '';
-  }
+// // 生成增强的代码块
+// function generateEnhancedCodeBlock(
+//   lineMappings: LineMapping[],
+//   changes: Array<{
+//     type: 'insert' | 'delete';
+//     originalLine: number;
+//     lines: string[];
+//   }>,
+//   contextLines: number
+// ): string {
+//   if (lineMappings.length === 0) {
+//     return '';
+//   }
 
-  // 找到所有变更影响的行范围
-  let minOriginalLine = Infinity;
-  let maxOriginalLine = -Infinity;
+//   // 找到所有变更影响的行范围
+//   let minOriginalLine = Infinity;
+//   let maxOriginalLine = -Infinity;
 
-  for (const change of changes) {
-    if (change.type === 'insert') {
-      minOriginalLine = Math.min(minOriginalLine, change.originalLine);
-      maxOriginalLine = Math.max(maxOriginalLine, change.originalLine);
-    } else if (change.type === 'delete') {
-      minOriginalLine = Math.min(minOriginalLine, change.originalLine);
-      maxOriginalLine = Math.max(maxOriginalLine, change.originalLine + change.lines.length - 1);
-    }
-  }
+//   for (const change of changes) {
+//     if (change.type === 'insert') {
+//       minOriginalLine = Math.min(minOriginalLine, change.originalLine);
+//       maxOriginalLine = Math.max(maxOriginalLine, change.originalLine);
+//     } else if (change.type === 'delete') {
+//       minOriginalLine = Math.min(minOriginalLine, change.originalLine);
+//       maxOriginalLine = Math.max(maxOriginalLine, change.originalLine + change.lines.length - 1);
+//     }
+//   }
 
-  // 找到相关的行映射（包含上下文）
-  const relevantMappings = lineMappings.filter(mapping => {
-    return mapping.originalLine >= minOriginalLine - contextLines &&
-      mapping.originalLine <= maxOriginalLine + contextLines;
-  });
+//   // 找到相关的行映射（包含上下文）
+//   const relevantMappings = lineMappings.filter((mapping) => {
+//     return (
+//       mapping.originalLine >= minOriginalLine - contextLines &&
+//       mapping.originalLine <= maxOriginalLine + contextLines
+//     );
+//   });
 
-  if (relevantMappings.length === 0) {
-    return '';
-  }
+//   if (relevantMappings.length === 0) {
+//     return '';
+//   }
 
-  // 构建代码块
-  let codeBlock = '';
+//   // 构建代码块
+//   let codeBlock = '';
 
-  for (const mapping of relevantMappings) {
-    let linePrefix = '';
+//   for (const mapping of relevantMappings) {
+//     let linePrefix = '';
 
-    if (mapping.operation === 'insert') {
-      // 插入时：原始行号 + 新行号┆行内容
-      linePrefix = `${mapping.originalLine} + ${mapping.newLine}┆`;
-    } else if (mapping.operation === 'delete') {
-      // 删除时：-原始行号┆行内容
-      linePrefix = ` - ${mapping.originalLine}┆`;
-    } else {
-      // 不变时：原始行号 新行号┆行内容
-      linePrefix = `${mapping.originalLine} ${mapping.newLine}┆`;
-    }
+//     if (mapping.operation === 'insert') {
+//       // 插入时：原始行号 + 新行号┆行内容
+//       linePrefix = `${mapping.originalLine} + ${mapping.newLine}┆`;
+//     } else if (mapping.operation === 'delete') {
+//       // 删除时：-原始行号┆行内容
+//       linePrefix = ` - ${mapping.originalLine}┆`;
+//     } else {
+//       // 不变时：原始行号 新行号┆行内容
+//       linePrefix = `${mapping.originalLine} ${mapping.newLine}┆`;
+//     }
 
-    codeBlock += `${linePrefix}${mapping.content}\n`;
-  }
+//     codeBlock += `${linePrefix}${mapping.content}\n`;
+//   }
 
-  // 移除最后一个换行符
-  if (codeBlock.endsWith('\n')) {
-    codeBlock = codeBlock.slice(0, -1);
-  }
+//   // 移除最后一个换行符
+//   if (codeBlock.endsWith('\n')) {
+//     codeBlock = codeBlock.slice(0, -1);
+//   }
 
-  return codeBlock;
-}
+//   return codeBlock;
+// }
