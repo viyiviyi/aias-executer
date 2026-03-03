@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { ConfigManager } from '../../core/config';
 import { Tool } from '@/types/tools/Tool';
+import path from 'path';
 
 const execAsync = promisify(exec);
 const configManager = ConfigManager.getInstance();
@@ -27,7 +28,8 @@ export const executeCommandTool: Tool = {
   definition: {
     name: 'utils_execute_command',
     groupName: '基础工具',
-    description: '执行命令行命令（命令行执行结束或超时后相关进程会退出，不可执行需要后台运行的命令）',
+    description:
+      '执行命令行命令（命令行执行结束或超时后相关进程会退出，不可执行需要后台运行的命令）',
     parameters: {
       type: 'object',
       properties: {
@@ -37,7 +39,7 @@ export const executeCommandTool: Tool = {
         },
         workdir: {
           type: 'string',
-          description: '工作目录（可选）',
+          description: '工作目录（可选，建议使用此参数而不是cd命令）',
           default: '.',
         },
         timeout: {
@@ -60,12 +62,12 @@ export const executeCommandTool: Tool = {
       '用于执行命令行，执行前需要确定操作系统信息',
       '请勿执行危险操作，除非用户明确要求',
     ],
-    result_use_type: 'once'
+    result_use_type: 'once',
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const command = parameters.command;
-    const workdir = parameters.workdir || configManager.getConfig().workspaceDir;
+    const workdir = path.resolve(parameters.workdir || configManager.getConfig().workspaceDir);
     const timeout = parameters.timeout || 300;
     const env = parameters.env || {};
 
@@ -113,7 +115,8 @@ export const executeCommandTool: Tool = {
       }
 
       // 合并错误信息，应用截断功能
-      const errorOutput = (error.stdout?.trim() || '') +
+      const errorOutput =
+        (error.stdout?.trim() || '') +
         (error.stderr?.trim() ? '\n' + error.stderr.trim() : '') +
         (error.message ? '\n' + error.message : '');
       const truncatedErrorOutput = truncateText(errorOutput);

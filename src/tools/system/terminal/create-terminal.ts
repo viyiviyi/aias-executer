@@ -1,8 +1,11 @@
 import { platform } from 'os';
 import { TerminalManager } from '../../../core/terminal-manager';
 import { Tool } from '@/types/tools/Tool';
+import { ConfigManager } from '@/core/config';
+import path from 'path';
 
 const terminalManager = TerminalManager.getInstance();
+const configManager = ConfigManager.getInstance();
 
 // 根据操作系统获取默认shell
 function getDefaultShell(): string {
@@ -52,7 +55,7 @@ export const createTerminalTool: Tool = {
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const shell = parameters.shell || getDefaultShell();
-    const workdir = parameters.workdir || '.';
+    const workdir = path.resolve(parameters.workdir || configManager.getConfig().workspaceDir);
     const env = parameters.env || {};
     const description = parameters.description;
     const initialCommand = parameters.initial_command;
