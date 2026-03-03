@@ -5,7 +5,7 @@ const terminalManager = TerminalManager.getInstance();
 
 export const listTerminalsTool: Tool = {
   definition: {
-    name: 'list_terminals',
+    name: 'terminals_list',
     groupName: '终端',
     description: '列出所有活动的终端会话',
     parameters: {

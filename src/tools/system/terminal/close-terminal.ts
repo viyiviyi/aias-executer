@@ -5,7 +5,7 @@ const terminalManager = TerminalManager.getInstance();
 
 export const closeTerminalTool: Tool = {
   definition: {
-    name: 'close_terminal',
+    name: 'terminal_close',
     groupName: '终端',
     description: '关闭终端会话',
     parameters: {

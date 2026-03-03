@@ -23,8 +23,8 @@ interface ReadCodeResult {
 
 const readCodeTool: Tool = {
   definition: {
-    name: 'read_code',
-    groupName: '文件工具',
+    name: 'utils_read_code',
+    groupName: '基础工具',
     description: '按行读取文件内容，返回每行内容行号和内容。',
     parameters: {
       type: 'object',

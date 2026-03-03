@@ -15,7 +15,7 @@ function getDefaultShell(): string {
 
 export const createTerminalTool: Tool = {
   definition: {
-    name: 'create_terminal',
+    name: 'terminal_create',
     groupName: '终端',
     description: '创建交互式终端会话（适合需要持续交互的命令，如长时间运行的进程、交互式程序等）',
     parameters: {

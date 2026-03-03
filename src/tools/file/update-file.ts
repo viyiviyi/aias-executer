@@ -20,8 +20,8 @@ interface LineMapping {
 
 export const updateFileTool: Tool = {
   definition: {
-    name: 'update_file',
-    groupName: '文件工具',
+    name: 'utils_update_file',
+    groupName: '基础工具',
     description: '部分更新文件内容，支持批量操作',
     parameters: {
       type: 'object',

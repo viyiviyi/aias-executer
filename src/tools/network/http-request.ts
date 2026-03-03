@@ -3,7 +3,8 @@ import axios, { AxiosRequestConfig } from 'axios';
 
 export const httpRequestTool: Tool = {
   definition: {
-    name: 'http_request',
+    name: 'utils_http_request',
+    groupName: '基础工具',
     description: '直接发起http请求',
     parameters: {
       type: 'object',

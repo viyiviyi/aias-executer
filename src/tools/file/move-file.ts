@@ -7,8 +7,8 @@ const configManager = ConfigManager.getInstance();
 
 export const moveFileTool: Tool = {
   definition: {
-    name: 'move_file',
-    groupName: '文件工具',
+    name: 'utils_move_file',
+    groupName: '基础工具',
     description: '移动文件或目录到新位置',
     parameters: {
       type: 'object',

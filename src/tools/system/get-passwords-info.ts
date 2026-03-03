@@ -4,8 +4,9 @@ import { PasswordManager } from '../../core/password-manager';
 
 export const getPasswordsInfoTool: Tool = {
   definition: {
-    name: 'get_passwords_info',
-    description: '获取所有可用的账号密码和对应的占位符信息',
+    name: 'utils_passwords_info',
+    groupName: '系统服务',
+    description: '获取所有可用的账号密码和对应的占位符信息，用于安全的使用隐私数据',
     parameters: {
       type: 'object',
       properties: {},

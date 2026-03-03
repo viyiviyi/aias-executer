@@ -9,7 +9,9 @@ const execAsync = promisify(exec);
 /**
  * 检查项目编译状态
  */
-async function checkCompilation(timeout: number): Promise<{ success: boolean; errors: string[]; output: string }> {
+async function checkCompilation(
+  timeout: number
+): Promise<{ success: boolean; errors: string[]; output: string }> {
   try {
     // 执行编译命令
     const result = await execAsync('yarn build', {
@@ -17,8 +19,8 @@ async function checkCompilation(timeout: number): Promise<{ success: boolean; er
       env: { ...process.env },
       timeout: timeout * 1000,
       encoding: 'utf-8',
-    }).catch(e => {
-      return e
+    }).catch((e) => {
+      return e;
     });
 
     const output = (result.stdout || '') + (result.stderr || '');
@@ -30,12 +32,11 @@ async function checkCompilation(timeout: number): Promise<{ success: boolean; er
     }
 
     return { success: true, errors: [], output };
-
   } catch (error: any) {
     return {
       success: false,
       errors: [`编译检查异常: ${error.message}`],
-      output: error.stack || ''
+      output: error.stack || '',
     };
   }
 }
@@ -55,10 +56,11 @@ function parseCompileErrors(output: string): string[] {
   } else if (output.includes('error') || output.includes('Error')) {
     // 如果没有匹配到标准格式，提取包含error的行
     const lines = output.split('\n');
-    const errorLines = lines.filter(line =>
-      line.toLowerCase().includes('error') &&
-      !line.toLowerCase().includes('warning')
-    ).slice(0, 10);
+    const errorLines = lines
+      .filter(
+        (line) => line.toLowerCase().includes('error') && !line.toLowerCase().includes('warning')
+      )
+      .slice(0, 10);
     errors.push(...errorLines);
   } else if (output.trim()) {
     errors.push('编译失败，但无法解析具体错误信息');
@@ -97,7 +99,7 @@ function detectEnvironment(): string {
 
     // 检查是否有.service文件
     try {
-      const serviceFiles = fs.readdirSync('/etc/systemd/system').filter(f => f.includes('aias'));
+      const serviceFiles = fs.readdirSync('/etc/systemd/system').filter((f) => f.includes('aias'));
       if (serviceFiles.length > 0) {
         return 'systemd';
       }
@@ -149,7 +151,7 @@ function performGracefulExit(): void {
     timestamp: new Date().toISOString(),
     environment: env,
     pid: process.pid,
-    restartMethod: getRestartMethod()
+    restartMethod: getRestartMethod(),
   };
 
   try {
@@ -183,33 +185,34 @@ function performGracefulExit(): void {
 
 export const restartServiceTool: Tool = {
   definition: {
-    name: 'restart_service',
-    description: '编译并安全重启当前服务（通过退出让外部进程管理器重启）',
+    name: 'service_restart',
+    groupName: '系统服务',
+    description: '编译并重启当前服务，当维护服务自身功能后调用安全重启',
     parameters: {
       type: 'object',
       properties: {
         checkOnly: {
           type: 'boolean',
           description: '仅检查编译，不执行重启',
-          default: false
+          default: false,
         },
         timeout: {
           type: 'integer',
           description: '编译检查超时时间（秒）',
           default: 120,
           minimum: 30,
-          maximum: 300
+          maximum: 300,
         },
         delay: {
           type: 'integer',
           description: '重启延迟时间（毫秒，给响应返回留出时间，外部重启会再延迟12秒）',
           default: 2000,
           minimum: 500,
-          maximum: 10000
-        }
+          maximum: 10000,
+        },
       },
-      required: []
-    }
+      required: [],
+    },
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -217,7 +220,11 @@ export const restartServiceTool: Tool = {
 
     try {
       // 1. 编译检查（除非force=true）
-      let compileResult: { success: boolean; errors: string[]; output: string } = { success: true, errors: [], output: '' };
+      let compileResult: { success: boolean; errors: string[]; output: string } = {
+        success: true,
+        errors: [],
+        output: '',
+      };
       compileResult = await checkCompilation(timeout);
       if (!compileResult.success) {
         return {
@@ -225,7 +232,7 @@ export const restartServiceTool: Tool = {
           error: '编译检查失败',
           details: compileResult.errors,
           output: compileResult.output,
-          suggestion: '修复编译错误后重试'
+          suggestion: '修复编译错误后重试',
         };
       }
       // 2. 如果仅检查，返回结果
@@ -236,7 +243,7 @@ export const restartServiceTool: Tool = {
           restartReady: true,
           message: '编译检查通过，可以安全重启',
           environment: detectEnvironment(),
-          restartMethod: getRestartMethod()
+          restartMethod: getRestartMethod(),
         };
       }
 
@@ -258,17 +265,16 @@ export const restartServiceTool: Tool = {
         restartMethod: restartMethod,
         restartInitiated: true,
         delay: delay,
-        note: '重启过程中服务会有短暂中断，外部进程管理器将自动重启服务'
+        note: '重启过程中服务会有短暂中断，外部进程管理器将自动重启服务',
       };
-
     } catch (error: any) {
       return {
         success: false,
         error: '重启服务执行失败',
         details: error.message,
         stack: error.stack,
-        suggestion: '请检查服务配置和权限'
+        suggestion: '请检查服务配置和权限',
       };
     }
-  }
+  },
 };

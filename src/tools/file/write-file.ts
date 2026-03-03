@@ -8,8 +8,8 @@ const configManager = ConfigManager.getInstance();
 
 export const writeFileTool: Tool = {
   definition: {
-    name: 'write_file',
-    groupName: '文件工具',
+    name: 'utils_write_file',
+    groupName: '基础工具',
     description: '写入文件内容',
     parameters: {
       type: 'object',

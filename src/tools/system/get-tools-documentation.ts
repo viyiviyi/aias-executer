@@ -10,8 +10,9 @@ const execAsync = promisify(exec);
 
 export const getToolsDocumentationTool: Tool = {
   definition: {
-    name: 'get_tools_documentation',
-    description: '获取工作环境，首次使用tool前先调用这个',
+    name: 'utils_get_system_info',
+    groupName: '基础工具',
+    description: '获取工作环境，首次使用tool前调用获取必要的内容',
     parameters: {
       type: 'object',
       properties: {},

@@ -16,6 +16,7 @@ export interface MCPServerConfig {
   url?: string;
   description?: string;
   disabled?: boolean;
+  toolConf?: Record<string, Record<string, any>>;
 }
 
 export interface MCPConfig {
@@ -170,7 +171,7 @@ export class MCPClientManager {
       // 注册工具到工具注册表
       console.log(`📝 注册工具`);
       for (const tool of tools) {
-        await this.registerMCPServerTool(serverName, tool, client);
+        await this.registerMCPServerTool(serverName, tool, client, serverConfig);
       }
 
       this.clients.set(serverName, client);
@@ -186,20 +187,16 @@ export class MCPClientManager {
   private async registerMCPServerTool(
     serverName: string,
     mcpTool: any,
-    client: Client
+    client: Client,
+    serverConfig: MCPServerConfig
   ): Promise<void> {
     const toolName = `${serverName}_${mcpTool.name}`;
-
     const tool: Tool = {
       definition: {
+        ...mcpTool,
         name: toolName,
         groupName: serverName,
-        description: mcpTool.description || `来自 ${serverName} MCP服务器的工具`,
-        parameters: mcpTool.inputSchema || {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
+        ...(serverConfig.toolConf && serverConfig.toolConf[toolName || mcpTool.name]),
       },
       execute: async (parameters: Record<string, any>) => {
         try {
