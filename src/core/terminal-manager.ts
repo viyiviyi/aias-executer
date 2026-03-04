@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import { spawn } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { platform } from 'os';
@@ -43,6 +44,19 @@ export class TerminalManager {
     // 检查终端数量限制
     if (this.terminals.size >= this.maxTerminals) {
       throw new Error(`已达到最大终端数限制: ${this.maxTerminals}`);
+    }
+
+    // 检查shell是否存在
+    try {
+      if (platform() === 'win32') {
+        // Windows: 使用where命令检查shell是否存在
+        execSync(`where ${shell}`, { stdio: 'ignore' });
+      } else {
+        // Unix-like: 使用which命令检查shell是否存在
+        execSync(`which ${shell}`, { stdio: 'ignore' });
+      }
+    } catch (error) {
+      throw new Error(`Shell不存在或不可执行: ${shell}`);
     }
 
     // 验证工作目录
