@@ -31,6 +31,20 @@ command:
   allowedCommands: []
   maxTerminals: 5
 
+# 终端配置
+terminal:
+  # 是否使用 node-pty（伪终端），启用后支持交互式程序、终端控制序列、信号处理等
+  usePty: true
+  # 默认终端尺寸
+  defaultCols: 80
+  defaultRows: 24
+  # 终端编码（Windows 上不支持）
+  encoding: "utf8"
+  # 终端类型
+  terminalType: "xterm-256color"
+  # 输出缓冲区最大行数
+  maxBufferSize: 1000
+
 # 包管理器配置
 packageManager:
   # 可选项: yarn, npm

@@ -91,9 +91,34 @@ export class ConfigManager {
     const packageManagerDefault = configData.packageManager?.default || 'yarn';
     const packageManagerAutoInstall = configData.packageManager?.autoInstall !== false;
     const packageManagerInstallTimeout = parseInt(
-      process.env.PACKAGE_MANAGER_INSTALL_TIMEOUT || 
-      configData.packageManager?.installTimeout?.toString() || 
+      process.env.PACKAGE_MANAGER_INSTALL_TIMEOUT ||
+      configData.packageManager?.installTimeout?.toString() ||
       '300'
+    );
+
+    // 终端配置
+    const terminalUsePty = process.env.TERMINAL_USE_PTY !== 'false' &&
+                          (configData.terminal?.usePty !== false);
+    const terminalDefaultCols = parseInt(
+      process.env.TERMINAL_DEFAULT_COLS ||
+      configData.terminal?.defaultCols?.toString() ||
+      '80'
+    );
+    const terminalDefaultRows = parseInt(
+      process.env.TERMINAL_DEFAULT_ROWS ||
+      configData.terminal?.defaultRows?.toString() ||
+      '24'
+    );
+    const terminalEncoding = process.env.TERMINAL_ENCODING ||
+                            configData.terminal?.encoding ||
+                            'utf8';
+    const terminalType = process.env.TERMINAL_TYPE ||
+                        configData.terminal?.terminalType ||
+                        'xterm-256color';
+    const terminalMaxBufferSize = parseInt(
+      process.env.TERMINAL_MAX_BUFFER_SIZE ||
+      configData.terminal?.maxBufferSize?.toString() ||
+      '1000'
     );
 
     return {
@@ -111,6 +136,14 @@ export class ConfigManager {
       allowedExtensions,
       pathValidation:
         process.env.PATH_VALIDATION !== 'false' && configData.workspace?.pathValidation !== false,
+      terminal: {
+        usePty: terminalUsePty,
+        defaultCols: terminalDefaultCols,
+        defaultRows: terminalDefaultRows,
+        encoding: terminalEncoding,
+        terminalType: terminalType,
+        maxBufferSize: terminalMaxBufferSize,
+      },
       packageManager: {
         default: packageManagerDefault,
         autoInstall: packageManagerAutoInstall,
@@ -249,5 +282,19 @@ export class ConfigManager {
     }
 
     return this.config.allowedCommands.includes(command);
+  }
+
+  /**
+   * 获取终端配置
+   */
+  public getTerminalConfig() {
+    return {
+      usePty: this.config.terminal?.usePty ?? true,
+      defaultCols: this.config.terminal?.defaultCols ?? 80,
+      defaultRows: this.config.terminal?.defaultRows ?? 24,
+      encoding: this.config.terminal?.encoding ?? 'utf8',
+      terminalType: this.config.terminal?.terminalType ?? 'xterm-256color',
+      maxBufferSize: this.config.terminal?.maxBufferSize ?? 1000,
+    };
   }
 }

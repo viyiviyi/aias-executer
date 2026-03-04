@@ -13,6 +13,10 @@ export interface TerminalSession {
   lastReadPosition: number;
   outputBuffer: string[];
   isReading: boolean;
+  cols?: number;
+  rows?: number;
+  encoding?: string;
+  rawOutputBuffer?: string; // 原始输出缓冲区，用于存储控制字符
 }
 
 export interface TerminalCreateOptions {

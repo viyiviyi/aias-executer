@@ -13,6 +13,14 @@ export interface Config {
   port: number;
   host: string;
   configPath?: string;
+  terminal?: {
+    usePty?: boolean;
+    defaultCols?: number;
+    defaultRows?: number;
+    encoding?: string;
+    terminalType?: string;
+    maxBufferSize?: number;
+  };
   mcp?: {
     autoStartServers?: string[];
     servers?: Record<string, {
@@ -50,4 +58,8 @@ export interface TerminalInfo {
   lastReadPosition: number; // 上次读取的位置
   outputBuffer: string[]; // 输出缓冲区
   isReading: boolean; // 是否正在读取
+  cols?: number;
+  rows?: number;
+  encoding?: string;
+  rawOutputBuffer?: string; // 原始输出缓冲区（仅用于 pty）
 }

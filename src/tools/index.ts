@@ -26,6 +26,9 @@ import {
   readTerminalOutputTool,
   closeTerminalTool,
   listTerminalsTool,
+  resizeTerminalTool,
+  sendSignalTool,
+  getRawOutputTool,
 } from './system';
 // 重启工具
 import { restartServiceTool } from './system/restart-service';
@@ -59,6 +62,9 @@ const toolList: Tool[] = [
   readTerminalOutputTool,
   closeTerminalTool,
   listTerminalsTool,
+  resizeTerminalTool,
+  sendSignalTool,
+  getRawOutputTool,
   // 浏览器工具（使用 Playwright MCP）
   openBrowserTool,
   getPageContentTool,

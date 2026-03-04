@@ -1,9 +1,11 @@
 import { execSync } from 'child_process';
 import { spawn } from 'child_process';
+import * as pty from 'node-pty';
 import { v4 as uuidv4 } from 'uuid';
 import { platform } from 'os';
 import { TerminalInfo } from '@/types';
 import { ConfigManager } from './config';
+import type { IPty } from 'node-pty';
 
 const configManager = ConfigManager.getInstance();
 
@@ -16,15 +18,38 @@ function getDefaultShell(): string {
   return 'bash';
 }
 
+// 获取终端配置
+function getTerminalConfig() {
+  return configManager.getTerminalConfig();
+}
+
+// 检查是否使用 pty
+function shouldUsePty(): boolean {
+  return getTerminalConfig().usePty;
+}
+
+// 清理终端输出中的控制字符
+function cleanTerminalOutput(data: string): string {
+  // 移除 ANSI 转义序列
+  return data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+}
+
+// 分割终端输出为行
+function splitTerminalOutput(data: string): string[] {
+  const cleaned = cleanTerminalOutput(data);
+  return cleaned.split('\n').filter(line => line.trim() !== '');
+}
+
 export class TerminalManager {
   private static instance: TerminalManager;
   private terminals: Map<string, TerminalInfo> = new Map();
   private maxTerminals: number;
-  private readonly MAX_BUFFER_SIZE = 1000; // 最大缓冲区大小，防止内存溢出
+  private terminalConfig: ReturnType<typeof getTerminalConfig>;
 
   private constructor() {
     const config = configManager.getConfig();
     this.maxTerminals = config.maxTerminals;
+    this.terminalConfig = getTerminalConfig();
   }
 
   public static getInstance(): TerminalManager {
@@ -39,24 +64,37 @@ export class TerminalManager {
     workdir: string = '.',
     env: Record<string, string> = {},
     description?: string,
-    initialCommand?: string
+    initialCommand?: string,
+    cols?: number,
+    rows?: number,
+    encoding?: string
   ): { terminal_id: string } {
     // 检查终端数量限制
     if (this.terminals.size >= this.maxTerminals) {
       throw new Error(`已达到最大终端数限制: ${this.maxTerminals}`);
     }
 
-    // 检查shell是否存在
+    // 检查shell是否存在（宽松检查，因为某些shell可能无法通过where/which找到）
     try {
       if (platform() === 'win32') {
-        // Windows: 使用where命令检查shell是否存在
-        execSync(`where ${shell}`, { stdio: 'ignore' });
+        // Windows: 尝试使用where命令检查，但忽略错误
+        try {
+          execSync(`where ${shell}`, { stdio: 'ignore' });
+        } catch (error) {
+          // 忽略错误，继续尝试
+          console.warn(`警告: 无法找到shell: ${shell}, 将继续尝试创建终端`);
+        }
       } else {
-        // Unix-like: 使用which命令检查shell是否存在
-        execSync(`which ${shell}`, { stdio: 'ignore' });
+        // Unix-like: 使用which命令检查
+        try {
+          execSync(`which ${shell}`, { stdio: 'ignore' });
+        } catch (error) {
+          console.warn(`警告: 无法找到shell: ${shell}, 将继续尝试创建终端`);
+        }
       }
-    } catch (error) {
-      throw new Error(`Shell不存在或不可执行: ${shell}`);
+    } catch (error: any) {
+      // 忽略检查错误，让 pty.spawn 自己处理
+      console.warn(`Shell检查失败: ${error.message}`);
     }
 
     // 验证工作目录
@@ -69,52 +107,116 @@ export class TerminalManager {
       // 准备环境变量
       const fullEnv = { ...process.env, ...env };
 
-      // 创建子进程
-      const childProcess = spawn(shell, [], {
-        cwd: workdirPath,
-        env: fullEnv,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        shell: true,
-      });
+      // 终端配置
+      const terminalCols = cols || this.terminalConfig.defaultCols;
+      const terminalRows = rows || this.terminalConfig.defaultRows;
+      const terminalEncoding = encoding || this.terminalConfig.encoding;
 
-      // 初始化输出缓冲区
+      let terminalProcess: any;
       const outputBuffer: string[] = [];
+      let rawOutputBuffer = '';
 
-      // 收集所有输出到缓冲区，并限制缓冲区大小
-      const collectOutput = (data: Buffer) => {
-        const output = data.toString();
-        const lines = output.split('\n').filter((line) => line.trim() !== '');
+      if (shouldUsePty()) {
+        // 使用 node-pty 创建伪终端
+        const ptyOptions: any = {
+          name: this.terminalConfig.terminalType,
+          cols: terminalCols,
+          rows: terminalRows,
+          cwd: workdirPath,
+          env: fullEnv,
+        };
 
-        // 添加新行到缓冲区
-        outputBuffer.push(...lines);
-
-        // 限制缓冲区大小，移除最旧的行
-        if (outputBuffer.length > this.MAX_BUFFER_SIZE) {
-          const excess = outputBuffer.length - this.MAX_BUFFER_SIZE;
-          outputBuffer.splice(0, excess);
+        // Windows 上不支持 encoding 参数
+        if (platform() !== 'win32') {
+          ptyOptions.encoding = terminalEncoding;
         }
-      };
 
-      childProcess.stdout.on('data', collectOutput);
-      childProcess.stderr.on('data', collectOutput);
+        const ptyProcess = pty.spawn(shell, [], ptyOptions);
+
+        // 收集输出到缓冲区
+        ptyProcess.onData((data: string) => {
+          // 保存原始数据（包含控制字符）
+          rawOutputBuffer += data;
+
+          // 更新终端对象中的 rawOutputBuffer
+          const terminal = this.terminals.get(terminalId);
+          if (terminal) {
+            terminal.rawOutputBuffer = rawOutputBuffer;
+          }
+
+          // 清理并分割为文本行
+          const lines = splitTerminalOutput(data);
+          if (lines.length > 0) {
+            outputBuffer.push(...lines);
+
+            // 限制缓冲区大小
+            if (outputBuffer.length > this.terminalConfig.maxBufferSize) {
+              const excess = outputBuffer.length - this.terminalConfig.maxBufferSize;
+              outputBuffer.splice(0, excess);
+            }
+          }
+        });
+
+        // 处理进程退出
+        ptyProcess.onExit(() => {
+          // 进程退出时清理终端
+          setTimeout(() => {
+            this.cleanupTerminal(terminalId);
+          }, 1000);
+        });
+
+        terminalProcess = ptyProcess;
+      } else {
+        // 使用传统子进程（向后兼容）
+        const childProcess = spawn(shell, [], {
+          cwd: workdirPath,
+          env: fullEnv,
+          stdio: ['pipe', 'pipe', 'pipe'],
+          shell: true,
+        });
+
+        // 收集所有输出到缓冲区
+        const collectOutput = (data: Buffer) => {
+          const output = data.toString();
+          const lines = output.split('\n').filter((line) => line.trim() !== '');
+
+          // 添加新行到缓冲区
+          outputBuffer.push(...lines);
+
+          // 限制缓冲区大小
+          if (outputBuffer.length > this.terminalConfig.maxBufferSize) {
+            const excess = outputBuffer.length - this.terminalConfig.maxBufferSize;
+            outputBuffer.splice(0, excess);
+          }
+        };
+
+        childProcess.stdout.on('data', collectOutput);
+        childProcess.stderr.on('data', collectOutput);
+
+        terminalProcess = childProcess;
+      }
 
       // 保存终端信息
       this.terminals.set(terminalId, {
         id: terminalId,
-        process: childProcess,
+        process: terminalProcess,
         workdir: workdirPath,
         shell,
         createdAt: Date.now(),
         lastActivity: Date.now(),
         description,
-        lastReadPosition: 0, // 上次读取的位置，保存在后台
+        lastReadPosition: 0,
         outputBuffer,
         isReading: false,
-      });
+        cols: terminalCols,
+        rows: terminalRows,
+        encoding: terminalEncoding,
+        rawOutputBuffer: shouldUsePty() ? rawOutputBuffer : undefined,
+      } as TerminalInfo);
 
       // 如果有初始命令，执行它
       if (initialCommand) {
-        childProcess.stdin.write(initialCommand + '\n');
+        this.sendInputToProcess(terminalProcess, initialCommand);
       }
 
       return { terminal_id: terminalId };
@@ -134,7 +236,7 @@ export class TerminalManager {
     }
 
     // 检查进程是否还在运行
-    if (terminal.process.exitCode !== null) {
+    if (!this.isProcessAlive(terminal.process)) {
       this.cleanupTerminal(terminalId);
       throw new Error('终端进程已结束');
     }
@@ -243,6 +345,41 @@ export class TerminalManager {
     }
   }
 
+  // 发送输入到进程（支持 pty 和传统进程）
+  private sendInputToProcess(process: any, input: string): void {
+    if (shouldUsePty() && typeof (process as IPty).write === 'function') {
+      // pty 进程
+      (process as IPty).write(input + '\n');
+    } else if (process.stdin && typeof process.stdin.write === 'function') {
+      // 传统子进程
+      process.stdin.write(input + '\n');
+    } else {
+      throw new Error('不支持的进程类型');
+    }
+  }
+
+  // 检查进程是否存活
+  private isProcessAlive(process: any): boolean {
+    if (shouldUsePty()) {
+      // pty 进程：通过监听器检查是否已退出
+      // 由于 node-pty 没有公开的 exited 属性，我们假设进程是存活的
+      // 除非我们收到了 onExit 事件（这会在 cleanupTerminal 中处理）
+      return true;
+    } else {
+      // 传统子进程：检查 exitCode
+      return process.exitCode === null;
+    }
+  }
+
+  // 杀死进程
+  private killProcess(process: any): void {
+    if (shouldUsePty() && typeof (process as IPty).kill === 'function') {
+      (process as IPty).kill();
+    } else if (typeof process.kill === 'function') {
+      process.kill();
+    }
+  }
+
   public async sendInput(
     terminalId: string,
     input: string,
@@ -255,7 +392,7 @@ export class TerminalManager {
     }
 
     // 检查进程是否还在运行
-    if (terminal.process.exitCode !== null) {
+    if (!this.isProcessAlive(terminal.process)) {
       this.cleanupTerminal(terminalId);
       throw new Error('终端进程已结束');
     }
@@ -264,7 +401,7 @@ export class TerminalManager {
     terminal.lastActivity = Date.now();
 
     // 发送输入
-    terminal.process.stdin.write(input + '\n');
+    this.sendInputToProcess(terminal.process, input);
 
     // 等待并读取输出
     return await this.readTerminalOutput(terminalId, waitTimeout, maxLines);
@@ -284,7 +421,7 @@ export class TerminalManager {
     const terminal = this.terminals.get(terminalId);
     if (terminal) {
       try {
-        terminal.process.kill();
+        this.killProcess(terminal.process);
       } catch (error) {
         // 忽略清理错误
       }
@@ -299,6 +436,10 @@ export class TerminalManager {
     created_at: number;
     last_activity: number;
     description?: string;
+    cols?: number;
+    rows?: number;
+    encoding?: string;
+    use_pty?: boolean;
   }> {
     return Array.from(this.terminals.values()).map((terminal) => ({
       id: terminal.id,
@@ -307,6 +448,82 @@ export class TerminalManager {
       created_at: terminal.createdAt,
       last_activity: terminal.lastActivity,
       description: terminal.description,
+      cols: terminal.cols,
+      rows: terminal.rows,
+      encoding: terminal.encoding,
+      use_pty: shouldUsePty(),
     }));
+  }
+
+  /**
+   * 调整终端尺寸
+   */
+  public resizeTerminal(terminalId: string, cols: number, rows: number): { success: boolean } {
+    const terminal = this.terminals.get(terminalId);
+    if (!terminal) {
+      throw new Error(`终端不存在: ${terminalId}`);
+    }
+
+    if (!shouldUsePty()) {
+      throw new Error('只有使用 pty 的终端支持调整尺寸');
+    }
+
+    const ptyProcess = terminal.process as IPty;
+    if (typeof ptyProcess.resize === 'function') {
+      ptyProcess.resize(cols, rows);
+      terminal.cols = cols;
+      terminal.rows = rows;
+      return { success: true };
+    }
+
+    throw new Error('终端不支持调整尺寸');
+  }
+
+  /**
+   * 发送信号到终端
+   */
+  public sendSignal(terminalId: string, signal: string): { success: boolean } {
+    const terminal = this.terminals.get(terminalId);
+    if (!terminal) {
+      throw new Error(`终端不存在: ${terminalId}`);
+    }
+
+    if (!shouldUsePty()) {
+      throw new Error('只有使用 pty 的终端支持发送信号');
+    }
+
+    const ptyProcess = terminal.process as IPty;
+
+    // 映射信号到控制字符
+    const signalMap: Record<string, string> = {
+      'SIGINT': '\x03',  // Ctrl+C
+      'SIGTSTP': '\x1A', // Ctrl+Z
+      'SIGQUIT': '\x1C', // Ctrl+\
+      'SIGKILL': '\x1B', // Esc
+    };
+
+    const controlChar = signalMap[signal];
+    if (controlChar) {
+      ptyProcess.write(controlChar);
+      return { success: true };
+    }
+
+    throw new Error(`不支持的信号: ${signal}`);
+  }
+
+  /**
+   * 获取终端原始输出（包含控制字符）
+   */
+  public getRawTerminalOutput(terminalId: string): { output: string } {
+    const terminal = this.terminals.get(terminalId);
+    if (!terminal) {
+      throw new Error(`终端不存在: ${terminalId}`);
+    }
+
+    if (!shouldUsePty()) {
+      throw new Error('只有使用 pty 的终端支持获取原始输出');
+    }
+
+    return { output: terminal.rawOutputBuffer || '' };
   }
 }
