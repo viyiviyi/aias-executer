@@ -6,3 +6,4 @@ browser-data/
 playwright-browsers/
 config/browser.yaml
 logs/
+.claude/

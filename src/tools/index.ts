@@ -15,6 +15,7 @@ import { readCodeTool } from './file/read-code';
 import { moveFileTool } from './file/move-file';
 import { deleteFilesTool } from './file/delete-files';
 import { copyFileTool } from './file/copy-file';
+import { createDirectoryTool } from './file/create-directory';
 
 // 系统工具
 // 系统工具
@@ -44,6 +45,7 @@ const toolList: Tool[] = [
   writeFileTool,
   readCodeTool,
   listDirectoryTool,
+  createDirectoryTool,
   updateFileTool,
   moveFileTool,
   copyFileTool,
