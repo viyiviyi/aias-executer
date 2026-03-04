@@ -40,15 +40,27 @@ export const terminalInputTool: Tool = {
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
-    const terminalId = parameters.terminal_id;
-    const input = parameters.input;
-    const waitTimeout = parameters.wait_timeout || 30;
-    const maxLines = parameters.max_lines || 100;
+    try {
+      const terminalId = parameters.terminal_id;
+      const input = parameters.input;
+      const waitTimeout = parameters.wait_timeout || 30;
+      const maxLines = parameters.max_lines || 100;
 
-    if (!terminalId || !input) {
-      throw new Error('terminal_id和input参数不能为空');
+      if (!terminalId || !input) {
+        throw new Error('terminal_id和input参数不能为空');
+      }
+
+      const result = await terminalManager.sendInput(terminalId, input, waitTimeout, maxLines);
+      
+      return {
+        success: true,
+        result: result
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || '向终端输入命令失败'
+      };
     }
-
-    return await terminalManager.sendInput(terminalId, input, waitTimeout, maxLines);
   },
-};
+};

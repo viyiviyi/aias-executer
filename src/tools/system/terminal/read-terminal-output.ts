@@ -36,14 +36,26 @@ export const readTerminalOutputTool: Tool = {
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
-    const terminalId = parameters.terminal_id;
-    const waitTimeout = parameters.wait_timeout || 30;
-    const maxLines = parameters.max_lines || 100;
+    try {
+      const terminalId = parameters.terminal_id;
+      const waitTimeout = parameters.wait_timeout || 30;
+      const maxLines = parameters.max_lines || 100;
 
-    if (!terminalId) {
-      throw new Error('terminal_id参数不能为空');
+      if (!terminalId) {
+        throw new Error('terminal_id参数不能为空');
+      }
+
+      const result = await terminalManager.readTerminalOutput(terminalId, waitTimeout, maxLines);
+      
+      return {
+        success: true,
+        result: result
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || '读取终端输出失败'
+      };
     }
-
-    return await terminalManager.readTerminalOutput(terminalId, waitTimeout, maxLines);
   },
-};
+};

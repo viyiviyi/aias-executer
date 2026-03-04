@@ -26,7 +26,7 @@ export const createTerminalTool: Tool = {
       properties: {
         shell: {
           type: 'string',
-          description: 'Shell类型（bash, zsh, sh等）',
+          description: 'Shell类型（Windows建议使用powershell，Linux建议使用bash，其他如cmd、zsh、sh等也可用）',
           default: 'bash',
         },
         workdir: {
@@ -54,12 +54,26 @@ export const createTerminalTool: Tool = {
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
-    const shell = parameters.shell || getDefaultShell();
-    const workdir = path.resolve(parameters.workdir || configManager.getConfig().workspaceDir);
-    const env = parameters.env || {};
-    const description = parameters.description;
-    const initialCommand = parameters.initial_command;
+    try {
+      const shell = parameters.shell || getDefaultShell();
+      const workdir = path.resolve(parameters.workdir || configManager.getConfig().workspaceDir);
+      const env = parameters.env || {};
+      const description = parameters.description;
+      const initialCommand = parameters.initial_command;
 
-    return terminalManager.createTerminal(shell, workdir, env, description, initialCommand);
+      const result = terminalManager.createTerminal(shell, workdir, env, description, initialCommand);
+      
+      // 确保返回格式正确
+      return {
+        success: true,
+        result: result
+      };
+    } catch (error: any) {
+      // 捕获并返回错误信息
+      return {
+        success: false,
+        error: error.message || '创建终端失败'
+      };
+    }
   },
-};
+};

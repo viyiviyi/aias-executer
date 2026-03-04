@@ -21,12 +21,24 @@ export const closeTerminalTool: Tool = {
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
-    const terminalId = parameters.terminal_id;
+    try {
+      const terminalId = parameters.terminal_id;
 
-    if (!terminalId) {
-      throw new Error('terminal_id参数不能为空');
+      if (!terminalId) {
+        throw new Error('terminal_id参数不能为空');
+      }
+
+      const result = terminalManager.closeTerminal(terminalId);
+      
+      return {
+        success: true,
+        result: result
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || '关闭终端失败'
+      };
     }
-
-    return terminalManager.closeTerminal(terminalId);
   },
-};
+};

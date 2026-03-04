@@ -15,9 +15,21 @@ export const listTerminalsTool: Tool = {
   },
 
   async execute(): Promise<any> {
-    return {
-      terminals: terminalManager.listTerminals(),
-      count: terminalManager.listTerminals().length,
-    };
+    try {
+      const terminals = terminalManager.listTerminals();
+      
+      return {
+        success: true,
+        result: {
+          terminals: terminals,
+          count: terminals.length,
+        }
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || '列出终端失败'
+      };
+    }
   },
-};
+};
