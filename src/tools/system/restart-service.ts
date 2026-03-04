@@ -14,7 +14,7 @@ async function checkCompilation(
 ): Promise<{ success: boolean; errors: string[]; output: string }> {
   try {
     // 执行编译命令
-    const result = await execAsync('yarn build', {
+    const result = await execAsync('npm run build', {
       cwd: process.cwd(),
       env: { ...process.env },
       timeout: timeout * 1000,
