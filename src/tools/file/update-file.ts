@@ -83,10 +83,19 @@ export const updateFileTool: Tool = {
         path: { type: 'string', description: '文件路径' },
         new_content: {
           type: 'string',
-          description: '修改结果',
+          description: '修改后的文件内容片段（包含变更范围及前后各5行上下文）',
+        },
+        changed_lines: {
+          type: 'array',
+          description: '发生变化的行号列表（基于新文件内容的行号）',
+          items: { type: 'integer' },
+        },
+        context_start_line: {
+          type: 'integer',
+          description: '返回内容片段的起始行号（基于新文件内容）',
         },
       },
-      required: ['success', 'path', 'new_content'],
+      required: ['success', 'path', 'new_content', 'changed_lines', 'context_start_line'],
     },
     // 使用指南
     guidelines: [
@@ -143,6 +152,7 @@ export const updateFileTool: Tool = {
       const changes: Array<{
         type: 'insert' | 'delete';
         originalLine: number;
+        newStartLine?: number; // 在新文件中的起始行号（对于insert有意义）
         lines: string[];
       }> = [];
 
@@ -171,16 +181,46 @@ export const updateFileTool: Tool = {
       const newContent = currentLines.join('\n');
       await fs.writeFile(resolvedPath, newContent, 'utf-8');
 
-      // 返回简洁的结果
+      // 返回包含上下文的结果
       const startChangeLine = Math.max(0, minChangeLine - 1);
       const endChangeLine = Math.min(currentLines.length, maxChangeLine + pushCount - 1);
+
+      // 计算上下文范围（前后各5行）
+      const startContext = Math.max(0, startChangeLine - 5);
+      const endContext = Math.min(currentLines.length, endChangeLine + 5);
+      const contextStartLine = startContext + 1; // 1-based行号
+
+      // 收集发生变化的行号（基于新文件内容的1-based行号）
+      const changedLines: number[] = [];
+      for (const change of changes) {
+        if (change.type === 'insert' && change.newStartLine) {
+          // 添加插入的所有行号
+          for (let i = 0; i < change.lines.length; i++) {
+            changedLines.push(change.newStartLine + i);
+          }
+        }
+        // 对于delete操作，不添加行号（因为行已不存在）
+      }
+
+      // 去重并排序
+      const uniqueChangedLines = [...new Set(changedLines)].sort((a, b) => a - b);
+
+      // 生成上下文内容片段
+      const contextLines = currentLines.slice(startContext, endContext);
+      const contextContent = contextLines
+        .map((line, index) => {
+          const lineNumber = startContext + index + 1; // 1-based行号
+          const linePrefix = `${lineNumber}┆`;
+          return linePrefix + line;
+        })
+        .join('\n');
+
       return {
         success: true,
         path: filePath,
-        new_content: currentLines
-          .slice(startChangeLine, endChangeLine)
-          .map((v, i) => `${i + startChangeLine + 1}┆${v}`)
-          .join('\n'),
+        new_content: contextContent,
+        changed_lines: uniqueChangedLines,
+        context_start_line: contextStartLine,
       };
     } catch (error: any) {
       if (error.code === 'EACCES') {
@@ -230,6 +270,7 @@ function applyUpdate(
   change?: {
     type: 'insert' | 'delete';
     originalLine: number;
+    newStartLine?: number; // 在新文件中的起始行号（对于insert有意义）
     lines: string[];
   };
 } {
@@ -250,6 +291,7 @@ function insertContent(
   change?: {
     type: 'insert' | 'delete';
     originalLine: number;
+    newStartLine?: number; // 在新文件中的起始行号（1-based）
     lines: string[];
   };
 } {
@@ -279,6 +321,7 @@ function insertContent(
     change: {
       type: 'insert',
       originalLine: startLineIndex,
+      newStartLine: insertIdx + 1, // 在新文件中的起始行号（1-based）
       lines: insertLines,
     },
   };
@@ -293,6 +336,7 @@ function deleteLines(
   change?: {
     type: 'insert' | 'delete';
     originalLine: number;
+    newStartLine?: number; // 在新文件中的起始行号（对于delete通常为undefined）
     lines: string[];
   };
 } {
