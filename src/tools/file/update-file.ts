@@ -81,13 +81,12 @@ export const updateFileTool: Tool = {
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
         path: { type: 'string', description: '文件路径' },
-        changed_code_context: {
-          type: 'array',
-          description:
-            '被修改行加前后3行，用于展示修改结果，如果多个变更在同一个范围，会合并成一块展示',
+        new_content: {
+          type: 'string',
+          description: '修改结果',
         },
       },
-      required: ['success', 'path', 'original_line_count', 'new_line_count', 'changes'],
+      required: ['success', 'path', 'new_content'],
     },
     // 使用指南
     guidelines: [
@@ -95,7 +94,6 @@ export const updateFileTool: Tool = {
       '行号从1开始，基于原始文件行号',
       '如果要替换内容，先删除再插入',
       '通过read_code读取行号后再基于读取到的行号更新文件',
-      '返回详细的变更信息和行号映射',
     ],
 
     result_use_type: 'last',
@@ -158,7 +156,7 @@ export const updateFileTool: Tool = {
         if (maxChangeLine < update.start_line_index) maxChangeLine = update.start_line_index;
         const result = applyUpdate(currentLines, update);
         if (update.operation == 'delete') {
-          pushCount -= result.change?.lines?.length || 0;
+          pushCount = Math.max(0, pushCount - (result.change?.lines?.length || 0));
         }
         if (update.operation == 'insert') {
           pushCount += result.change?.lines?.length || 0;
@@ -174,14 +172,14 @@ export const updateFileTool: Tool = {
       await fs.writeFile(resolvedPath, newContent, 'utf-8');
 
       // 返回简洁的结果
-      const startChangeLine = Math.min(currentLines.length, Math.max(0, minChangeLine));
-      const endChangeLine = Math.min(currentLines.length, maxChangeLine + pushCount + 1);
+      const startChangeLine = Math.max(0, minChangeLine - 1);
+      const endChangeLine = Math.min(currentLines.length, maxChangeLine + pushCount - 1);
       return {
         success: true,
         path: filePath,
         new_content: currentLines
-          .slice(startChangeLine - 1, endChangeLine + 1)
-          .map((v, i) => `${i + startChangeLine}┆${v}`)
+          .slice(startChangeLine, endChangeLine)
+          .map((v, i) => `${i + startChangeLine + 1}┆${v}`)
           .join('\n'),
       };
     } catch (error: any) {
