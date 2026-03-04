@@ -19,24 +19,43 @@ async function checkCompilation(
       env: { ...process.env },
       timeout: timeout * 1000,
       encoding: 'utf-8',
-    }).catch((e) => {
-      return e;
     });
 
     const output = (result.stdout || '') + (result.stderr || '');
+    const exitCode = (result as any).code || 0;
 
-    if (result.stderr) {
-      // 解析编译错误
-      //   const errors = parseCompileErrors(output);
-      return { success: false, errors: [], output };
+    // 检查编译是否成功
+    if (exitCode !== 0) {
+      // 编译失败，解析错误
+      const errors = parseCompileErrors(output);
+      return { success: false, errors, output };
+    }
+
+    // 编译成功，但检查是否有警告
+    const warnings = extractWarnings(output);
+    if (warnings.length > 0) {
+      // 编译成功但有警告，在输出中添加警告信息
+      const warningHeader = '\n\n=== 编译警告 ===\n';
+      const warningText = warnings.join('\n');
+      const enhancedOutput = output + warningHeader + warningText;
+      return { success: true, errors: [], output: enhancedOutput };
     }
 
     return { success: true, errors: [], output };
   } catch (error: any) {
+    // execAsync抛出的错误（如超时、命令不存在等）
+    const output = error.stdout || error.stderr || error.message || '';
+    const errors = parseCompileErrors(output);
+
+    // 如果没有解析到具体错误，添加通用错误信息
+    if (errors.length === 0 || (errors.length === 1 && errors[0] === '未知编译错误')) {
+      errors.unshift(`编译过程异常: ${error.message}`);
+    }
+
     return {
       success: false,
-      errors: [`编译检查异常: ${error.message}`],
-      output: error.stack || '',
+      errors,
+      output: error.stack || output,
     };
   }
 }
@@ -44,41 +63,246 @@ async function checkCompilation(
 /**
  * 解析编译错误信息
  */
-// function parseCompileErrors(output: string): string[] {
-//   const errors: string[] = [];
+function parseCompileErrors(output: string): string[] {
+  const errors: string[] = [];
 
-//   // 匹配TypeScript错误格式
-//   const tsErrorRegex = /error TS\d+: .*?(?=\n|$)/g;
-//   const matches = output.match(tsErrorRegex);
+  // 清理输出，移除多余的空格
+  const cleanedOutput = output.trim();
+  if (!cleanedOutput) {
+    return ['编译输出为空'];
+  }
 
-//   if (matches) {
-//     errors.push(...matches.slice(0, 10)); // 最多返回10个错误
-//   } else if (output.includes('error') || output.includes('Error')) {
-//     // 如果没有匹配到标准格式，提取包含error的行
-//     const lines = output.split('\n');
-//     const errorLines = lines
-//       .filter(
-//         (line) => line.toLowerCase().includes('error') && !line.toLowerCase().includes('warning')
-//       )
-//       .slice(0, 10);
-//     errors.push(...errorLines);
-//   } else if (output.trim()) {
-//     errors.push('编译失败，但无法解析具体错误信息');
-//   }
+  // 按行分割
+  const lines = cleanedOutput.split('\n');
 
-//   return errors.length > 0 ? errors : ['未知编译错误'];
-// }
+  // 定义TypeScript错误模式
+  const tsErrorPattern = /error\s+TS(\d+):\s*(.+)/i;
+  const fileLocationPattern = /(\S+\.(?:ts|js|tsx|jsx))\((\d+),(\d+)\)/;
+
+  // 收集所有错误行
+  const errorLines: string[] = [];
+  let currentError: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // 跳过空行
+    if (!line) continue;
+
+    // 检查是否是错误行开始（包含error但不包含warning）
+    if (line.toLowerCase().includes('error') && !line.toLowerCase().includes('warning')) {
+      // 如果有收集到前一个错误，先保存
+      if (currentError.length > 0) {
+        errorLines.push(currentError.join('\n'));
+        currentError = [];
+      }
+      currentError.push(line);
+    } else if (currentError.length > 0) {
+      // 如果是错误信息的延续（缩进或相关行）
+      if (line.startsWith(' ') || line.startsWith('\t') ||
+          line.includes('^') || // 错误位置标记
+          fileLocationPattern.test(line)) {
+        currentError.push(line);
+      } else {
+        // 错误信息结束
+        if (currentError.length > 0) {
+          errorLines.push(currentError.join('\n'));
+          currentError = [];
+        }
+      }
+    }
+  }
+
+  // 处理最后一个错误
+  if (currentError.length > 0) {
+    errorLines.push(currentError.join('\n'));
+  }
+
+  // 处理提取到的错误
+  if (errorLines.length > 0) {
+    // 限制返回的错误数量
+    const maxErrors = 10;
+    const limitedErrors = errorLines.slice(0, maxErrors);
+
+    // 格式化错误信息
+    for (const errorBlock of limitedErrors) {
+      // 尝试提取结构化信息
+      const lines = errorBlock.split('\n');
+      const firstLine = lines[0];
+
+      // 尝试匹配TypeScript错误代码
+      const tsMatch = firstLine.match(tsErrorPattern);
+      if (tsMatch) {
+        const errorCode = tsMatch[1];
+        const errorMessage = tsMatch[2];
+
+        // 查找文件位置
+        let fileLocation = '';
+        for (const line of lines) {
+          const locationMatch = line.match(fileLocationPattern);
+          if (locationMatch) {
+            const [, file, lineNum, colNum] = locationMatch;
+            fileLocation = ` (${file}:${lineNum}:${colNum})`;
+            break;
+          }
+        }
+
+        errors.push(`TS${errorCode}: ${errorMessage}${fileLocation}`);
+      } else {
+        // 普通错误格式
+        errors.push(firstLine);
+      }
+    }
+
+    // 如果错误太多，添加提示
+    if (errorLines.length > maxErrors) {
+      errors.push(`... 还有 ${errorLines.length - maxErrors} 个错误未显示`);
+    }
+  } else if (cleanedOutput.toLowerCase().includes('error')) {
+    // 如果包含error关键词但未匹配到格式，返回关键行
+    const errorKeywords = ['failed', 'error', '无法', '失败'];
+    const relevantLines = lines.filter(line =>
+      errorKeywords.some(keyword => line.toLowerCase().includes(keyword))
+    ).slice(0, 5);
+
+    if (relevantLines.length > 0) {
+      errors.push(...relevantLines);
+    } else {
+      errors.push('编译失败，无法解析具体错误信息');
+    }
+  } else if (cleanedOutput) {
+    errors.push('编译失败，输出信息：' + cleanedOutput.split('\n')[0]);
+  }
+
+  return errors.length > 0 ? errors : ['未知编译错误'];
+}
+
+/**
+ * 提取编译警告信息
+ */
+function extractWarnings(output: string): string[] {
+  const warnings: string[] = [];
+
+  // 清理输出，移除多余的空格
+  const cleanedOutput = output.trim();
+  if (!cleanedOutput) {
+    return [];
+  }
+
+  // 按行分割
+  const lines = cleanedOutput.split('\n');
+
+  // 定义警告模式
+  const tsWarningPattern = /warning\s+TS(\d+):\s*(.+)/i;
+  const fileLocationPattern = /(\S+\.(?:ts|js|tsx|jsx))\((\d+),(\d+)\)/;
+
+  // 收集所有警告行
+  const warningLines: string[] = [];
+  let currentWarning: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // 跳过空行
+    if (!line) continue;
+
+    // 检查是否是警告行开始（包含warning但不包含error）
+    if (line.toLowerCase().includes('warning') && !line.toLowerCase().includes('error')) {
+      // 如果有收集到前一个警告，先保存
+      if (currentWarning.length > 0) {
+        warningLines.push(currentWarning.join('\n'));
+        currentWarning = [];
+      }
+      currentWarning.push(line);
+    } else if (currentWarning.length > 0) {
+      // 如果是警告信息的延续（缩进或相关行）
+      if (line.startsWith(' ') || line.startsWith('\t') ||
+          line.includes('^') || // 位置标记
+          fileLocationPattern.test(line)) {
+        currentWarning.push(line);
+      } else {
+        // 警告信息结束
+        if (currentWarning.length > 0) {
+          warningLines.push(currentWarning.join('\n'));
+          currentWarning = [];
+        }
+      }
+    }
+  }
+
+  // 处理最后一个警告
+  if (currentWarning.length > 0) {
+    warningLines.push(currentWarning.join('\n'));
+  }
+
+  // 处理提取到的警告
+  if (warningLines.length > 0) {
+    // 限制返回的警告数量
+    const maxWarnings = 10;
+    const limitedWarnings = warningLines.slice(0, maxWarnings);
+
+    // 格式化警告信息
+    for (const warningBlock of limitedWarnings) {
+      // 尝试提取结构化信息
+      const lines = warningBlock.split('\n');
+      const firstLine = lines[0];
+
+      // 尝试匹配TypeScript警告代码
+      const tsMatch = firstLine.match(tsWarningPattern);
+      if (tsMatch) {
+        const warningCode = tsMatch[1];
+        const warningMessage = tsMatch[2];
+
+        // 查找文件位置
+        let fileLocation = '';
+        for (const line of lines) {
+          const locationMatch = line.match(fileLocationPattern);
+          if (locationMatch) {
+            const [, file, lineNum, colNum] = locationMatch;
+            fileLocation = ` (${file}:${lineNum}:${colNum})`;
+            break;
+          }
+        }
+
+        warnings.push(`TS${warningCode}: ${warningMessage}${fileLocation}`);
+      } else {
+        // 普通警告格式
+        warnings.push(firstLine);
+      }
+    }
+
+    // 如果警告太多，添加提示
+    if (warningLines.length > maxWarnings) {
+      warnings.push(`... 还有 ${warningLines.length - maxWarnings} 个警告未显示`);
+    }
+  }
+
+  return warnings;
+}
 
 /**
  * 检测当前运行环境
  */
 function detectEnvironment(): string {
-  // 检查是否在Docker中
+  // 按优先级检测环境
+
+  // 1. 检查是否由PM2管理（最高优先级）
+  if (isManagedByPM2()) {
+    return 'pm2';
+  }
+
+  // 2. 检查是否由ts-node-dev管理
+  if (isManagedByTsNodeDev()) {
+    return 'development';
+  }
+
+  // 3. 检查是否在Docker容器中
   if (fs.existsSync('/.dockerenv')) {
+    // 检查是否由其他进程管理器管理（但PM2已检查过）
     return 'docker';
   }
 
-  // 检查是否在Windows服务中
+  // 4. 检查是否在Windows服务中
   if (process.platform === 'win32') {
     try {
       const winswPath = path.join(process.cwd(), 'win-server', 'aias-executer.exe');
@@ -90,7 +314,7 @@ function detectEnvironment(): string {
     }
   }
 
-  // 检查是否在systemd服务中
+  // 5. 检查是否在systemd服务中
   if (process.platform === 'linux' || process.platform === 'darwin') {
     // 检查是否由systemd管理
     if (process.env.INVOCATION_ID) {
@@ -108,8 +332,88 @@ function detectEnvironment(): string {
     }
   }
 
-  // 默认开发环境
+  // 6. 默认开发环境
   return 'development';
+}
+
+/**
+ * 检测是否由ts-node-dev管理
+ */
+function isManagedByTsNodeDev(): boolean {
+  // 检查进程参数是否包含ts-node-dev
+  const processArgs = process.argv.join(' ');
+  if (processArgs.includes('ts-node-dev')) {
+    return true;
+  }
+
+  // 检查父进程（在Linux/macOS上）
+  if (process.platform === 'linux' || process.platform === 'darwin') {
+    try {
+      const ppid = process.ppid;
+      // 读取父进程的命令行
+      const fs = require('fs');
+      const cmdlinePath = `/proc/${ppid}/cmdline`;
+      if (fs.existsSync(cmdlinePath)) {
+        const cmdline = fs.readFileSync(cmdlinePath, 'utf8');
+        return cmdline.includes('ts-node-dev');
+      }
+    } catch {
+      // 忽略错误
+    }
+  }
+
+  // 检查环境变量（ts-node-dev可能会设置）
+  if (process.env.TS_NODE_DEV) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * 检测是否由PM2管理
+ */
+function isManagedByPM2(): boolean {
+  // 检查环境变量（PM2设置的环境变量）
+  if (process.env.PM2_HOME || process.env.PM2_PROGRAMMATIC) {
+    return true;
+  }
+
+  // 检查进程名称或参数
+  const processArgs = process.argv.join(' ');
+  if (processArgs.includes('pm2') || process.title?.includes('pm2')) {
+    return true;
+  }
+
+  // 检查NODE_APP_INSTANCE环境变量（PM2集群模式）
+  if (process.env.NODE_APP_INSTANCE !== undefined) {
+    return true;
+  }
+
+  // 检查父进程（在Linux/macOS上）
+  if (process.platform === 'linux' || process.platform === 'darwin') {
+    try {
+      const ppid = process.ppid;
+      const fs = require('fs');
+      const cmdlinePath = `/proc/${ppid}/cmdline`;
+      if (fs.existsSync(cmdlinePath)) {
+        const cmdline = fs.readFileSync(cmdlinePath, 'utf8');
+        return cmdline.includes('pm2');
+      }
+    } catch {
+      // 忽略错误
+    }
+  }
+
+  // 尝试加载pm2模块来验证
+  try {
+    require('pm2');
+    return true;
+  } catch {
+    // pm2模块未安装或不可用
+  }
+
+  return false;
 }
 
 /**
@@ -119,6 +423,8 @@ function getRestartMethod(): string {
   const env = detectEnvironment();
 
   switch (env) {
+    case 'pm2':
+      return 'PM2进程管理器重启（使用PM2 API优雅重启）';
     case 'docker':
       return 'Docker容器重启（依赖Docker restart策略）';
     case 'windows-service':
@@ -126,9 +432,51 @@ function getRestartMethod(): string {
     case 'systemd':
       return 'systemd服务重启（依赖systemd Restart配置）';
     case 'development':
+      if (isManagedByTsNodeDev()) {
+        return '开发模式重启（ts-node-dev将自动重启进程）';
+      }
       return '开发模式重启（进程退出后需手动重启）';
     default:
       return '进程优雅退出';
+  }
+}
+
+/**
+ * 使用PM2 API重启当前应用
+ */
+async function restartWithPM2(): Promise<boolean> {
+  try {
+    console.log('[RestartService] 尝试通过PM2 API重启应用...');
+
+    // 动态加载pm2模块
+    const pm2 = require('pm2');
+
+    return new Promise((resolve, reject) => {
+      pm2.connect((err: any) => {
+        if (err) {
+          console.error('[RestartService] PM2连接失败:', err.message);
+          reject(err);
+          return;
+        }
+
+        // 重启当前应用（根据进程名或ID）
+        const processName = 'aias-executor'; // 从ecosystem.config.js获取
+        pm2.restart(processName, (restartErr: any) => {
+          pm2.disconnect();
+
+          if (restartErr) {
+            console.error('[RestartService] PM2重启失败:', restartErr.message);
+            reject(restartErr);
+          } else {
+            console.log('[RestartService] PM2重启命令已发送');
+            resolve(true);
+          }
+        });
+      });
+    });
+  } catch (error: any) {
+    console.error('[RestartService] PM2重启异常:', error.message);
+    return false;
   }
 }
 
@@ -162,6 +510,22 @@ function performGracefulExit(): void {
 
   // 根据环境执行不同的退出策略
   switch (env) {
+    case 'pm2':
+      // 使用PM2 API优雅重启
+      console.log('[RestartService] 通过PM2 API重启应用...');
+      restartWithPM2().then(success => {
+        if (!success) {
+          console.log('[RestartService] PM2重启失败，回退到进程退出');
+          process.exit(1);
+        }
+        // 如果成功，PM2会处理重启，当前进程会继续运行直到被PM2停止
+      }).catch(error => {
+        console.error('[RestartService] PM2重启异常:', error.message);
+        process.exit(1);
+      });
+      // 注意：不要在这里调用break，因为我们需要等待异步操作
+      return;
+
     case 'docker':
     case 'windows-service':
     case 'systemd':
@@ -172,7 +536,12 @@ function performGracefulExit(): void {
 
     case 'development':
       // 开发环境：尝试使用nodemon/ts-node-dev的热重载
-      console.log('[RestartService] 开发环境退出，可能需要手动重启');
+      if (isManagedByTsNodeDev()) {
+        console.log('[RestartService] 开发环境退出，ts-node-dev将自动重启进程');
+        console.log('[RestartService] 如果未自动重启，请确保ts-node-dev使用--respawn参数启动');
+      } else {
+        console.log('[RestartService] 开发环境退出，可能需要手动重启');
+      }
       process.exit(1);
       break;
 
