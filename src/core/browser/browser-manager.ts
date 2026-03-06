@@ -306,6 +306,59 @@ export class BrowserManager {
     return session;
   }
 
+  public async registerNewTab(
+    originalBrowserId: string,
+    newPage: Page,
+    newBrowserId?: string
+  ): Promise<string> {
+    const originalSession = this.getSession(originalBrowserId);
+    if (!originalSession) {
+      throw new Error(`原始浏览器会话 ${originalBrowserId} 不存在`);
+    }
+
+    // 生成新的浏览器ID
+    const finalNewBrowserId = newBrowserId || `${originalBrowserId}_tab${Date.now()}`;
+
+    // 检查是否达到最大会话数
+    const config = this.configManager.getConfig();
+    if (this.sessions.size >= config.maxSessions) {
+      // 清理最旧的会话
+      const oldestSessionId = this.getOldestSessionId();
+      if (oldestSessionId) {
+        await this.closeSession(oldestSessionId);
+      }
+    }
+
+    // 如果新会话ID已存在，先关闭
+    if (this.sessions.has(finalNewBrowserId)) {
+      await this.closeSession(finalNewBrowserId);
+    }
+
+    const session: BrowserSession = {
+      browser: originalSession.browser,
+      context: originalSession.context,
+      page: newPage,
+      createdAt: new Date(),
+      lastUsed: new Date(),
+      config: originalSession.config,
+    };
+
+    this.sessions.set(finalNewBrowserId, session);
+
+    // 应用反检测措施到新页面
+    if (originalSession.config.antiDetection) {
+      const config = this.configManager.getConfig();
+      await StealthUtils.applyStealthToPage(newPage, config);
+    }
+
+    console.log(`新标签页已注册: ${finalNewBrowserId}`, {
+      originalSession: originalBrowserId,
+      totalSessions: this.sessions.size,
+    });
+
+    return finalNewBrowserId;
+  }
+
   public async closeSession(browserId: string = 'default'): Promise<boolean> {
     const session = this.sessions.get(browserId);
     if (session) {

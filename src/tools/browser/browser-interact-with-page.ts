@@ -104,6 +104,7 @@ export const interactWithPageTool: Tool = {
           },
           required: ['url', 'title'],
         },
+        new_tab_session_id: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的会话ID' },
         timestamp: { type: 'string', description: '操作时间戳' },
       },
       required: ['success', 'session_id', 'action', 'result', 'page_state', 'timestamp'],
@@ -115,6 +116,7 @@ export const interactWithPageTool: Tool = {
       '不同操作需要不同的参数组合',
       '操作后会等待页面加载完成',
       '返回操作后的页面状态信息',
+      '如果点击操作打开了新标签页，会返回new_tab_session_id字段，可用于后续操作',
       '默认超时时间为30秒，可以自定义',
     ],
   },
@@ -139,6 +141,7 @@ export const interactWithPageTool: Tool = {
 
     const page = session.page;
     let result: any = {};
+    let newTabSessionId: string | undefined = undefined;
 
     try {
       switch (action) {
@@ -146,10 +149,24 @@ export const interactWithPageTool: Tool = {
           if (!selector) {
             throw new Error('click操作需要selector参数');
           }
+
+          // 设置新页面监听器（带超时）
+          const newPagePromise = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
+
+          // 执行点击
           await page.click(selector, { timeout: timeout * 1000 });
+
+          // 等待新页面（如果有）
+          const newPage = await newPagePromise;
+          if (newPage) {
+            // 注册新标签页
+            newTabSessionId = await browserManager.registerNewTab(browserId, newPage);
+          }
+
           if (waitForNavigation) {
             await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
           }
+
           result = { message: `已点击元素: ${selector}` };
           break;
 
@@ -157,10 +174,24 @@ export const interactWithPageTool: Tool = {
           if (x === undefined || y === undefined) {
             throw new Error('click_coordinate操作需要x和y参数');
           }
+
+          // 设置新页面监听器（带超时）
+          const newPagePromise2 = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
+
+          // 执行坐标点击
           await page.mouse.click(x, y);
+
+          // 等待新页面（如果有）
+          const newPage2 = await newPagePromise2;
+          if (newPage2) {
+            // 注册新标签页
+            newTabSessionId = await browserManager.registerNewTab(browserId, newPage2);
+          }
+
           if (waitForNavigation) {
             await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
           }
+
           result = { message: `已点击坐标: (${x}, ${y})` };
           break;
 
@@ -251,6 +282,7 @@ export const interactWithPageTool: Tool = {
           url: currentUrl,
           title: currentTitle,
         },
+        new_tab_session_id: newTabSessionId || null,
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
