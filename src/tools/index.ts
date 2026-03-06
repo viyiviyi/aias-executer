@@ -5,7 +5,7 @@ import { browserConfigTool } from './browser/browser-config-tool';
 import { closeBrowserTool } from './browser/close-browser';
 import { getPageContentTool } from './browser/browser-get-page-content';
 import { interactWithPageTool } from './browser/browser-interact-with-page';
-import { openBrowserTool } from './browser/open-browser';
+import { navigateToPageTool } from './browser/open-browser';
 // 文件工具
 import { readFileTool } from './file/read-file';
 import { writeFileTool } from './file/write-file';
@@ -66,7 +66,7 @@ const toolList: Tool[] = [
   sendSignalTool,
   getRawOutputTool,
   // 浏览器工具（使用 Playwright MCP）
-  openBrowserTool,
+  navigateToPageTool,
   getPageContentTool,
   interactWithPageTool,
   closeBrowserTool,

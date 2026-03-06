@@ -27,7 +27,6 @@ export const interactWithPageTool: Tool = {
             'select',
             'check',
             'uncheck',
-            'goto',
             'go_back',
             'go_forward',
             'reload',
@@ -48,10 +47,6 @@ export const interactWithPageTool: Tool = {
         key: {
           type: 'string',
           description: '要按下的键（对于press操作需要），如Enter、Tab、ArrowDown等',
-        },
-        url: {
-          type: 'string',
-          description: '要导航到的URL（对于goto操作需要）',
         },
         wait_for_navigation: {
           type: 'boolean',
@@ -131,7 +126,6 @@ export const interactWithPageTool: Tool = {
     const text = parameters.text;
     const value = parameters.value;
     const key = parameters.key;
-    const url = parameters.url;
     const x = parameters.x;
     const y = parameters.y;
     const waitForNavigation =
@@ -140,7 +134,7 @@ export const interactWithPageTool: Tool = {
 
     const session = browserManager.getSession(browserId);
     if (!session) {
-      throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 open_browser 打开浏览器`);
+      throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 navigate_to_page 打开浏览器并导航到页面`);
     }
 
     const page = session.page;
@@ -224,13 +218,6 @@ export const interactWithPageTool: Tool = {
           result = { message: `已取消勾选元素: ${selector}` };
           break;
 
-        case 'goto':
-          if (!url) {
-            throw new Error('goto操作需要url参数');
-          }
-          await browserManager.navigateTo(browserId, url, timeout * 1000);
-          result = { message: `已导航到: ${url}` };
-          break;
 
         case 'go_back':
           await page.goBack({ timeout: timeout * 1000 });

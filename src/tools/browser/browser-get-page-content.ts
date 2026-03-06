@@ -126,16 +126,6 @@ export const getPageContentTool: Tool = {
           required: ['title', 'url']
         },
         dom_tree: { type: 'string', description: 'DOM树内容' },
-        scrollbar: {
-          type: 'object',
-          description: '滚动条信息',
-          properties: {
-            has_scrollbar: { type: 'boolean', description: '是否有滚动条' },
-            scroll_height: { type: 'number', description: '滚动条高度（仅当有滚动条时存在）' },
-            scroll_position: { type: 'number', description: '滚动条位置（仅当有滚动条时存在）' }
-          },
-          required: ['has_scrollbar']
-        }
       },
       required: ['success', 'session_id', 'page_info', 'dom_tree']
     },
@@ -146,8 +136,7 @@ export const getPageContentTool: Tool = {
       '默认只显示视口内可见的DOM元素（可通过show_no_visibility参数显示所有元素）',
       '可以指定根选择器来获取特定区域的内容',
       '支持自定义包含的属性和事件属性',
-      '返回的DOM树经过优化，只包含有用的内容',
-      '返回结果包含滚动条信息（如果有滚动条）'
+      '返回的DOM树经过优化，只包含有用的内容'
     ],
 
     result_use_type: 'last',
@@ -163,7 +152,7 @@ export const getPageContentTool: Tool = {
 
     const session = browserManager.getSession(browserId);
     if (!session) {
-      throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 open_browser 打开浏览器`);
+      throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 navigate_to_page 打开浏览器并导航到页面`);
     }
 
     try {
@@ -190,12 +179,6 @@ export const getPageContentTool: Tool = {
       // 获取页面内容 - 优化的DOM树
       const bodyDomTree = await page.evaluate((options: PageEvaluateOptions) => {
         // 页面内使用的类型定义
-        interface ScrollbarInfo {
-          has_scrollbar: boolean;
-          scroll_height?: number;
-          scroll_position?: number;
-        }
-
         const {
           showNoVisibility,
           includeAttributes,
@@ -241,21 +224,21 @@ export const getPageContentTool: Tool = {
           }
 
           // 检查是否在视口内
-          const rect = element.getBoundingClientRect();
-          const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-          const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-          
-          // 元素完全或部分在视口内
-          const isInViewport = (
-            rect.top < viewportHeight &&
-            rect.bottom > 0 &&
-            rect.left < viewportWidth &&
-            rect.right > 0
-          );
+          // const rect = element.getBoundingClientRect();
+          // const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+          // const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
 
-          if (!isInViewport) {
-            return false;
-          }
+          // // 元素完全或部分在视口内
+          // const isInViewport = (
+          //   rect.top < viewportHeight &&
+          //   rect.bottom > 0 &&
+          //   rect.left < viewportWidth &&
+          //   rect.right > 0
+          // );
+
+          // if (!isInViewport) {
+          //   return false;
+          // }
 
           return true;
         };
@@ -461,7 +444,7 @@ export const getPageContentTool: Tool = {
             const tagName = element.tagName.toUpperCase();
             const attrsStr = getAttributesString(element);
 
-            const dom: Dom = { tag: tagName, attr: attrsStr || undefined }
+            const dom: Dom = { tag: tagName, attr: attrsStr?.trim() || undefined }
             lines.push(dom)
             // 处理子节点
             for (const child of Array.from(node.childNodes)) {
@@ -470,8 +453,11 @@ export const getPageContentTool: Tool = {
               if (childLines.length)
                 dom.child.push(...childLines)
             }
-            if (dom.child && dom.child.length == 1) {
+            // 如果节点只有一个子节点，用子节点覆盖当前节点，子节点是text节点除外
+            if (dom.child && dom.child.length == 1 && dom.child[0].tag != 'text') {
+              const child = dom.child[0].child
               Object.assign(dom, dom.child[0])
+              Object.assign(dom, { child })
             }
           }
 
@@ -493,38 +479,120 @@ export const getPageContentTool: Tool = {
           }
         }
 
-        // 从根节点开始构建
-        const treeLines = buildDomTree(rootElement);
+        // 合并文本节点的函数
+        const mergeTextNodes = (domArray: Dom[]): Dom[] => {
+          // 内联元素标签，这些元素通常只包含文本，可以扁平化
+          const inlineTags = new Set(['span', 'strong', 'em', 'i', 'b', 'u', 'mark', 'small', 'sub', 'sup']);
+          // 需要保留的元素标签，即使它们只包含文本
+          const keepTags = new Set(['a', 'img', 'button', 'input', 'textarea', 'select', 'label', 'code', 'pre']);
 
-        // 获取滚动条信息
-        const getScrollbarInfo = (): ScrollbarInfo => {
-          const htmlElement = document.documentElement;
-          const bodyElement = document.body;
-          
-          // 检查是否有滚动条
-          const hasVerticalScrollbar = htmlElement.scrollHeight > htmlElement.clientHeight || 
-                                      bodyElement.scrollHeight > bodyElement.clientHeight;
-          
-          if (!hasVerticalScrollbar) {
-            return { has_scrollbar: false };
-          }
-          
-          // 获取滚动条信息
-          const scrollHeight = Math.max(htmlElement.scrollHeight, bodyElement.scrollHeight);
-          const scrollPosition = Math.max(htmlElement.scrollTop, bodyElement.scrollTop);
-          
-          return {
-            has_scrollbar: true,
-            scroll_height: scrollHeight,
-            scroll_position: scrollPosition
+          const processDom = (dom: Dom): Dom | null => {
+            if (dom.tag === 'text') {
+              return dom;
+            }
+
+            // 递归处理子节点
+            let processedChild: Dom[] = [];
+            if (dom.child) {
+              for (const child of dom.child) {
+                const processed = processDom(child);
+                if (processed) {
+                  processedChild.push(processed);
+                }
+              }
+            }
+
+            const tagLower = dom.tag.toLowerCase();
+            const isInline = inlineTags.has(tagLower);
+            const shouldKeep = keepTags.has(tagLower) || dom.attr?.includes('href=') || dom.attr?.includes('src=') || dom.attr?.includes('onclick=');
+
+            // 收集所有文本内容（包括子元素的文本）
+            const collectText = (d: Dom): string => {
+              let text = '';
+              if (d.tag === 'text' && d.text) {
+                text += d.text + ' ';
+              } else if (d.child) {
+                for (const child of d.child) {
+                  text += collectText(child);
+                }
+              } else if (d.text) {
+                text += d.text + ' ';
+              }
+              return text;
+            };
+
+            const allText = collectText({ ...dom, child: processedChild }).trim();
+
+            // 如果是内联元素且没有需要保留的属性，则返回文本节点
+            if (isInline && !shouldKeep && allText.length > 0) {
+              return { tag: 'text', text: allText };
+            }
+
+            // 否则创建新的DOM对象
+            const mergedDom: Dom = { tag: dom.tag, attr: dom.attr };
+            if (processedChild.length > 0) {
+              mergedDom.child = processedChild;
+            }
+            // 如果元素有文本内容，可以设置text属性
+            if (allText.length > 0 && (!mergedDom.child || mergedDom.child.length === 0)) {
+              mergedDom.text = allText;
+              delete mergedDom.child;
+            }
+            return mergedDom;
           };
+
+          const result: Dom[] = [];
+          let currentText: string | null = null;
+
+          for (const dom of domArray) {
+            const processed = processDom(dom);
+            if (!processed) continue;
+
+            if (processed.tag === 'text') {
+              // 累积文本节点
+              if (currentText === null) {
+                currentText = processed.text || '';
+              } else {
+                currentText += ' ' + (processed.text || '');
+              }
+            } else {
+              // 如果之前有累积的文本，先创建一个文本节点
+              if (currentText !== null && currentText.trim().length > 0) {
+                result.push({ tag: 'text', text: currentText.trim() });
+                currentText = null;
+              }
+              result.push(processed);
+            }
+          }
+
+          // 处理末尾累积的文本
+          if (currentText !== null && currentText.trim().length > 0) {
+            result.push({ tag: 'text', text: currentText.trim() });
+          }
+
+          return result;
         };
 
-        const scrollbarInfo = getScrollbarInfo();
-        
+        // 从根节点开始构建
+        const treeLines = mergeTextNodes(buildDomTree(rootElement));
+
+        const toYaml = (dom: Dom[], dept = 0): string => {
+          let res = '';
+          dom.forEach(ele => {
+            res += `${' '.repeat(dept)}${ele.tag == 'text' ? '' : ele.tag}${ele.attr || ''}${ele.text || ''}`
+            if (ele.child && ele.child.length) {
+              if (!res.endsWith('\n'))
+                res += '\n'
+              res += toYaml(ele.child, dept + 1);
+            }
+            if (!res.endsWith('\n'))
+              res += '\n'
+          });
+
+          return res;
+        };
         return {
-          dom_tree: treeLines,
-          scrollbar: scrollbarInfo
+          dom_tree: toYaml(treeLines),
         };
       }, evaluateOptions);
 
@@ -536,7 +604,6 @@ export const getPageContentTool: Tool = {
           url: url,
           root_selector: rootSelector || undefined,
         },
-        scrollbar: bodyDomTree.scrollbar,
         dom_tree: bodyDomTree.dom_tree,
       };
     } catch (error: unknown) {

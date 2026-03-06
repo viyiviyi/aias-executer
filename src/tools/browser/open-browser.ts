@@ -3,11 +3,11 @@ import { BrowserManager } from '../../core/browser/browser-manager';
 
 const browserManager = BrowserManager.getInstance();
 
-export const openBrowserTool: Tool = {
+export const navigateToPageTool: Tool = {
   definition: {
-    name: 'open_browser',
+    name: 'navigate_to_page',
     groupName: 'browser',
-    description: 'playwright打开浏览器，用于访问互联网、网站、测试网页等，默认可联网',
+    description: '导航到指定URL页面，如果浏览器会话不存在则自动创建浏览器并导航，默认可联网',
     parameters: {
       type: 'object',
       properties: {
@@ -38,7 +38,7 @@ export const openBrowserTool: Tool = {
       openWorldHint: true,      // 开放世界操作（访问外部网页）
       category: 'browser',      // 浏览器操作类别
       version: '1.0.0',        // 工具版本
-      tags: ['browser', 'open', 'navigate', 'session'] // 工具标签
+      tags: ['browser', 'navigate', 'session'] // 工具标签
     },
 
     // 结构化输出模式
@@ -76,6 +76,7 @@ export const openBrowserTool: Tool = {
 
     // 使用指南
     guidelines: [
+      '导航到指定URL页面，如果浏览器会话不存在则自动创建',
       '默认使用配置文件中的浏览器设置',
       '可以指定会话名称来管理多个浏览器会话',
       '支持反检测功能，避免被网站识别为自动化工具',
@@ -151,14 +152,14 @@ export const openBrowserTool: Tool = {
           url: urlAfterNavigation,
           original_url: url
         },
-        message: `浏览器已成功打开并导航到 ${url}`,
+        message: `已成功导航到 ${url}`,
         sessions_count: browserManager.listSessions().length
       };
     } catch (error: any) {
       // 如果创建会话失败，确保清理
       await browserManager.closeSession(sessionName).catch(() => { });
 
-      throw new Error(`打开浏览器失败: ${error.message}`);
+      throw new Error(`导航到页面失败: ${error.message}`);
     }
   }
 };

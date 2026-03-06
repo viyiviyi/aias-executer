@@ -6,15 +6,13 @@
 
 ## 可用工具
 
-### 1. `open_browser` - 打开浏览器
+### 1. `navigate_to_page` - 导航到页面
 
-**功能**: 打开浏览器并导航到指定URL
+**功能**: 导航到指定URL页面，如果浏览器会话不存在则自动创建浏览器并导航
 
 **参数**:
-- `url` (必需): 要打开的URL地址
-- `browser` (可选): 浏览器类型，可选值: `chrome`, `firefox`, `webkit`, `msedge`，默认: `chrome`
+- `url` (必需): 要导航到的URL地址
 - `session_name` (可选): 浏览器会话名称，用于管理多个浏览器会话，默认: `default`
-- `headless` (可选): 是否以无头模式运行，默认: `false`（显示浏览器界面）
 - `timeout` (可选): 超时时间（秒），默认: 30，范围: 5-300
 
 **返回示例**:
@@ -29,7 +27,7 @@
     "url": "https://example.com/",
     "original_url": "https://example.com"
   },
-  "message": "浏览器已成功打开并导航到 https://example.com",
+  "message": "已成功导航到 https://example.com",
   "sessions_count": 1
 }
 ```
@@ -85,12 +83,11 @@
 
 **参数**:
 - `browser_id` (可选): 浏览器会话名称，默认: `default`
-- `action` (必需): 操作类型，可选值: `click`, `click_coordinate`, `fill`, `press`, `hover`, `select`, `check`, `uncheck`, `goto`, `go_back`, `go_forward`, `reload`
+- `action` (必需): 操作类型，可选值: `click`, `click_coordinate`, `fill`, `press`, `hover`, `select`, `check`, `uncheck`, `go_back`, `go_forward`, `reload`
 - `selector` (可选): CSS选择器（对于需要定位的操作）
 - `text` (可选): 要输入的文本（对于type、fill操作需要）
 - `value` (可选): 要选择的值（对于select操作需要）
 - `key` (可选): 要按下的键（对于press操作需要），如Enter、Tab、ArrowDown等
-- `url` (可选): 要导航到的URL（对于goto操作需要）
 - `wait_for_navigation` (可选): 操作后是否等待页面导航完成，默认: `true`
 - `x` (可选): X坐标（对于click_coordinate操作需要）
 - `y` (可选): Y坐标（对于click_coordinate操作需要）
@@ -117,14 +114,6 @@
 }
 ```
 
-3. **导航到新页面**:
-```json
-{
-  "browser_id": "default",
-  "action": "goto",
-  "url": "https://google.com"
-}
-```
 
 4. **按下键盘键**:
 ```json
@@ -173,11 +162,10 @@
 ### 完整工作流程
 
 ```javascript
-// 1. 打开浏览器
-await open_browser({
+// 1. 导航到页面
+await navigate_to_page({
   url: "https://example.com",
-  browser: "chrome",
-  headless: false
+  session_name: "default"
 });
 
 // 2. 获取页面内容
@@ -207,16 +195,15 @@ await close_browser({
 
 ```javascript
 // 打开第一个浏览器会话
-await open_browser({
+await navigate_to_page({
   url: "https://example.com",
   session_name: "session1"
 });
 
 // 打开第二个浏览器会话
-await open_browser({
+await navigate_to_page({
   url: "https://google.com",
-  session_name: "session2",
-  browser: "firefox"
+  session_name: "session2"
 });
 
 // 在两个会话间切换操作
