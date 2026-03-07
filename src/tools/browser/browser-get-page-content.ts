@@ -163,8 +163,8 @@ export const getPageContentTool: Tool = {
     try {
       const page = session.page;
 
-      // 等待页面完全加载
-      await page.waitForLoadState('networkidle', { timeout: timeout * 1000 });
+      // 等待页面加载
+      await page.waitForLoadState('load', { timeout: timeout * 1000 });
 
       // 获取页面基本信息
       const title = await page.title();
