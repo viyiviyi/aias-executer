@@ -164,7 +164,7 @@ export const getPageContentTool: Tool = {
       const page = session.page;
 
       // 等待页面加载
-      await page.waitForLoadState('load', { timeout: timeout * 1000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
 
       // 获取页面基本信息
       const title = await page.title();
@@ -217,10 +217,14 @@ export const getPageContentTool: Tool = {
           if (parseFloat(style.opacity) === 0) {
             return false;
           }
-
           // 检查尺寸
           if (element.clientWidth === 0 && element.clientHeight === 0) {
-            return false;
+            if (element.children) {
+              for (const s of Array.from(element.children)) {
+                if (isVisible(s)) return true;
+              }
+            } else
+              return false;
           }
 
           // 如果showNoVisibility为true，跳过视口检查
@@ -580,7 +584,6 @@ export const getPageContentTool: Tool = {
 
         // 从根节点开始构建
         const treeLines = mergeTextNodes(buildDomTree(rootElement));
-
         const toYaml = (dom: Dom[], dept = 0): string => {
           let res = '';
           dom.forEach(ele => {
@@ -617,10 +620,10 @@ export const getPageContentTool: Tool = {
 
       // 检查是否是浏览器断开连接相关的错误
       if (errorMessageLower.includes('target closed') ||
-          errorMessageLower.includes('session closed') ||
-          errorMessageLower.includes('browser disconnected') ||
-          errorMessageLower.includes('context closed') ||
-          errorMessageLower.includes('page closed')) {
+        errorMessageLower.includes('session closed') ||
+        errorMessageLower.includes('browser disconnected') ||
+        errorMessageLower.includes('context closed') ||
+        errorMessageLower.includes('page closed')) {
         throw new Error(`获取页面内容失败：浏览器已关闭或会话已断开。请重新打开浏览器并导航到页面。原始错误: ${errorMessage}`);
       }
 
