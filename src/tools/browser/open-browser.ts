@@ -102,64 +102,98 @@ export const navigateToPageTool: Tool = {
       throw new Error(`无效的URL格式: ${url}`);
     }
 
-    try {
-      // 获取配置
-      const config = browserManager.getConfig();
+    let retryCount = 0;
+    const maxRetries = 2;
 
-      // 创建浏览器会话（使用配置文件中的默认设置）
-      const session = await browserManager.createSession(
-        sessionName,
-        config.defaultBrowser,
-        config.defaultHeadless,
-        config.antiDetection,
-        config.userDataDir
-      );
+    while (retryCount <= maxRetries) {
+      try {
+        // 获取配置
+        const config = browserManager.getConfig();
 
-      // 导航到指定URL
-      await browserManager.navigateTo(sessionName, url, timeout * 1000);
+        // 创建浏览器会话（使用配置文件中的默认设置）
+        const session = await browserManager.createSession(
+          sessionName,
+          config.defaultBrowser,
+          config.defaultHeadless,
+          config.antiDetection,
+          config.userDataDir
+        );
 
-      // 获取页面基本信息
-      const page = session.page;
-      const title = await page.title();
-      const urlAfterNavigation = page.url();
+        // 导航到指定URL
+        await browserManager.navigateTo(sessionName, url, timeout * 1000);
 
-      // 获取反检测状态
-      const stealthStatus = {
-        enabled: config.antiDetection && config.stealthOptions.enable,
-        features: config.antiDetection && config.stealthOptions.enable ? [
-          'webdriver属性隐藏',
-          '用户代理伪装',
-          'WebGL指纹修改',
-          'Canvas指纹修改',
-          '屏幕分辨率修改',
-          '硬件信息修改'
-        ] : []
-      };
+        // 获取页面基本信息
+        const page = session.page;
+        const title = await page.title();
+        const urlAfterNavigation = page.url();
 
-      return {
-        success: true,
-        session_id: sessionName,
-        config: {
-          browser_type: config.defaultBrowser,
-          headless: config.defaultHeadless,
-          anti_detection: config.antiDetection,
-          user_data_dir: config.userDataDir,
-          stealth_enabled: stealthStatus.enabled,
-          stealth_features_count: stealthStatus.features.length
-        },
-        page_info: {
-          title: title,
-          url: urlAfterNavigation,
-          original_url: url
-        },
-        message: `已成功导航到 ${url}`,
-        sessions_count: browserManager.listSessions().length
-      };
-    } catch (error: any) {
-      // 如果创建会话失败，确保清理
-      await browserManager.closeSession(sessionName).catch(() => { });
+        // 获取反检测状态
+        const stealthStatus = {
+          enabled: config.antiDetection && config.stealthOptions.enable,
+          features: config.antiDetection && config.stealthOptions.enable ? [
+            'webdriver属性隐藏',
+            '用户代理伪装',
+            'WebGL指纹修改',
+            'Canvas指纹修改',
+            '屏幕分辨率修改',
+            '硬件信息修改'
+          ] : []
+        };
 
-      throw new Error(`导航到页面失败: ${error.message}`);
+        return {
+          success: true,
+          session_id: sessionName,
+          config: {
+            browser_type: config.defaultBrowser,
+            headless: config.defaultHeadless,
+            anti_detection: config.antiDetection,
+            user_data_dir: config.userDataDir,
+            stealth_enabled: stealthStatus.enabled,
+            stealth_features_count: stealthStatus.features.length
+          },
+          page_info: {
+            title: title,
+            url: urlAfterNavigation,
+            original_url: url
+          },
+          message: `已成功导航到 ${url}`,
+          sessions_count: browserManager.listSessions().length
+        };
+      } catch (error: any) {
+        retryCount++;
+
+        // 检查错误类型，判断是否需要重试
+        const errorMessage = error.message.toLowerCase();
+        const shouldRetry = errorMessage.includes('target closed') ||
+                           errorMessage.includes('session closed') ||
+                           errorMessage.includes('browser disconnected') ||
+                           errorMessage.includes('浏览器会话不存在');
+
+        if (retryCount <= maxRetries && shouldRetry) {
+          console.log(`导航失败，第 ${retryCount} 次重试...`);
+
+          // 清理失败的会话
+          await browserManager.closeSession(sessionName).catch(() => {});
+
+          // 等待一段时间后重试（指数退避）
+          const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // 如果创建会话失败，确保清理
+        await browserManager.closeSession(sessionName).catch(() => {});
+
+        // 根据错误类型提供更清晰的错误信息
+        if (shouldRetry) {
+          throw new Error(`导航到页面失败：浏览器已关闭或会话不存在。请检查浏览器是否正常运行。原始错误: ${error.message}`);
+        } else {
+          throw new Error(`导航到页面失败: ${error.message}`);
+        }
+      }
     }
+
+    // 理论上不会执行到这里，因为循环内会抛出错误
+    throw new Error('导航到页面失败：未知错误');
   }
 };

@@ -33,6 +33,10 @@ export class BrowserManager {
   private mainBrowser: Browser | null = null;
   private mainContext: BrowserContext | null = null;
 
+  // 重连相关属性
+  private isReconnecting: boolean = false;
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+
   private constructor() {
     // 设置Playwright浏览器安装路径到项目目录
     // 这样无论是普通模式还是服务模式都能使用同一个浏览器
@@ -52,15 +56,145 @@ export class BrowserManager {
     return BrowserManager.instance;
   }
 
+  /**
+   * 检查浏览器连接状态
+   */
+  private async checkBrowserHealth(): Promise<boolean> {
+    if (!this.mainBrowser) return false;
+
+    // 添加重试机制，最多重试2次
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        // 尝试执行一个简单的操作来检查连接状态
+        const version = await this.mainBrowser.version();
+        return !!version;
+      } catch (error) {
+        if (attempt === 2) {
+          // 最后一次尝试也失败
+          console.warn(`浏览器健康检查失败 (尝试 ${attempt}/2):`, error);
+          return false;
+        }
+        // 第一次失败，等待一小段时间后重试
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * 清理已断开连接的浏览器实例
+   */
+  private async cleanupDisconnectedBrowser(): Promise<void> {
+    try {
+      if (this.mainContext) {
+        await this.mainContext.close().catch(() => {});
+      }
+      if (this.mainBrowser) {
+        await this.mainBrowser.close().catch(() => {});
+      }
+    } catch (error) {
+      console.warn('清理断开连接的浏览器时出错:', error);
+    } finally {
+      this.mainBrowser = null;
+      this.mainContext = null;
+
+      if (this.healthCheckInterval) {
+        clearInterval(this.healthCheckInterval);
+        this.healthCheckInterval = null;
+      }
+    }
+  }
+
+  /**
+   * 处理浏览器断开连接事件
+   */
+  private async handleBrowserDisconnection(): Promise<void> {
+    if (this.isReconnecting) return;
+
+    this.isReconnecting = true;
+
+    try {
+      await this.cleanupDisconnectedBrowser();
+
+      // 如果有活跃会话，通知它们浏览器已断开
+      if (this.sessions.size > 0) {
+        console.log(`浏览器断开，清理 ${this.sessions.size} 个会话`);
+        this.sessions.clear(); // 下次使用时会自动重新创建
+      }
+    } finally {
+      this.isReconnecting = false;
+    }
+  }
+
+  /**
+   * 设置浏览器事件监听器
+   */
+  private setupBrowserEventListeners(browser: Browser): void {
+    // 监听disconnected事件
+    browser.on('disconnected', () => {
+      console.log('浏览器断开连接事件触发');
+      this.handleBrowserDisconnection();
+    });
+
+    // 启动定期健康检查（每30秒）
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    this.healthCheckInterval = setInterval(() => {
+      this.performHealthCheck().catch(error => {
+        console.error('健康检查失败:', error);
+      });
+    }, 30000);
+  }
+
+  /**
+   * 执行健康检查
+   */
+  private async performHealthCheck(): Promise<void> {
+    if (!this.mainBrowser || this.sessions.size === 0) {
+      return;
+    }
+
+    const isHealthy = await this.checkBrowserHealth();
+    if (!isHealthy) {
+      console.warn('健康检查发现浏览器可能不健康，将在下次操作时处理...');
+      // 不立即处理，避免中断正在进行的操作
+      // 设置浏览器为null，让下次getOrCreateMainBrowser时重新创建
+      this.mainBrowser = null;
+      this.mainContext = null;
+
+      // 清理健康检查定时器
+      if (this.healthCheckInterval) {
+        clearInterval(this.healthCheckInterval);
+        this.healthCheckInterval = null;
+      }
+    }
+  }
+
   private async getOrCreateMainBrowser(
     browserType: 'chrome' | 'firefox' | 'webkit' | 'msedge',
     headless: boolean,
     antiDetection: boolean,
     userDataDir?: string
   ): Promise<{ browser: Browser; context: BrowserContext }> {
-    // 如果主浏览器已经存在，直接返回
+    // 如果主浏览器已存在且健康，直接返回
     if (this.mainBrowser && this.mainContext) {
-      return { browser: this.mainBrowser, context: this.mainContext };
+      const isHealthy = await this.checkBrowserHealth();
+      if (isHealthy) {
+        return { browser: this.mainBrowser, context: this.mainContext };
+      } else {
+        // 浏览器不健康，标记为需要重新创建，但不立即清理避免中断操作
+        console.warn('浏览器健康检查失败，标记为需要重新创建...');
+        this.mainBrowser = null;
+        this.mainContext = null;
+
+        // 异步清理旧的浏览器实例（不阻塞当前操作）
+        this.cleanupDisconnectedBrowser().catch(error => {
+          console.warn('异步清理浏览器时出错:', error);
+        });
+      }
     }
 
     const config = this.configManager.getConfig();
@@ -218,6 +352,9 @@ export class BrowserManager {
 
     this.mainBrowser = browser;
     this.mainContext = context;
+
+    // 设置事件监听器
+    this.setupBrowserEventListeners(browser);
 
     return { browser, context };
   }
@@ -377,6 +514,13 @@ export class BrowserManager {
           await this.mainBrowser.close();
           this.mainBrowser = null;
           this.mainContext = null;
+
+          // 清理健康检查定时器
+          if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+          }
+
           console.log('所有会话已关闭，浏览器已关闭');
         } catch (error) {
           console.error('关闭主浏览器时出错:', error);

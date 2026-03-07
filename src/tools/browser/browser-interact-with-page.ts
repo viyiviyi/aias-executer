@@ -105,6 +105,7 @@ export const interactWithPageTool: Tool = {
           required: ['url', 'title'],
         },
         new_tab_session_id: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的会话ID' },
+        new_tab_url: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的URL' },
         timestamp: { type: 'string', description: '操作时间戳' },
       },
       required: ['success', 'session_id', 'action', 'result', 'page_state', 'timestamp'],
@@ -116,7 +117,7 @@ export const interactWithPageTool: Tool = {
       '不同操作需要不同的参数组合',
       '操作后会等待页面加载完成',
       '返回操作后的页面状态信息',
-      '如果操作打开了新标签页，会返回new_tab_session_id字段，可用于后续操作',
+      '如果操作打开了新标签页，会返回new_tab_session_id，可用于直接获取页面内容',
       '默认超时时间为30秒，可以自定义',
     ],
   },
@@ -136,12 +137,18 @@ export const interactWithPageTool: Tool = {
 
     const session = browserManager.getSession(browserId);
     if (!session) {
-      throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 navigate_to_page 打开浏览器并导航到页面`);
+      throw new Error(`浏览器会话 ${browserId} 不存在。可能的原因：
+1. 浏览器已关闭或崩溃
+2. 会话已过期（默认30分钟）
+3. 从未创建过该会话
+
+请先使用 navigate_to_page 工具打开浏览器并导航到页面，或检查浏览器是否正常运行。`);
     }
 
     const page = session.page;
     let result: any = {};
     let newTabSessionId: string | undefined = undefined;
+    let newTabUrl: string | undefined = undefined;
 
     try {
       switch (action) {
@@ -161,6 +168,8 @@ export const interactWithPageTool: Tool = {
           if (newPage) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPage);
+            // 获取新标签页的URL
+            newTabUrl = newPage.url();
           }
 
           if (waitForNavigation) {
@@ -186,6 +195,8 @@ export const interactWithPageTool: Tool = {
           if (newPage2) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPage2);
+            // 获取新标签页的URL
+            newTabUrl = newPage2.url();
           }
 
           if (waitForNavigation) {
@@ -211,6 +222,8 @@ export const interactWithPageTool: Tool = {
           if (newPageFill) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageFill);
+            // 获取新标签页的URL
+            newTabUrl = newPageFill.url();
           }
 
           if (waitForNavigation) {
@@ -241,6 +254,8 @@ export const interactWithPageTool: Tool = {
           if (newPagePress) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPagePress);
+            // 获取新标签页的URL
+            newTabUrl = newPagePress.url();
           }
 
           if (waitForNavigation) {
@@ -264,6 +279,8 @@ export const interactWithPageTool: Tool = {
           if (newPageHover) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageHover);
+            // 获取新标签页的URL
+            newTabUrl = newPageHover.url();
           }
 
           if (waitForNavigation) {
@@ -288,6 +305,8 @@ export const interactWithPageTool: Tool = {
           if (newPageSelect) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageSelect);
+            // 获取新标签页的URL
+            newTabUrl = newPageSelect.url();
           }
 
           if (waitForNavigation) {
@@ -312,6 +331,8 @@ export const interactWithPageTool: Tool = {
           if (newPageCheck) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageCheck);
+            // 获取新标签页的URL
+            newTabUrl = newPageCheck.url();
           }
 
           if (waitForNavigation) {
@@ -336,6 +357,8 @@ export const interactWithPageTool: Tool = {
           if (newPageUncheck) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageUncheck);
+            // 获取新标签页的URL
+            newTabUrl = newPageUncheck.url();
           }
 
           if (waitForNavigation) {
@@ -357,6 +380,8 @@ export const interactWithPageTool: Tool = {
           if (newPageGoBack) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageGoBack);
+            // 获取新标签页的URL
+            newTabUrl = newPageGoBack.url();
           }
 
           if (waitForNavigation) {
@@ -377,6 +402,8 @@ export const interactWithPageTool: Tool = {
           if (newPageGoForward) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageGoForward);
+            // 获取新标签页的URL
+            newTabUrl = newPageGoForward.url();
           }
 
           if (waitForNavigation) {
@@ -397,6 +424,8 @@ export const interactWithPageTool: Tool = {
           if (newPageReload) {
             // 注册新标签页
             newTabSessionId = await browserManager.registerNewTab(browserId, newPageReload);
+            // 获取新标签页的URL
+            newTabUrl = newPageReload.url();
           }
 
           if (waitForNavigation) {
@@ -423,9 +452,27 @@ export const interactWithPageTool: Tool = {
           title: currentTitle,
         },
         new_tab_session_id: newTabSessionId || null,
+        tips: newTabSessionId ? '可通过新标签页sessionId获取页面内容' : undefined,
+        new_tab_url: newTabUrl || null,
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
+      const errorMessage = error.message.toLowerCase();
+
+      // 检查是否是浏览器断开连接相关的错误
+      if (errorMessage.includes('target closed') ||
+        errorMessage.includes('session closed') ||
+        errorMessage.includes('browser disconnected') ||
+        errorMessage.includes('context closed')) {
+        throw new Error(`执行操作 ${action} 失败：浏览器已关闭或会话已断开。请重新打开浏览器并导航到页面。原始错误: ${error.message}`);
+      }
+
+      // 检查是否是页面关闭相关的错误
+      if (errorMessage.includes('page closed') || errorMessage.includes('target page, context or browser has been closed')) {
+        throw new Error(`执行操作 ${action} 失败：页面已关闭。可能浏览器已崩溃或页面被意外关闭。请重新打开浏览器并导航到页面。原始错误: ${error.message}`);
+      }
+
+      // 其他错误
       throw new Error(`执行操作 ${action} 失败: ${error.message}`);
     }
   },

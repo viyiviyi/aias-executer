@@ -152,7 +152,12 @@ export const getPageContentTool: Tool = {
 
     const session = browserManager.getSession(browserId);
     if (!session) {
-      throw new Error(`浏览器会话 ${browserId} 不存在，请先使用 navigate_to_page 打开浏览器并导航到页面`);
+      throw new Error(`浏览器会话 ${browserId} 不存在。可能的原因：
+1. 浏览器已关闭或崩溃
+2. 会话已过期（默认30分钟）
+3. 从未创建过该会话
+
+请先使用 navigate_to_page 工具打开浏览器并导航到页面，或检查浏览器是否正常运行。`);
     }
 
     try {
@@ -608,6 +613,17 @@ export const getPageContentTool: Tool = {
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
+      const errorMessageLower = errorMessage.toLowerCase();
+
+      // 检查是否是浏览器断开连接相关的错误
+      if (errorMessageLower.includes('target closed') ||
+          errorMessageLower.includes('session closed') ||
+          errorMessageLower.includes('browser disconnected') ||
+          errorMessageLower.includes('context closed') ||
+          errorMessageLower.includes('page closed')) {
+        throw new Error(`获取页面内容失败：浏览器已关闭或会话已断开。请重新打开浏览器并导航到页面。原始错误: ${errorMessage}`);
+      }
+
       throw new Error(`获取页面内容失败: ${errorMessage}`);
     }
   },
