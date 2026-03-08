@@ -29,14 +29,14 @@ function truncateText(text: string, maxLines: number = 100): string {
 function decodeBuffer(buffer: Buffer): string {
   // 尝试的编码顺序
   const encodings: string[] = ['gbk', 'utf-8', 'gb2312', 'latin1', 'ascii'];
-  
+
   for (const encoding of encodings) {
     try {
       const decoded = iconv.decode(buffer, encoding);
       // 检查是否包含过多的空字符（二进制文件的特征）
       const nullCount = (decoded.match(/\x00/g) || []).length;
       const nullRatio = nullCount / decoded.length;
-      
+
       // 如果空字符比例小于5%，认为是有效的文本
       if (nullRatio < 0.05) {
         return decoded;
@@ -46,7 +46,7 @@ function decodeBuffer(buffer: Buffer): string {
       continue;
     }
   }
-  
+
   // 如果所有编码都失败，使用utf-8并替换无效字符
   return iconv.decode(buffer, 'utf-8').replace(/[^\x00-\x7F]/g, '?');
 }
@@ -89,7 +89,7 @@ export const executeCommandTool: Tool = {
       '用于执行命令行，执行前需要确定操作系统信息',
       '请勿执行危险操作，除非用户明确要求',
     ],
-    result_use_type: 'once',
+    result_use_type: 'last',
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -149,7 +149,7 @@ export const executeCommandTool: Tool = {
       // 解码错误输出
       const errorStdout = error.stdout ? decodeBuffer(error.stdout) : '';
       const errorStderr = error.stderr ? decodeBuffer(error.stderr) : '';
-      
+
       // 合并错误信息，应用截断功能
       const errorOutput =
         (errorStdout.trim() || '') +
@@ -159,7 +159,7 @@ export const executeCommandTool: Tool = {
 
       // 返回错误信息
       return {
-        result: truncatedErrorOutput.trim(),
+        output: truncatedErrorOutput.trim(),
         success: false,
       };
     }

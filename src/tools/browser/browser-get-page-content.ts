@@ -50,7 +50,8 @@ interface GetPageContentResult {
     root_selector?: string;
   };
   scrollbar?: ScrollbarInfo;
-  dom_tree: any;
+  dom_tree?: any;
+  pageContennt: string
 }
 
 export const getPageContentTool: Tool = {
@@ -125,9 +126,10 @@ export const getPageContentTool: Tool = {
           },
           required: ['title', 'url']
         },
-        dom_tree: { type: 'string', description: 'DOM树内容' },
+        dom_tree: { type: 'object', description: 'DOM树内容' },
+        pageContent: { type: 'string', description: 'DOM树内容' },
       },
-      required: ['success', 'session_id', 'page_info', 'dom_tree']
+      required: ['success', 'session_id', 'page_info']
     },
 
     // 使用指南
@@ -600,7 +602,8 @@ export const getPageContentTool: Tool = {
           return res;
         };
         return {
-          dom_tree: toYaml(treeLines),
+          dom_tree: treeLines,
+          page: toYaml(treeLines)
         };
       }, evaluateOptions);
 
@@ -612,7 +615,8 @@ export const getPageContentTool: Tool = {
           url: url,
           root_selector: rootSelector || undefined,
         },
-        dom_tree: bodyDomTree.dom_tree,
+        // dom_tree: bodyDomTree.dom_tree,
+        pageContennt: bodyDomTree.page,
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';

@@ -243,7 +243,7 @@ async function listDirectoryRecursive(dirPath: string, originalPath: string, ski
         fullPath: displayPath,
         type: item.isDirectory() ? 'directory' : 'file',
         size: stats.size,
-        modified: stats.mtime.toISOString(),
+        modified: stats.mtime.toLocaleString(),
         depth
       };
 

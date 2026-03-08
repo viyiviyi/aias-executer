@@ -15,6 +15,7 @@ interface ReadCodeParameters {
 }
 
 interface ReadCodeResult {
+  success: boolean;
   content: string;
   total_lines: number;
   start_line: number;
@@ -75,18 +76,12 @@ const readCodeTool: Tool = {
       type: 'object',
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
-        result: {
-          type: 'object',
-          properties: {
-            content: { type: 'string', description: '代码内容（可能包含行号 1-based）' },
-            total_lines: { type: 'integer', description: '文件总行数' },
-            start_line: { type: 'integer', description: '实际起始行号' },
-            end_line: { type: 'integer', description: '实际结束行号' },
-          },
-          required: ['content', 'total_lines', 'start_line', 'end_line'],
-        },
+        content: { type: 'string', description: '代码内容（可能包含行号 1-based）' },
+        total_lines: { type: 'integer', description: '文件总行数' },
+        start_line: { type: 'integer', description: '实际起始行号' },
+        end_line: { type: 'integer', description: '实际结束行号' },
       },
-      required: ['success', 'result'],
+      required: ['success', 'content', 'total_lines', 'start_line', 'end_line'],
     },
     // 使用指南
     guidelines: [
@@ -98,7 +93,7 @@ const readCodeTool: Tool = {
     ],
   },
 
-  async execute(parameters: Record<string, any>): Promise<any> {
+  async execute(parameters: Record<string, any>): Promise<ReadCodeResult> {
     const {
       path: filePath,
       start_line: startLine,
@@ -171,17 +166,12 @@ const readCodeTool: Tool = {
       formattedContent = formattedContent.slice(0, -1);
     }
 
-    // 返回结果
-    const result: ReadCodeResult = {
+    return {
+      success: true,
       content: formattedContent,
       total_lines: totalLines,
       start_line: clampedStart,
       end_line: clampedEnd,
-    };
-
-    return {
-      success: true,
-      result: result,
     };
   },
 };

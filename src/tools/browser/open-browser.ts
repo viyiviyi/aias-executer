@@ -47,18 +47,6 @@ export const navigateToPageTool: Tool = {
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
         session_id: { type: 'string', description: '浏览器会话ID' },
-        config: {
-          type: 'object',
-          properties: {
-            browser_type: { type: 'string', description: '浏览器类型' },
-            headless: { type: 'boolean', description: '是否无头模式' },
-            anti_detection: { type: 'boolean', description: '是否启用反检测' },
-            user_data_dir: { type: 'string', description: '用户数据目录' },
-            stealth_enabled: { type: 'boolean', description: '是否启用隐身模式' },
-            stealth_features_count: { type: 'integer', description: '隐身功能数量' }
-          },
-          required: ['browser_type', 'headless', 'anti_detection', 'stealth_enabled', 'stealth_features_count']
-        },
         page_info: {
           type: 'object',
           properties: {
@@ -127,30 +115,9 @@ export const navigateToPageTool: Tool = {
         const title = await page.title();
         const urlAfterNavigation = page.url();
 
-        // 获取反检测状态
-        const stealthStatus = {
-          enabled: config.antiDetection && config.stealthOptions.enable,
-          features: config.antiDetection && config.stealthOptions.enable ? [
-            'webdriver属性隐藏',
-            '用户代理伪装',
-            'WebGL指纹修改',
-            'Canvas指纹修改',
-            '屏幕分辨率修改',
-            '硬件信息修改'
-          ] : []
-        };
-
         return {
           success: true,
           session_id: sessionName,
-          config: {
-            browser_type: config.defaultBrowser,
-            headless: config.defaultHeadless,
-            anti_detection: config.antiDetection,
-            user_data_dir: config.userDataDir,
-            stealth_enabled: stealthStatus.enabled,
-            stealth_features_count: stealthStatus.features.length
-          },
           page_info: {
             title: title,
             url: urlAfterNavigation,
