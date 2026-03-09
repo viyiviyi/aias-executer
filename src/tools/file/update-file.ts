@@ -22,7 +22,7 @@ export const updateFileTool: Tool = {
   definition: {
     name: 'utils_update_file',
     groupName: '基础工具',
-    description: '部分更新文件内容，支持批量操作',
+    description: '部分更新文件内容，支持批量操作，建议使用批量操作一次性完成一个文件的所有修改',
     parameters: {
       type: 'object',
       properties: {
@@ -219,6 +219,7 @@ export const updateFileTool: Tool = {
         success: true,
         path: filePath,
         new_content: contextContent,
+        tips:'返回的内容是修改范围内和附近的代码，非完整代码不要用于判断代码是否重复或格式不正确。',
         changed_lines: uniqueChangedLines,
         context_start_line: contextStartLine,
       };
@@ -371,162 +372,3 @@ function deleteLines(
     },
   };
 }
-
-// 生成行号映射
-// function generateLineMappings(
-//   originalLines: string[],
-//   changes: Array<{
-//     type: 'insert' | 'delete';
-//     originalLine: number;
-//     lines: string[];
-//   }>
-// ): LineMapping[] {
-//   const mappings: LineMapping[] = [];
-
-//   // 收集所有删除的行
-//   const deletedLines = new Set<number>();
-//   for (const change of changes) {
-//     if (change.type === 'delete') {
-//       // 对于删除操作，记录被删除的原始行号
-//       for (let i = 0; i < change.lines.length; i++) {
-//         const originalLine = change.originalLine + i;
-//         if (originalLine <= originalLines.length) {
-//           deletedLines.add(originalLine);
-//         }
-//       }
-//     }
-//   }
-
-//   // 收集插入操作的位置
-//   const insertions = new Map<number, string[]>();
-//   for (const change of changes) {
-//     if (change.type === 'insert') {
-//       insertions.set(change.originalLine, change.lines);
-//     }
-//   }
-
-//   // 生成映射
-//   let newLineCounter = 1;
-
-//   for (let originalLine = 1; originalLine <= originalLines.length; originalLine++) {
-//     // 检查是否有插入在这个位置之前
-//     const insertedLines = insertions.get(originalLine);
-//     if (insertedLines) {
-//       // 添加插入的行
-//       for (let i = 0; i < insertedLines.length; i++) {
-//         mappings.push({
-//           originalLine: originalLine,
-//           newLine: newLineCounter,
-//           operation: 'insert',
-//           content: insertedLines[i],
-//         });
-//         newLineCounter++;
-//       }
-//     }
-
-//     // 检查当前行是否被删除
-//     if (deletedLines.has(originalLine)) {
-//       // 被删除的行
-//       mappings.push({
-//         originalLine,
-//         newLine: -1,
-//         operation: 'delete',
-//         content: originalLines[originalLine - 1],
-//       });
-//     } else {
-//       // 未被删除的行
-//       mappings.push({
-//         originalLine,
-//         newLine: newLineCounter,
-//         operation: 'unchanged',
-//         content: originalLines[originalLine - 1],
-//       });
-//       newLineCounter++;
-//     }
-//   }
-
-//   // 处理文件末尾的插入
-//   for (const change of changes) {
-//     if (change.type === 'insert' && change.originalLine > originalLines.length) {
-//       for (let i = 0; i < change.lines.length; i++) {
-//         mappings.push({
-//           originalLine: change.originalLine,
-//           newLine: newLineCounter,
-//           operation: 'insert',
-//           content: change.lines[i],
-//         });
-//         newLineCounter++;
-//       }
-//     }
-//   }
-
-//   return mappings;
-// }
-
-// // 生成增强的代码块
-// function generateEnhancedCodeBlock(
-//   lineMappings: LineMapping[],
-//   changes: Array<{
-//     type: 'insert' | 'delete';
-//     originalLine: number;
-//     lines: string[];
-//   }>,
-//   contextLines: number
-// ): string {
-//   if (lineMappings.length === 0) {
-//     return '';
-//   }
-
-//   // 找到所有变更影响的行范围
-//   let minOriginalLine = Infinity;
-//   let maxOriginalLine = -Infinity;
-
-//   for (const change of changes) {
-//     if (change.type === 'insert') {
-//       minOriginalLine = Math.min(minOriginalLine, change.originalLine);
-//       maxOriginalLine = Math.max(maxOriginalLine, change.originalLine);
-//     } else if (change.type === 'delete') {
-//       minOriginalLine = Math.min(minOriginalLine, change.originalLine);
-//       maxOriginalLine = Math.max(maxOriginalLine, change.originalLine + change.lines.length - 1);
-//     }
-//   }
-
-//   // 找到相关的行映射（包含上下文）
-//   const relevantMappings = lineMappings.filter((mapping) => {
-//     return (
-//       mapping.originalLine >= minOriginalLine - contextLines &&
-//       mapping.originalLine <= maxOriginalLine + contextLines
-//     );
-//   });
-
-//   if (relevantMappings.length === 0) {
-//     return '';
-//   }
-
-//   // 构建代码块
-//   let codeBlock = '';
-
-//   for (const mapping of relevantMappings) {
-//     let linePrefix = '';
-
-//     if (mapping.operation === 'insert') {
-//       // 插入时：原始行号 + 新行号┆行内容
-//       linePrefix = `${mapping.originalLine} + ${mapping.newLine}┆`;
-//     } else if (mapping.operation === 'delete') {
-//       // 删除时：-原始行号┆行内容
-//       linePrefix = ` - ${mapping.originalLine}┆`;
-//     } else {
-//       // 不变时：原始行号 新行号┆行内容
-//       linePrefix = `${mapping.originalLine} ${mapping.newLine}┆`;
-//     }
-
-//     codeBlock += `${linePrefix}${mapping.content}\n`;
-//   }
-
-//   // 移除最后一个换行符
-//   if (codeBlock.endsWith('\n')) {
-//     codeBlock = codeBlock.slice(0, -1);
-//   }
-
-//   return codeBlock;
-// }

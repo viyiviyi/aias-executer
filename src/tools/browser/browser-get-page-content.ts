@@ -19,6 +19,7 @@ interface GetPageContentParameters {
   include_attributes?: string[];
   event_attributes?: string[];
   root_selector?: string;
+  accessibility_only?: boolean;
 }
 
 // 传递给页面执行的选项类型
@@ -30,6 +31,7 @@ interface PageEvaluateOptions {
   iconElements: readonly string[];
   usefulStyleProperties: readonly string[];
   defaultStyleValues: Record<string, Record<string, string>>;
+  accessibilityOnly: boolean;
   rootSelector?: string;
 }
 
@@ -96,6 +98,11 @@ export const getPageContentTool: Tool = {
           description: 'CSS选择器，指定从哪个DOM元素开始获取内容（可选）。如果未指定，则从body元素开始。',
           default: '',
         },
+        accessibility_only: {
+          type: 'boolean',
+          description: '是否仅获取可访问性元素列表（交互式元素如按钮、链接、表单控件等）',
+          default: false,
+        },
       },
       required: [],
     },
@@ -138,6 +145,7 @@ export const getPageContentTool: Tool = {
       '默认只显示视口内可见的DOM元素（可通过show_no_visibility参数显示所有元素）',
       '可以指定根选择器来获取特定区域的内容',
       '支持自定义包含的属性和事件属性',
+      '通过accessibility_only参数可以仅获取交互式元素列表（按钮、链接、表单控件等）',
       '返回的DOM树经过优化，只包含有用的内容'
     ],
 
@@ -150,6 +158,7 @@ export const getPageContentTool: Tool = {
     const show_no_visibility = parameters.show_no_visibility || false;
     const includeAttributes = parameters.include_attributes || [...INCLUDE_ATTRIBUTES];
     const eventAttributes = parameters.event_attributes || [...EVENT_ATTRIBUTES];
+    const accessibilityOnly = parameters.accessibility_only || false;
     const rootSelector = parameters.root_selector || '';
 
     const session = browserManager.getSession(browserId);
@@ -180,6 +189,7 @@ export const getPageContentTool: Tool = {
         iconElements: ICON_ELEMENTS,
         usefulStyleProperties: USEFUL_STYLE_PROPERTIES,
         defaultStyleValues: DEFAULT_STYLE_VALUES,
+        accessibilityOnly,
         rootSelector,
       };
 
@@ -194,6 +204,7 @@ export const getPageContentTool: Tool = {
           iconElements,
           usefulStyleProperties,
           // defaultStyleValues,
+          accessibilityOnly,
           rootSelector,
         } = options;
 
@@ -310,6 +321,98 @@ export const getPageContentTool: Tool = {
             }
           }
 
+          return false;
+        };
+        // 检查元素是否是交互式/可访问性元素
+        const isInteractiveElement = (element: Element): boolean => {
+          const tagName = element.tagName.toLowerCase();
+          
+          // 检查是否是按钮
+          if (tagName === 'button') {
+            return true;
+          }
+          
+          // 检查是否是输入框或表单控件
+          if (tagName === 'input') {
+            const type = element.getAttribute('type') || 'text';
+            // 排除隐藏输入框
+            if (type !== 'hidden') {
+              return true;
+            }
+          }
+          
+          // 检查其他表单控件
+          if (
+            tagName === 'textarea' ||
+            tagName === 'select' ||
+            tagName === 'option'
+          ) {
+            return true;
+          }
+          
+          // 检查是否是链接
+          if (tagName === 'a' && element.hasAttribute('href')) {
+            return true;
+          }
+          
+          // 检查是否是图片（特别是可点击的图片）
+          if (tagName === 'img') {
+            // 如果图片有onclick事件或者父元素是链接，则认为是交互式的
+            if (element.hasAttribute('onclick')) {
+              return true;
+            }
+            // 检查父元素是否是链接
+            let parent = element.parentElement;
+            while (parent) {
+              if (parent.tagName.toLowerCase() === 'a') {
+                return true;
+              }
+              parent = parent.parentElement;
+            }
+          }
+          
+          // 检查是否有事件绑定
+          for (const attr of eventAttributes) {
+            if (element.hasAttribute(attr)) {
+              return true;
+            }
+          }
+          
+          // 检查是否有可操作属性
+          if (
+            element.hasAttribute('contenteditable') ||
+            element.hasAttribute('draggable') ||
+            element.getAttribute('role') === 'button' ||
+            element.getAttribute('role') === 'link' ||
+            element.getAttribute('role') === 'checkbox' ||
+            element.getAttribute('role') === 'radio' ||
+            element.getAttribute('role') === 'tab' ||
+            element.getAttribute('role') === 'menuitem' ||
+            element.getAttribute('role') === 'option' ||
+            element.getAttribute('role') === 'slider' ||
+            element.getAttribute('role') === 'spinbutton' ||
+            element.getAttribute('role') === 'switch'
+          ) {
+            return true;
+          }
+          
+          // 检查是否是标签元素（通常与表单控件关联）
+          if (tagName === 'label') {
+            return true;
+          }
+          
+          // 检查是否是详情/摘要元素（可展开/折叠）
+          if (tagName === 'details' || tagName === 'summary') {
+            return true;
+          }
+          
+          // 检查子元素是否有交互式元素
+          for (const child of Array.from(element.children)) {
+            if (isInteractiveElement(child)) {
+              return true;
+            }
+          }
+          
           return false;
         };
 
@@ -447,9 +550,15 @@ export const getPageContentTool: Tool = {
               return lines;
             }
 
-            // 检查是否有用内容
-            if (!hasUsefulContent(element)) {
-              return lines;
+            // 检查是否有用内容（如果是accessibilityOnly模式，检查是否是交互式元素）
+            if (accessibilityOnly) {
+              if (!isInteractiveElement(element)) {
+                return lines;
+              }
+            } else {
+              if (!hasUsefulContent(element)) {
+                return lines;
+              }
             }
 
             const tagName = element.tagName.toUpperCase();
