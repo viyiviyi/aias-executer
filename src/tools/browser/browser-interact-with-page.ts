@@ -277,7 +277,7 @@ export const interactWithPageTool: Tool = {
 
       // 如果需要等待页面加载
       if (waitForNavigation) {
-        await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
+        await page.waitForLoadState('load', { timeout: timeout * 1000 });
       }
 
       // 获取操作后的页面状态

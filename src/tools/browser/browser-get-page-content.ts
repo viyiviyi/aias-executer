@@ -100,7 +100,7 @@ export const getPageContentTool: Tool = {
         },
         accessibility_only: {
           type: 'boolean',
-          description: '是否仅获取可访问性元素列表（交互式元素如按钮、链接、表单控件等）',
+          description: '是否仅获取可访问性元素列表（交互式元素如按钮、链接、表单控件等），推荐使用',
           default: false,
         },
       },
