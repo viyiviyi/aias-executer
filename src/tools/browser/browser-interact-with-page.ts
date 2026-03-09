@@ -151,30 +151,17 @@ export const interactWithPageTool: Tool = {
     let newTabUrl: string | undefined = undefined;
 
     try {
+      // 在switch之前设置新页面监听器（带超时）
+      const newPagePromise = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
+
       switch (action) {
         case 'click':
           if (!selector) {
             throw new Error('click操作需要selector参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromise = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           // 执行点击
           await page.click(selector, { timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPage = await newPagePromise;
-          if (newPage) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPage);
-            // 获取新标签页的URL
-            newTabUrl = newPage.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: `已点击元素: ${selector}` };
           break;
@@ -184,24 +171,8 @@ export const interactWithPageTool: Tool = {
             throw new Error('click_coordinate操作需要x和y参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromise2 = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           // 执行坐标点击
           await page.mouse.click(x, y);
-
-          // 等待新页面（如果有）
-          const newPage2 = await newPagePromise2;
-          if (newPage2) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPage2);
-            // 获取新标签页的URL
-            newTabUrl = newPage2.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: `已点击坐标: (${x}, ${y})` };
           break;
@@ -211,24 +182,8 @@ export const interactWithPageTool: Tool = {
             throw new Error('fill操作需要selector和text参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromiseFill = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.locator(selector).focus();
           await page.fill(selector, text, { timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPageFill = await newPagePromiseFill;
-          if (newPageFill) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageFill);
-            // 获取新标签页的URL
-            newTabUrl = newPageFill.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: `已填充 ${selector} 内容: ${text}` };
           break;
@@ -238,28 +193,12 @@ export const interactWithPageTool: Tool = {
             throw new Error('press操作需要key参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromisePress = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           if (selector) {
             await page.press(selector, key, { timeout: timeout * 1000 });
             result = { message: `已在 ${selector} 按下键: ${key}` };
           } else {
             await page.keyboard.press(key);
             result = { message: `已按下键: ${key}` };
-          }
-
-          // 等待新页面（如果有）
-          const newPagePress = await newPagePromisePress;
-          if (newPagePress) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPagePress);
-            // 获取新标签页的URL
-            newTabUrl = newPagePress.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
           }
 
           break;
@@ -269,23 +208,7 @@ export const interactWithPageTool: Tool = {
             throw new Error('hover操作需要selector参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromiseHover = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.hover(selector, { timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPageHover = await newPagePromiseHover;
-          if (newPageHover) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageHover);
-            // 获取新标签页的URL
-            newTabUrl = newPageHover.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: `已悬停在元素: ${selector}` };
           break;
@@ -295,23 +218,7 @@ export const interactWithPageTool: Tool = {
             throw new Error('select操作需要selector和value参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromiseSelect = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.selectOption(selector, value, { timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPageSelect = await newPagePromiseSelect;
-          if (newPageSelect) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageSelect);
-            // 获取新标签页的URL
-            newTabUrl = newPageSelect.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: `已在 ${selector} 选择值: ${value}` };
           break;
@@ -321,23 +228,7 @@ export const interactWithPageTool: Tool = {
             throw new Error('check操作需要selector参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromiseCheck = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.check(selector, { timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPageCheck = await newPagePromiseCheck;
-          if (newPageCheck) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageCheck);
-            // 获取新标签页的URL
-            newTabUrl = newPageCheck.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: `已勾选元素: ${selector}` };
           break;
@@ -347,90 +238,26 @@ export const interactWithPageTool: Tool = {
             throw new Error('uncheck操作需要selector参数');
           }
 
-          // 设置新页面监听器（带超时）
-          const newPagePromiseUncheck = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.uncheck(selector, { timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPageUncheck = await newPagePromiseUncheck;
-          if (newPageUncheck) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageUncheck);
-            // 获取新标签页的URL
-            newTabUrl = newPageUncheck.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: `已取消勾选元素: ${selector}` };
           break;
 
 
         case 'go_back':
-          // 设置新页面监听器（带超时）
-          const newPagePromiseGoBack = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.goBack({ timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPageGoBack = await newPagePromiseGoBack;
-          if (newPageGoBack) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageGoBack);
-            // 获取新标签页的URL
-            newTabUrl = newPageGoBack.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: '已返回上一页' };
           break;
 
         case 'go_forward':
-          // 设置新页面监听器（带超时）
-          const newPagePromiseGoForward = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.goForward({ timeout: timeout * 1000 });
-
-          // 等待新页面（如果有）
-          const newPageGoForward = await newPagePromiseGoForward;
-          if (newPageGoForward) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageGoForward);
-            // 获取新标签页的URL
-            newTabUrl = newPageGoForward.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: '已前进到下一页' };
           break;
 
         case 'reload':
-          // 设置新页面监听器（带超时）
-          const newPagePromiseReload = session.context.waitForEvent('page', { timeout: 1000 }).catch(() => null);
-
           await page.reload({ timeout: timeout * 1000, waitUntil: 'domcontentloaded' });
-
-          // 等待新页面（如果有）
-          const newPageReload = await newPagePromiseReload;
-          if (newPageReload) {
-            // 注册新标签页
-            newTabSessionId = await browserManager.registerNewTab(browserId, newPageReload);
-            // 获取新标签页的URL
-            newTabUrl = newPageReload.url();
-          }
-
-          if (waitForNavigation) {
-            await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
-          }
 
           result = { message: '已重新加载页面' };
           break;
@@ -438,6 +265,21 @@ export const interactWithPageTool: Tool = {
         default:
           throw new Error(`不支持的操作类型: ${action}`);
       }
+
+      // 等待新页面（如果有）
+      const newPage = await newPagePromise;
+      if (newPage) {
+        // 注册新标签页
+        newTabSessionId = await browserManager.registerNewTab(browserId, newPage);
+        // 获取新标签页的URL
+        newTabUrl = newPage.url();
+      }
+
+      // 如果需要等待页面加载
+      if (waitForNavigation) {
+        await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
+      }
+
       // 获取操作后的页面状态
       const currentUrl = page.url();
       const currentTitle = await page.title();
