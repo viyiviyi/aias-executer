@@ -131,8 +131,9 @@ export const listDirectoryTool: Tool = {
     if (recursive) {
       const result = await listDirectoryRecursive(resolvedPath, originalPath, skipHidden, skipDirs, countStats);
       return {
-        success: true,
-        result: result
+        success: result.error ? false : true,
+        // result: result,
+        error: result.error
       };
     } else {
       const result = await listDirectorySimple(resolvedPath, skipHidden, skipDirs, countStats);
@@ -195,7 +196,6 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
       itemInfo.wordCount = wordCount;
       itemInfo.lineCount = lineCount;
     }
-
     result.push(itemInfo);
   }
 
@@ -207,12 +207,19 @@ async function listDirectorySimple(dirPath: string, skipHidden: boolean, skipDir
 }
 
 // 辅助函数 - 递归列表
-async function listDirectoryRecursive(dirPath: string, originalPath: string, skipHidden: boolean, skipDirs: string[], countStats: boolean): Promise<any> {
+async function listDirectoryRecursive(dirPath: string, originalPath: string, skipHidden: boolean, skipDirs: string[], countStats: boolean): Promise<{
+  absolute_path: string;
+  originalPath: string;
+  items: DirectoryItem[],
+  directories: string[],
+  error: string
+}> {
   const result = {
     absolute_path: dirPath,
     originalPath,
     items: [] as DirectoryItem[],
-    directories: [] as string[]
+    directories: [] as string[],
+    error: ''
   };
 
   const walk = async (currentPath: string, depth: number) => {
@@ -255,13 +262,19 @@ async function listDirectoryRecursive(dirPath: string, originalPath: string, ski
 
       result.items.push(itemInfo);
 
+      if (result.items.length >= 500) {
+        break;
+      }
       if (item.isDirectory()) {
         await walk(fullPath, depth + 1);
       }
     }
   };
-
   await walk(dirPath, 0);
+  if (result.items.length > 500) {
+    result.items = []
+    result.error = '文件总数大于500，请勿递归访问';
+  }
   return result;
 }
 

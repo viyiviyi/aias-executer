@@ -22,7 +22,7 @@ export const updateFileTool: Tool = {
   definition: {
     name: 'utils_update_file',
     groupName: '基础工具',
-    description: '部分更新文件内容，建议单次调用传入多个操作一次性完成文件的所有修改。',
+    description: '部分更新文件内容',
     parameters: {
       type: 'object',
       properties: {
@@ -43,7 +43,7 @@ export const updateFileTool: Tool = {
               start_line_index: {
                 type: 'integer',
                 description:
-                  '起始行号（1-based）。对于insert：在此行之前插入；对于delete：从此行开始删除（包括此行）。所有操作都基于原行号，使用大于所有行号的值在最后添加行。',
+                  '操作起始行号。对于insert：在此行之前插入；对于delete：从此行开始删除（包括此行）。所有操作都基于read_code获取的行号，使用大于所有行号的值在最后添加行。',
                 minimum: 1,
               },
               insert_content: {
@@ -59,7 +59,7 @@ export const updateFileTool: Tool = {
             required: ['operation', 'start_line_index'],
           },
           description:
-            '更新操作列表，所有操作都基于原行号（1-based）。如果要替换内容，先使用delete操作删除旧内容，再使用insert操作插入新内容。',
+            '批量操作列表，如果需要对文件多处修改务必一次性传入所有修改操作而不是多次使用此工具；所有操作都基于read_code获取的行号。如果要替换内容，先使用delete操作删除行，再使用insert操作插入新内容。',
         },
       },
       required: ['path', 'updates'],
@@ -219,7 +219,7 @@ export const updateFileTool: Tool = {
         success: true,
         path: filePath,
         new_content: contextContent,
-        tips: '返回的内容是修改范围内和附近的代码，非完整代码不要用于判断代码是否重复或格式不正确。',
+        tips: '返回的内容是修改范围内和附近的代码，非完整代码不要用于判断代码是否重复或格式不正确，行号为最新行号，可用于后续操作。',
         changed_lines: uniqueChangedLines[0] + ' ~ ' + uniqueChangedLines[uniqueChangedLines.length - 1],
         context_start_line: contextStartLine,
       };
