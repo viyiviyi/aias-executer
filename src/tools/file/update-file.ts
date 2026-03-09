@@ -22,7 +22,7 @@ export const updateFileTool: Tool = {
   definition: {
     name: 'utils_update_file',
     groupName: '基础工具',
-    description: '部分更新文件内容，支持批量操作，建议使用批量操作一次性完成一个文件的所有修改',
+    description: '部分更新文件内容，建议单次调用传入多个操作一次性完成文件的所有修改。',
     parameters: {
       type: 'object',
       properties: {
