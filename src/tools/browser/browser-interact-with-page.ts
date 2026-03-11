@@ -11,9 +11,9 @@ export const interactWithPageTool: Tool = {
     parameters: {
       type: 'object',
       properties: {
-        browser_id: {
+        tab_id: {
           type: 'string',
-          description: '浏览器ID（会话名称）',
+          description: '标签页ID（可选），用于管理多个标签页，默认为default',
           default: 'default',
         },
         action: {
@@ -104,7 +104,7 @@ export const interactWithPageTool: Tool = {
           },
           required: ['url', 'title'],
         },
-        new_tab_session_id: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的会话ID' },
+        new_tab_id: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的ID' },
         new_tab_url: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的URL' },
         timestamp: { type: 'string', description: '操作时间戳' },
       },
@@ -117,13 +117,13 @@ export const interactWithPageTool: Tool = {
       '不同操作需要不同的参数组合',
       '操作后会等待页面加载完成',
       '返回操作后的页面状态信息',
-      '如果操作打开了新标签页，会返回new_tab_session_id，可用于直接获取页面内容',
+      '如果操作打开了新标签页，会返回new_tab_id，可用于直接获取页面内容',
       '默认超时时间为30秒，可以自定义',
     ],
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
-    const browserId = parameters.browser_id || 'default';
+    const browserId = parameters.tab_id || 'default';
     const action = parameters.action;
     const selector = parameters.selector;
     const text = parameters.text;
@@ -147,7 +147,7 @@ export const interactWithPageTool: Tool = {
 
     const page = session.page;
     let result: any = {};
-    let newTabSessionId: string | undefined = undefined;
+    let newTabId: string | undefined = undefined;
     let newTabUrl: string | undefined = undefined;
 
     try {
@@ -270,7 +270,7 @@ export const interactWithPageTool: Tool = {
       const newPage = await newPagePromise;
       if (newPage) {
         // 注册新标签页
-        newTabSessionId = await browserManager.registerNewTab(browserId, newPage);
+        newTabId = await browserManager.registerNewTab(browserId, newPage);
         // 获取新标签页的URL
         newTabUrl = newPage.url();
       }
@@ -292,8 +292,9 @@ export const interactWithPageTool: Tool = {
         page_state: {
           title: currentTitle,
         },
-        new_tab_session_id: newTabSessionId || null,
-        tips: newTabSessionId ? '可通过new_tab_session_id获取页面内容' : undefined,
+        new_tab_id: newTabId || null,
+        new_tab_url: newTabUrl || null,
+        tips: newTabId ? '可通过new_tab_id获取页面内容' : undefined,
         time: new Date().toLocaleString(),
       };
     } catch (error: any) {

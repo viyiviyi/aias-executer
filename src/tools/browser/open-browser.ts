@@ -15,9 +15,9 @@ export const navigateToPageTool: Tool = {
           type: 'string',
           description: '要打开的URL地址'
         },
-        session_name: {
+        tab_id: {
           type: 'string',
-          description: '浏览器会话名称（可选），用于管理多个浏览器会话',
+          description: '标签页ID（可选），用于管理多个标签页，默认为default',
           default: 'default'
         },
         timeout: {
@@ -76,7 +76,7 @@ export const navigateToPageTool: Tool = {
 
   async execute(parameters: Record<string, any>): Promise<any> {
     const url = parameters.url;
-    const sessionName = parameters.session_name || 'default';
+    const tabId = parameters.tab_id || 'default';
     const timeout = parameters.timeout || 30;
 
     if (!url) {
@@ -100,7 +100,7 @@ export const navigateToPageTool: Tool = {
 
         // 创建浏览器会话（使用配置文件中的默认设置）
         const session = await browserManager.createSession(
-          sessionName,
+          tabId,
           config.defaultBrowser,
           config.defaultHeadless,
           config.antiDetection,
@@ -108,7 +108,7 @@ export const navigateToPageTool: Tool = {
         );
 
         // 导航到指定URL
-        await browserManager.navigateTo(sessionName, url, timeout * 1000);
+        await browserManager.navigateTo(tabId, url, timeout * 1000);
 
         // 获取页面基本信息
         const page = session.page;
@@ -117,7 +117,7 @@ export const navigateToPageTool: Tool = {
 
         return {
           success: true,
-          session_id: sessionName,
+          session_id: tabId,
           page_info: {
             title: title,
             url: urlAfterNavigation,
@@ -140,7 +140,7 @@ export const navigateToPageTool: Tool = {
           console.log(`导航失败，第 ${retryCount} 次重试...`);
 
           // 清理失败的会话
-          await browserManager.closeSession(sessionName).catch(() => {});
+          await browserManager.closeSession(tabId).catch(() => {});
 
           // 等待一段时间后重试（指数退避）
           const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
@@ -149,7 +149,7 @@ export const navigateToPageTool: Tool = {
         }
 
         // 如果创建会话失败，确保清理
-        await browserManager.closeSession(sessionName).catch(() => {});
+        await browserManager.closeSession(tabId).catch(() => {});
 
         // 根据错误类型提供更清晰的错误信息
         if (shouldRetry) {

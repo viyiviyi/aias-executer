@@ -11,9 +11,9 @@ export const closeBrowserTool: Tool = {
     parameters: {
       type: 'object',
       properties: {
-        browser_id: {
+        tab_id: {
           type: 'string',
-          description: '要关闭的浏览器ID，如果为"all"则关闭所有浏览器',
+          description: '要关闭的标签页ID，如果为"all"则关闭所有标签页',
           default: 'default'
         },
         delete_data: {
@@ -80,7 +80,7 @@ export const closeBrowserTool: Tool = {
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
-    const browserId = parameters.browser_id || 'default';
+    const browserId = parameters.tab_id || 'default';
     const deleteData = parameters.delete_data || false;
     const forceKill = parameters.force_kill || false;
     try {

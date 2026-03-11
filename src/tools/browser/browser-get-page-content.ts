@@ -13,7 +13,7 @@ const browserManager = BrowserManager.getInstance();
 
 // 参数类型定义
 interface GetPageContentParameters {
-  browser_session_id?: string;
+  tab_id?: string;
   show_no_visibility?: boolean;
   timeout?: number;
   include_attributes?: string[];
@@ -64,9 +64,9 @@ export const getPageContentTool: Tool = {
     parameters: {
       type: 'object',
       properties: {
-        browser_session_id: {
+        tab_id: {
           type: 'string',
-          description: '浏览器/标签页session_ID',
+          description: '标签页ID（可选），用于管理多个标签页，默认为default',
           default: 'default',
         },
         show_no_visibility: {
@@ -153,7 +153,7 @@ export const getPageContentTool: Tool = {
   },
 
   async execute(parameters: GetPageContentParameters): Promise<GetPageContentResult> {
-    const browserId = parameters.browser_session_id || 'default';
+    const browserId = parameters.tab_id || 'default';
     const timeout = parameters.timeout || 30;
     const show_no_visibility = parameters.show_no_visibility || false;
     const includeAttributes = parameters.include_attributes || [...INCLUDE_ATTRIBUTES];
