@@ -281,22 +281,20 @@ export const interactWithPageTool: Tool = {
       }
 
       // 获取操作后的页面状态
-      const currentUrl = page.url();
+      // const currentUrl = page.url();
       const currentTitle = await page.title();
-
+      console.log(newTabUrl);
       return {
         success: true,
         session_id: browserId,
         action: action,
         result: result,
         page_state: {
-          url: currentUrl,
           title: currentTitle,
         },
         new_tab_session_id: newTabSessionId || null,
-        tips: newTabSessionId ? '可通过新标签页sessionId获取页面内容' : undefined,
-        new_tab_url: newTabUrl || null,
-        timestamp: new Date().toISOString(),
+        tips: newTabSessionId ? '可通过new_tab_session_id获取页面内容' : undefined,
+        time: new Date().toLocaleString(),
       };
     } catch (error: any) {
       const errorMessage = error.message.toLowerCase();

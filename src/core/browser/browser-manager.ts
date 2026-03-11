@@ -454,7 +454,7 @@ export class BrowserManager {
     }
 
     // 生成新的浏览器ID
-    const finalNewBrowserId = newBrowserId || `${originalBrowserId}_tab${Date.now()}`;
+    const finalNewBrowserId = newBrowserId || `tab${Date.now()}`;
 
     // 检查是否达到最大会话数
     const config = this.configManager.getConfig();

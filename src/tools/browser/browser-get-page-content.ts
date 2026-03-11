@@ -66,7 +66,7 @@ export const getPageContentTool: Tool = {
       properties: {
         browser_session_id: {
           type: 'string',
-          description: '浏览器ID（会话名称）',
+          description: '浏览器/标签页session_ID',
           default: 'default',
         },
         show_no_visibility: {
