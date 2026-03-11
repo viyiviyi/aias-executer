@@ -40,6 +40,9 @@ import { getToolsDocumentationTool } from './system/get-tools-documentation';
 
 // 网络工具
 import { httpRequestTool } from './network/http-request';
+// skill工具
+import { listSkillsTool } from './skill/list-skills';
+import { executeSkillTool } from './skill/execute-skill';
 
 const toolList: Tool[] = [
   getToolsDocumentationTool,
@@ -77,6 +80,9 @@ const toolList: Tool[] = [
   restartServiceTool,
   // 密码工具
   getPasswordsInfoTool,
+  // skill工具
+  listSkillsTool,
+  executeSkillTool,
 ];
 
 // 导出所有基础工具定义
