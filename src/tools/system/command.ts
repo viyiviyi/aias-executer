@@ -25,18 +25,90 @@ function truncateText(text: string, maxLines: number = 100): string {
   return truncatedText;
 }
 
+// 辅助函数：获取系统编码
+function getSystemEncoding(): string {
+  // Windows系统：根据代码页判断
+  if (process.platform === 'win32') {
+    try {
+      // 执行chcp命令获取代码页
+      const { execSync } = require('child_process');
+      const result = execSync('chcp', { encoding: 'utf-8' });
+      const match = result.match(/\d+/);
+      if (match) {
+        const codePage = parseInt(match[0]);
+        // 常见代码页映射
+        switch (codePage) {
+          case 65001: // UTF-8
+            return 'utf-8';
+          case 936: // GBK (简体中文)
+            return 'gbk';
+          case 950: // Big5 (繁体中文)
+            return 'big5';
+          case 932: // Shift-JIS (日文)
+            return 'shiftjis';
+          case 949: // EUC-KR (韩文)
+            return 'euc-kr';
+          default:
+            // 其他代码页，默认使用GBK
+            return 'gbk';
+        }
+      }
+    } catch (error: any) {
+      // 如果获取失败，使用默认编码
+      console.warn('无法获取系统代码页，使用默认编码:', error instanceof Error ? error.message : String(error));
+    }
+  }
+  
+  // 非Windows系统或获取失败，根据环境变量判断
+  const lang = process.env.LANG || process.env.LC_ALL || process.env.LC_CTYPE;
+  if (lang && lang.toLowerCase().includes('utf-8')) {
+    return 'utf-8';
+  }
+  
+  // 默认使用UTF-8
+  return 'utf-8';
+}
+
 // 辅助函数：尝试多种编码解码buffer
 function decodeBuffer(buffer: Buffer): string {
-  // 尝试的编码顺序
-  const encodings: string[] = ['gbk', 'utf-8', 'gb2312', 'latin1', 'ascii'];
-
-  for (const encoding of encodings) {
+  if (!buffer || buffer.length === 0) {
+    return '';
+  }
+  
+  // 获取系统编码
+  const systemEncoding = getSystemEncoding();
+  
+  // 如果是Windows且代码页是65001（UTF-8），直接使用UTF-8解码
+  if (process.platform === 'win32' && systemEncoding === 'utf-8') {
+    try {
+      return iconv.decode(buffer, 'utf-8');
+    } catch (e) {
+      // 如果UTF-8解码失败，尝试其他编码
+    }
+  }
+  
+  // 尝试的编码顺序：系统编码优先，然后是其他常见编码
+  const encodings: string[] = [
+    systemEncoding,
+    'utf-8',
+    'gbk',
+    'gb2312',
+    'cp936',
+    'big5',
+    'latin1',
+    'ascii'
+  ];
+  
+  // 去重
+  const uniqueEncodings = [...new Set(encodings)];
+  
+  for (const encoding of uniqueEncodings) {
     try {
       const decoded = iconv.decode(buffer, encoding);
       // 检查是否包含过多的空字符（二进制文件的特征）
       const nullCount = (decoded.match(/\x00/g) || []).length;
       const nullRatio = nullCount / decoded.length;
-
+      
       // 如果空字符比例小于5%，认为是有效的文本
       if (nullRatio < 0.05) {
         return decoded;
@@ -46,7 +118,7 @@ function decodeBuffer(buffer: Buffer): string {
       continue;
     }
   }
-
+  
   // 如果所有编码都失败，使用utf-8并替换无效字符
   return iconv.decode(buffer, 'utf-8').replace(/[^\x00-\x7F]/g, '?');
 }

@@ -186,8 +186,8 @@ export const updateFileTool: Tool = {
       const endChangeLine = Math.min(currentLines.length, maxChangeLine + pushCount - 1);
 
       // 计算上下文范围（前后各5行）
-      const startContext = Math.max(0, startChangeLine - 5);
-      const endContext = Math.min(currentLines.length, endChangeLine + 5);
+      const startContext = Math.max(0, startChangeLine - 50);
+      const endContext = Math.min(currentLines.length, endChangeLine + 50);
       const contextStartLine = startContext + 1; // 1-based行号
 
       // 收集发生变化的行号（基于新文件内容的1-based行号）
