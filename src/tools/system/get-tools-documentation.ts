@@ -12,7 +12,7 @@ export const getToolsDocumentationTool: Tool = {
   definition: {
     name: 'utils_get_system_info',
     groupName: '基础工具',
-    description: '获取工作环境，首次使用tool前调用获取必要的内容',
+    description: '获取系统信息，访问文件系统、项目、系统资源前调用获取系统基本信息，常规问答时无需调用',
     parameters: {
       type: 'object',
       properties: {},
