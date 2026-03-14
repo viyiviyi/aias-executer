@@ -45,7 +45,7 @@ interface ScrollbarInfo {
 // 返回结果类型
 interface GetPageContentResult {
   success: boolean;
-  session_id: string;
+  tab_id: string;
   page_info: {
     title: string;
     url: string;
@@ -123,7 +123,7 @@ export const getPageContentTool: Tool = {
       type: 'object',
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
-        session_id: { type: 'string', description: '浏览器会话ID' },
+        tab_id: { type: 'string', description: '浏览器标签页ID' },
         page_info: {
           type: 'object',
           properties: {
@@ -136,7 +136,7 @@ export const getPageContentTool: Tool = {
         dom_tree: { type: 'object', description: 'DOM树内容' },
         pageContent: { type: 'string', description: 'DOM树内容' },
       },
-      required: ['success', 'session_id', 'page_info']
+      required: ['success', 'tab_id', 'page_info']
     },
 
     // 使用指南
@@ -698,7 +698,7 @@ export const getPageContentTool: Tool = {
         const toYaml = (dom: Dom[], dept = 0): string => {
           let res = '';
           dom.forEach(ele => {
-            res += `${' '.repeat(dept)}${ele.tag == 'text' ? '' : ele.tag}${ele.attr || ''}${ele.text || ''}`
+            res += `${' '.repeat(dept)}${ele.tag == 'text' ? '' : ele.tag.toLowerCase()}${ele.attr || ''}${ele.text || ''}`
             if (ele.child && ele.child.length) {
               if (!res.endsWith('\n'))
                 res += '\n'
@@ -718,7 +718,7 @@ export const getPageContentTool: Tool = {
 
       return {
         success: true,
-        session_id: browserId,
+        tab_id: browserId,
         page_info: {
           title: title,
           url: url,

@@ -87,7 +87,7 @@ export const interactWithPageTool: Tool = {
       type: 'object',
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
-        session_id: { type: 'string', description: '浏览器会话ID' },
+        tab_id: { type: 'string', description: '浏览器标签页ID' },
         action: { type: 'string', description: '执行的操作类型' },
         result: {
           type: 'object',
@@ -108,7 +108,7 @@ export const interactWithPageTool: Tool = {
         new_tab_url: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的URL' },
         timestamp: { type: 'string', description: '操作时间戳' },
       },
-      required: ['success', 'session_id', 'action', 'result', 'page_state', 'timestamp'],
+      required: ['success', 'tab_id', 'action', 'result', 'page_state', 'timestamp'],
     },
 
     // 使用指南
@@ -286,7 +286,7 @@ export const interactWithPageTool: Tool = {
       console.log(newTabUrl);
       return {
         success: true,
-        session_id: browserId,
+        // session_id: browserId,
         action: action,
         result: result,
         page_state: {

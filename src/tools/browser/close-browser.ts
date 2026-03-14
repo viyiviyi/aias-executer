@@ -53,16 +53,16 @@ export const closeBrowserTool: Tool = {
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
         message: { type: 'string', description: '操作结果消息' },
-        session_id: { type: 'string', description: '浏览器会话ID' },
+        tab_id: { type: 'string', description: '浏览器标签页ID' },
         closed: { type: 'boolean', description: '是否成功关闭' },
-        delete_data: { type: 'boolean', description: '是否删除浏览器数据' },
-        remaining_sessions: { type: 'integer', description: '剩余会话数量' },
-        remaining_session_ids: { 
+        delete_data: { type: 'boolean', description: '是否删除浏览器标签页数据' },
+        remaining_tabs: { type: 'integer', description: '剩余标签页数量' },
+        remaining_tab_ids: { 
           type: 'array', 
           items: { type: 'string' },
           description: '剩余会话ID列表'
         },
-        closed_sessions: { type: 'integer', description: '关闭的会话数量（关闭所有时）' },
+        closed_sessions: { type: 'integer', description: '关闭的会话标签页数量（关闭所有时）' },
         force_kill: { type: 'boolean', description: '是否强制杀死进程' }
       },
       required: ['success', 'message']
@@ -70,11 +70,11 @@ export const closeBrowserTool: Tool = {
     
     // 使用指南
     guidelines: [
-      '可以关闭单个会话或所有会话',
+      '可以关闭单个标签页或所有标签页',
       '删除数据会清除cookies和localStorage',
-      '强制杀死仅在所有会话关闭时有效',
-      '如果会话不存在，返回成功但closed为false',
-      '返回剩余会话信息以便管理'
+      '强制杀死仅在所有会标签页关闭时有效',
+      '如果标签页不存在，返回成功但closed为false',
+      '返回剩余标签页信息以便管理'
     ],
     
   },
@@ -146,11 +146,11 @@ export const closeBrowserTool: Tool = {
           return {
             success: true,
             message: `已关闭浏览器会话: ${browserId}`,
-            session_id: browserId,
+            tab_id: browserId,
             closed: true,
             delete_data: deleteData,
-            remaining_sessions: remainingSessions.length,
-            remaining_session_ids: remainingSessions.map(s => s.id)
+            remaining_tabs: remainingSessions.length,
+            remaining_tab_ids: remainingSessions.map(s => s.id)
           };
         } else {
           return {

@@ -46,7 +46,7 @@ export const navigateToPageTool: Tool = {
       type: 'object',
       properties: {
         success: { type: 'boolean', description: '操作是否成功' },
-        session_id: { type: 'string', description: '浏览器会话ID' },
+        tab_id: { type: 'string', description: '浏览器标签页ID' },
         page_info: {
           type: 'object',
           properties: {
@@ -59,7 +59,7 @@ export const navigateToPageTool: Tool = {
         message: { type: 'string', description: '操作结果消息' },
         sessions_count: { type: 'integer', description: '当前会话总数' }
       },
-      required: ['success', 'session_id', 'config', 'page_info', 'message', 'sessions_count']
+      required: ['success', 'tab_id', 'config', 'page_info', 'message', 'sessions_count']
     },
 
     // 使用指南
@@ -117,7 +117,7 @@ export const navigateToPageTool: Tool = {
 
         return {
           success: true,
-          session_id: tabId,
+          tab_id: tabId,
           page_info: {
             title: title,
             url: urlAfterNavigation,

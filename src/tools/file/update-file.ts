@@ -219,7 +219,7 @@ export const updateFileTool: Tool = {
         success: true,
         path: filePath,
         new_content: contextContent,
-        tips: '返回的内容是修改范围内和附近的代码，非完整代码不要用于判断代码是否重复或格式不正确，行号为最新行号，可用于后续操作。',
+        tips: '返回的内容是修改范围附近的代码，因为不是完整代码，在没有第1行的情况下,变更范围外的代码：不可用于判断格式不正确！不可用于判断括号数量异常！不可用于判断代码重复!',
         changed_lines: uniqueChangedLines[0] + ' ~ ' + uniqueChangedLines[uniqueChangedLines.length - 1],
         context_start_line: contextStartLine,
       };
