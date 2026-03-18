@@ -294,7 +294,7 @@ export const interactWithPageTool: Tool = {
         },
         new_tab_id: newTabId || null,
         new_tab_url: newTabUrl || null,
-        tips: newTabId ? '可通过new_tab_id获取页面内容' : undefined,
+        tips: newTabId ? `新标签页已打开，id是[${newTabId}]，需要使用新标签页id获取页面内容或操作标签页` : undefined,
         time: new Date().toLocaleString(),
       };
     } catch (error: any) {
