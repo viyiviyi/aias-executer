@@ -67,64 +67,62 @@ export class BrowserConfigManager {
       return this.createDefaultConfig();
     }
   }
-
-  private createDefaultConfig(): BrowserConfig {
-    const defaultConfig: BrowserConfig = {
-      defaultBrowser: 'chrome',
-      defaultHeadless: false,
-      antiDetection: true,
-      userDataDir: path.join(process.cwd(), 'browser-data'),
-      viewport: {
-        width: 1920,
-        height: 1080
-      },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36',
-      args: [
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-features=IsolateOrigins,site-per-process',
-        '--disable-web-security',
-        '--disable-site-isolation-trials',
-        '--disable-features=BlockInsecurePrivateNetworkRequests'
-      ],
-      stealthOptions: {
-        enable: true,
-        options: {
-          webglVendor: 'Intel Inc.',
-          renderer: 'Intel Iris OpenGL Engine',
-          hardwareConcurrency: 8,
-          deviceMemory: 8,
-          screenResolution: '1920x1080',
-          languages: ['zh-CN', 'zh', 'en-US', 'en'],
-          platform: 'Win32',
-          plugins: [
-            'PDF Viewer',
-            'Chrome PDF Viewer',
-            'Chromium PDF Viewer',
-            'Microsoft Edge PDF Viewer',
-            'WebKit built-in PDF'
-          ],
-          webdriver: false,
-          chrome: {
-            runtime: '145.0.7632.6',
-            cdc: false
-          }
+  defaultConfig: BrowserConfig = {
+    defaultBrowser: 'chrome',
+    defaultHeadless: false,
+    antiDetection: true,
+    userDataDir: path.join(process.cwd(), 'browser-data'),
+    viewport: {
+      width: 1920,
+      height: 1080
+    },
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36',
+    args: [
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-features=IsolateOrigins,site-per-process',
+      '--disable-web-security',
+      '--disable-site-isolation-trials',
+      '--disable-features=BlockInsecurePrivateNetworkRequests'
+    ],
+    stealthOptions: {
+      enable: true,
+      options: {
+        webglVendor: 'Intel Inc.',
+        renderer: 'Intel Iris OpenGL Engine',
+        hardwareConcurrency: 8,
+        deviceMemory: 8,
+        screenResolution: '1920x1080',
+        languages: ['zh-CN', 'zh', 'en-US', 'en'],
+        platform: 'Win32',
+        plugins: [
+          'PDF Viewer',
+          'Chrome PDF Viewer',
+          'Chromium PDF Viewer',
+          'Microsoft Edge PDF Viewer',
+          'WebKit built-in PDF'
+        ],
+        webdriver: false,
+        chrome: {
+          runtime: '145.0.7632.6',
+          cdc: false
         }
-      },
-      timeout: 30,
-      maxSessions: 30,
-      sessionTimeout: 30
-    };
-
+      }
+    },
+    timeout: 30,
+    maxSessions: 30,
+    sessionTimeout: 30
+  };
+  private createDefaultConfig(): BrowserConfig {
     // 保存默认配置
-    this.saveConfig(defaultConfig);
-    return defaultConfig;
+    this.saveConfig(this.defaultConfig);
+    return this.defaultConfig;
   }
 
   private mergeWithDefaults(userConfig: Partial<BrowserConfig>): BrowserConfig {
-    const defaultConfig = this.createDefaultConfig();
-    
+    const defaultConfig = this.defaultConfig
+
     return {
       defaultBrowser: userConfig.defaultBrowser || defaultConfig.defaultBrowser,
       defaultHeadless: userConfig.defaultHeadless !== undefined ? userConfig.defaultHeadless : defaultConfig.defaultHeadless,
@@ -146,13 +144,13 @@ export class BrowserConfigManager {
       if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true });
       }
-      
+
       const yamlContent = yaml.dump(config, {
         indent: 2,
         lineWidth: -1,
         noRefs: true
       });
-      
+
       fs.writeFileSync(this.configPath, yamlContent, 'utf8');
     } catch (error) {
       console.error('保存浏览器配置失败:', error);

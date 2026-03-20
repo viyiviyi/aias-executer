@@ -137,7 +137,7 @@ export const getPageContentTool: Tool = {
   definition: {
     name: 'browser_get_page_content',
     groupName: 'browser',
-    description: '读取浏览器页面内容，会自动等待页面加载再获取',
+    description: '读取浏览器页面内容',
     parameters: {
       type: 'object',
       properties: {
@@ -182,9 +182,9 @@ export const getPageContentTool: Tool = {
         // },
         content_type: {
           type: 'string',
-          description: '返回内容类型：dom（DOM树）、accessibility（无障碍元素列表）、screenshot（截图）',
+          description: '返回内容类型：dom（DOM树）、accessibility（无障碍元素列表）、screenshot（页面截图），在需要识别图像内容时需要使用截图，获取截图时会额外返回accessibility列表',
           enum: ['dom', 'accessibility', 'screenshot'],
-          default: 'dom',
+          default: 'accessibility',
         },
         // include_screenshot: {
         //   type: 'boolean',
@@ -281,24 +281,22 @@ export const getPageContentTool: Tool = {
   async execute(parameters: GetPageContentParameters): Promise<GetPageContentResult> {
     const browserId = parameters.tab_id || 'default';
     const timeout = parameters.timeout || 30;
-    const show_no_visibility = parameters.show_no_visibility || false;
     const includeAttributes = parameters.include_attributes || [...INCLUDE_ATTRIBUTES];
     const eventAttributes = parameters.event_attributes || [...EVENT_ATTRIBUTES];
     // const accessibilityOnly = parameters.accessibility_only || false;
     const rootSelector = parameters.root_selector || '';
-    const contentType = parameters.content_type || 'dom';
+    const contentType = parameters.content_type || 'accessibility';
     // const includeScreenshot = parameters.include_screenshot || false;
     const screenshotType = parameters.screenshot_type || 'viewport';
     const screenshotQuality = parameters.screenshot_quality || 80;
     const screenshotFormat = parameters.screenshot_format || 'png';
     const screenshotSelector = parameters.screenshot_selector || '';
-
-    // 如果content_type是screenshot，则强制include_screenshot为true
-    // const shouldTakeScreenshot = contentType === 'screenshot' || includeScreenshot;
+    let show_no_visibility = parameters.show_no_visibility || false;
 
     // 如果content_type是accessibility，则设置accessibilityOnly为true
     const effectiveAccessibilityOnly = contentType === 'accessibility';
-
+    // 如果content_type是 screenshot 根据viewport改变accessibilityOnly
+    if (contentType == 'screenshot') show_no_visibility = screenshotType != 'viewport';
     const session = browserManager.getSession(browserId);
     if (!session) {
       throw new Error(`浏览器会话 ${browserId} 不存在。可能的原因：
@@ -384,21 +382,21 @@ export const getPageContentTool: Tool = {
           }
 
           // 检查是否在视口内
-          // const rect = element.getBoundingClientRect();
-          // const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-          // const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+          const rect = element.getBoundingClientRect();
+          const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+          const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
 
-          // // 元素完全或部分在视口内
-          // const isInViewport = (
-          //   rect.top < viewportHeight &&
-          //   rect.bottom > 0 &&
-          //   rect.left < viewportWidth &&
-          //   rect.right > 0
-          // );
+          // 元素完全或部分在视口内
+          const isInViewport = (
+            rect.top < viewportHeight &&
+            rect.bottom > 0 &&
+            rect.left < viewportWidth &&
+            rect.right > 0
+          );
 
-          // if (!isInViewport) {
-          //   return false;
-          // }
+          if (!isInViewport) {
+            return false;
+          }
 
           return true;
         };
@@ -884,13 +882,20 @@ export const getPageContentTool: Tool = {
         //   // data: screenshotResult.buffer.toString('base64')
         //   data: `![浏览器页面截图](data:image/${screenshotFormat};base64,${screenshotResult.buffer.toString('base64')})`,
         // };
-        return {
+
+        return [{
+          type: 'text',
+          text: `这是标签页[${browserId}]的页面截图：`
+        }, {
           type: 'image_url',
           image_url: {
             url: `data:image/png;base64,${screenshotResult.buffer.toString('base64')}`,
             detail: 'high',
           },
-        } as any;
+        }, {
+          type: 'text',
+          text: '这是页面元素列表: \n'+JSON.stringify({ pageContennt: bodyDomTree.page })
+        },] as any;
         // return `data:image/png;base64,${screenshotResult.buffer.toString('base64')}` as any
       } else {
         // 返回DOM树或无障碍元素列表
