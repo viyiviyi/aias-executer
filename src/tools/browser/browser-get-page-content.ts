@@ -11,6 +11,69 @@ import {
 
 const browserManager = BrowserManager.getInstance();
 
+// 截图选项类型
+interface ScreenshotOptions {
+  type: 'fullpage' | 'viewport';
+  quality: number;
+  format: 'png' | 'jpeg';
+  selector?: string;
+}
+
+// 截图函数
+async function takeScreenshot(page: any, options: ScreenshotOptions): Promise<{buffer: Buffer, width: number, height: number}> {
+  const { type, quality, format, selector } = options;
+  
+  let screenshotOptions: any = {
+    type: format,
+    quality: format === 'jpeg' ? quality : undefined,
+  };
+  
+  // 如果有选择器，截图指定元素
+  if (selector && selector.trim() !== '') {
+    const element = await page.$(selector);
+    if (element) {
+      const buffer = await element.screenshot(screenshotOptions);
+      // 获取元素尺寸
+      const boundingBox = await element.boundingBox();
+      return {
+        buffer,
+        width: boundingBox ? Math.round(boundingBox.width) : 0,
+        height: boundingBox ? Math.round(boundingBox.height) : 0,
+      };
+    } else {
+      console.warn(`未找到选择器 ${selector} 对应的元素，将截图整个页面`);
+    }
+  }
+  
+  // 根据类型截图
+  if (type === 'fullpage') {
+    screenshotOptions.fullPage = true;
+  }
+  
+  const buffer = await page.screenshot(screenshotOptions);
+  
+  // 获取页面或视口尺寸
+  let width = 0, height = 0;
+  if (type === 'fullpage') {
+    // 对于全页截图，获取页面总高度
+    const pageSize = await page.evaluate(() => {
+      return {
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight,
+      };
+    });
+    width = pageSize.width;
+    height = pageSize.height;
+  } else {
+    // 对于视口截图，获取视口尺寸
+    const viewportSize = page.viewportSize();
+    width = viewportSize.width;
+    height = viewportSize.height;
+  }
+  
+  return { buffer, width, height };
+}
+
 // 参数类型定义
 interface GetPageContentParameters {
   tab_id?: string;
@@ -20,6 +83,12 @@ interface GetPageContentParameters {
   event_attributes?: string[];
   root_selector?: string;
   accessibility_only?: boolean;
+  content_type?: 'dom' | 'accessibility' | 'screenshot';
+  include_screenshot?: boolean;
+  screenshot_type?: 'fullpage' | 'viewport';
+  screenshot_quality?: number;
+  screenshot_format?: 'png' | 'jpeg';
+  screenshot_selector?: string;
 }
 
 // 传递给页面执行的选项类型
@@ -53,7 +122,16 @@ interface GetPageContentResult {
   };
   scrollbar?: ScrollbarInfo;
   dom_tree?: any;
-  pageContennt: string
+  pageContennt?: string;
+  screenshot?: {
+    data: string; // base64编码的图片数据
+    type: 'png' | 'jpeg';
+    size: number;
+    width: number;
+    height: number;
+  };
+  accessibility_elements?: any[];
+  content_type: 'dom' | 'accessibility' | 'screenshot';
 }
 
 export const getPageContentTool: Tool = {
@@ -103,6 +181,41 @@ export const getPageContentTool: Tool = {
           description: '是否仅获取可访问性元素列表（交互式元素如按钮、链接、表单控件等），推荐使用',
           default: false,
         },
+        content_type: {
+          type: 'string',
+          description: '返回内容类型：dom（DOM树）、accessibility（无障碍元素列表）、screenshot（截图）',
+          enum: ['dom', 'accessibility', 'screenshot'],
+          default: 'dom',
+        },
+        include_screenshot: {
+          type: 'boolean',
+          description: '是否包含页面截图（当content_type为dom或accessibility时有效）',
+          default: false,
+        },
+        screenshot_type: {
+          type: 'string',
+          description: '截图类型：fullpage（全页截图）或 viewport（视口截图）',
+          enum: ['fullpage', 'viewport'],
+          default: 'viewport',
+        },
+        screenshot_quality: {
+          type: 'integer',
+          description: '截图质量（1-100），仅对jpeg格式有效',
+          default: 80,
+          minimum: 1,
+          maximum: 100,
+        },
+        screenshot_format: {
+          type: 'string',
+          description: '截图格式',
+          enum: ['png', 'jpeg'],
+          default: 'png',
+        },
+        screenshot_selector: {
+          type: 'string',
+          description: 'CSS选择器，指定要截图的元素（可选）。如果未指定，则根据screenshot_type截图整个页面或视口。',
+          default: '',
+        },
       },
       required: ['tab_id'],
     },
@@ -135,8 +248,21 @@ export const getPageContentTool: Tool = {
         },
         dom_tree: { type: 'object', description: 'DOM树内容' },
         pageContent: { type: 'string', description: 'DOM树内容' },
+        screenshot: {
+          type: 'object',
+          description: '页面截图信息',
+          properties: {
+            data: { type: 'string', description: 'base64编码的图片数据' },
+            type: { type: 'string', description: '图片格式：png或jpeg' },
+            size: { type: 'integer', description: '图片大小（字节）' },
+            width: { type: 'integer', description: '图片宽度（像素）' },
+            height: { type: 'integer', description: '图片高度（像素）' }
+          }
+        },
+        accessibility_elements: { type: 'array', description: '无障碍元素列表' },
+        content_type: { type: 'string', description: '返回的内容类型' }
       },
-      required: ['success', 'tab_id', 'page_info']
+      required: ['success', 'tab_id', 'page_info', 'content_type']
     },
 
     // 使用指南
@@ -145,7 +271,8 @@ export const getPageContentTool: Tool = {
       '默认只显示视口内可见的DOM元素（可通过show_no_visibility参数显示所有元素）',
       '可以指定根选择器来获取特定区域的内容',
       '支持自定义包含的属性和事件属性',
-      '通过accessibility_only参数可以仅获取交互式元素列表（按钮、链接、表单控件等）',
+      '通过content_type参数可以选择返回内容类型：dom（DOM树）、accessibility（无障碍元素列表）、screenshot（截图）',
+      '当content_type为dom或accessibility时，可以通过include_screenshot参数同时获取截图',
       '返回的DOM树经过优化，只包含有用的内容'
     ],
 
@@ -160,6 +287,18 @@ export const getPageContentTool: Tool = {
     const eventAttributes = parameters.event_attributes || [...EVENT_ATTRIBUTES];
     const accessibilityOnly = parameters.accessibility_only || false;
     const rootSelector = parameters.root_selector || '';
+    const contentType = parameters.content_type || 'dom';
+    const includeScreenshot = parameters.include_screenshot || false;
+    const screenshotType = parameters.screenshot_type || 'viewport';
+    const screenshotQuality = parameters.screenshot_quality || 80;
+    const screenshotFormat = parameters.screenshot_format || 'png';
+    const screenshotSelector = parameters.screenshot_selector || '';
+    
+    // 如果content_type是screenshot，则强制include_screenshot为true
+    const shouldTakeScreenshot = contentType === 'screenshot' || includeScreenshot;
+    
+    // 如果content_type是accessibility，则设置accessibilityOnly为true
+    const effectiveAccessibilityOnly = contentType === 'accessibility' || accessibilityOnly;
 
     const session = browserManager.getSession(browserId);
     if (!session) {
@@ -189,7 +328,7 @@ export const getPageContentTool: Tool = {
         iconElements: ICON_ELEMENTS,
         usefulStyleProperties: USEFUL_STYLE_PROPERTIES,
         defaultStyleValues: DEFAULT_STYLE_VALUES,
-        accessibilityOnly,
+        accessibilityOnly: effectiveAccessibilityOnly,
         rootSelector,
       };
 
@@ -716,7 +855,8 @@ export const getPageContentTool: Tool = {
         };
       }, evaluateOptions);
 
-      return {
+      // 初始化返回结果
+      const result: GetPageContentResult = {
         success: true,
         tab_id: browserId,
         page_info: {
@@ -724,9 +864,55 @@ export const getPageContentTool: Tool = {
           url: url,
           root_selector: rootSelector || undefined,
         },
-        // dom_tree: bodyDomTree.dom_tree,
-        pageContennt: bodyDomTree.page,
+        content_type: contentType,
       };
+
+      // 根据content_type决定返回什么内容
+      if (contentType === 'screenshot') {
+        // 只返回截图
+        const screenshotResult = await takeScreenshot(page, {
+          type: screenshotType,
+          quality: screenshotQuality,
+          format: screenshotFormat as 'png' | 'jpeg',
+          selector: screenshotSelector,
+        });
+        
+        result.screenshot = {
+          data: screenshotResult.buffer.toString('base64'),
+          type: screenshotFormat as 'png' | 'jpeg',
+          size: screenshotResult.buffer.length,
+          width: screenshotResult.width,
+          height: screenshotResult.height,
+        };
+      } else {
+        // 返回DOM树或无障碍元素列表
+        if (contentType === 'accessibility') {
+          result.accessibility_elements = bodyDomTree.dom_tree;
+        } else {
+          result.dom_tree = bodyDomTree.dom_tree;
+          result.pageContennt = bodyDomTree.page;
+        }
+        
+        // 如果需要截图，添加截图
+        if (shouldTakeScreenshot) {
+          const screenshotResult = await takeScreenshot(page, {
+            type: screenshotType,
+            quality: screenshotQuality,
+            format: screenshotFormat as 'png' | 'jpeg',
+            selector: screenshotSelector,
+          });
+          
+          result.screenshot = {
+            data: screenshotResult.buffer.toString('base64'),
+            type: screenshotFormat as 'png' | 'jpeg',
+            size: screenshotResult.buffer.length,
+            width: screenshotResult.width,
+            height: screenshotResult.height,
+          };
+        }
+      }
+
+      return result;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       const errorMessageLower = errorMessage.toLowerCase();
