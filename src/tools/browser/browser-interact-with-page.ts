@@ -72,46 +72,6 @@ export const interactWithPageTool: Tool = {
       },
       required: ['action'],
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false, // 非只读操作（交互操作）
-      destructiveHint: true, // 破坏性操作（可能修改页面状态）
-      idempotentHint: false, // 非幂等操作（多次交互可能产生不同结果）
-      openWorldHint: true, // 开放世界操作（与外部网页交互）
-      category: 'browser', // 浏览器操作类别
-      version: '1.0.0', // 工具版本
-      tags: ['browser', 'interact', 'click', 'fill', 'navigate', 'automation'], // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        tab_id: { type: 'string', description: '浏览器标签页ID' },
-        action: { type: 'string', description: '执行的操作类型' },
-        result: {
-          type: 'object',
-          properties: {
-            message: { type: 'string', description: '操作结果消息' },
-          },
-          required: ['message'],
-        },
-        page_state: {
-          type: 'object',
-          properties: {
-            url: { type: 'string', description: '操作后的页面URL' },
-            title: { type: 'string', description: '操作后的页面标题' },
-          },
-          required: ['url', 'title'],
-        },
-        new_tab_id: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的ID' },
-        new_tab_url: { type: 'string', description: '如果操作打开了新标签页，返回新标签页的URL' },
-        timestamp: { type: 'string', description: '操作时间戳' },
-      },
-      required: ['success', 'tab_id', 'action', 'result', 'page_state', 'timestamp'],
-    },
-
     // 使用指南
     guidelines: [
       '支持多种交互操作：点击、填写、悬停、选择等',

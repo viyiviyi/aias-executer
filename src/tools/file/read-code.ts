@@ -60,29 +60,6 @@ const readCodeTool: Tool = {
       },
       required: ['path'],
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: true, // 只读操作
-      destructiveHint: false, // 非破坏性操作
-      idempotentHint: true, // 幂等操作（相同输入总是相同输出）
-      openWorldHint: false, // 不是开放世界操作
-      category: 'file', // 文件操作类别
-      version: '1.0.0', // 工具版本
-      tags: ['file', 'code', 'read', 'source', 'programming'], // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        content: { type: 'string', description: '代码内容（可能包含行号 1-based）' },
-        total_lines: { type: 'integer', description: '文件总行数' },
-        start_line: { type: 'integer', description: '实际起始行号' },
-        end_line: { type: 'integer', description: '实际结束行号' },
-      },
-      required: ['success', 'content', 'total_lines', 'start_line', 'end_line'],
-    },
     // 使用指南
     guidelines: [
       '专为读取代码文件设计，支持行号(1-based)显示',

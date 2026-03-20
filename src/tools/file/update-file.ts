@@ -64,39 +64,6 @@ export const updateFileTool: Tool = {
       },
       required: ['path', 'updates'],
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false, // 非只读操作（更新文件）
-      destructiveHint: true, // 破坏性操作（修改文件内容）
-      idempotentHint: false, // 非幂等操作（多次更新可能产生不同结果）
-      openWorldHint: false, // 不是开放世界操作
-      category: 'file', // 文件操作类别
-      version: '1.0.0', // 工具版本
-      tags: ['file', 'update', 'modify', 'edit', 'patch'], // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        path: { type: 'string', description: '文件路径' },
-        new_content: {
-          type: 'string',
-          description: '修改后的文件内容片段（包含变更范围及前后各5行上下文）',
-        },
-        changed_lines: {
-          type: 'array',
-          description: '发生变化的行号列表（基于新文件内容的行号）',
-          items: { type: 'integer' },
-        },
-        context_start_line: {
-          type: 'integer',
-          description: '返回内容片段的起始行号（基于新文件内容）',
-        },
-      },
-      required: ['success', 'path', 'new_content', 'changed_lines', 'context_start_line'],
-    },
     // 使用指南
     guidelines: [
       '支持批量操作，按原始行号处理',

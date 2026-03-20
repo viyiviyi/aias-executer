@@ -219,51 +219,6 @@ export const getPageContentTool: Tool = {
       required: ['tab_id'],
     },
 
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: true,      // 只读操作
-      destructiveHint: false,  // 非破坏性操作
-      idempotentHint: false,   // 非幂等操作（页面内容可能变化）
-      openWorldHint: true,     // 开放世界操作（访问外部网页）
-      category: 'browser',     // 浏览器操作类别
-      version: '1.0.0',       // 工具版本
-      tags: ['browser', 'page', 'content', 'dom', 'scraping'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        tab_id: { type: 'string', description: '浏览器标签页ID' },
-        page_info: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', description: '页面标题' },
-            url: { type: 'string', description: '页面URL' },
-            root_selector: { type: 'string', description: '使用的根选择器' }
-          },
-          required: ['title', 'url']
-        },
-        dom_tree: { type: 'object', description: 'DOM树内容' },
-        pageContent: { type: 'string', description: 'DOM树内容' },
-        screenshot: {
-          type: 'object',
-          description: '页面截图信息',
-          properties: {
-            data: { type: 'string', description: 'base64编码的图片数据' },
-            type: { type: 'string', description: '图片格式：png或jpeg' },
-            size: { type: 'integer', description: '图片大小（字节）' },
-            width: { type: 'integer', description: '图片宽度（像素）' },
-            height: { type: 'integer', description: '图片高度（像素）' }
-          }
-        },
-        accessibility_elements: { type: 'array', description: '无障碍元素列表' },
-        content_type: { type: 'string', description: '返回的内容类型' }
-      },
-      required: ['success', 'tab_id', 'page_info', 'content_type']
-    },
-
     // 使用指南
     guidelines: [
       '只有最后一次查看的页面在上下文可见',

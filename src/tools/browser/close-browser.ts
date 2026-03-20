@@ -36,38 +36,6 @@ export const closeBrowserTool: Tool = {
       },
       required: []
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（关闭浏览器）
-      destructiveHint: true,    // 破坏性操作（关闭浏览器会话）
-      idempotentHint: true,     // 幂等操作（多次关闭相同会话效果相同）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'browser',      // 浏览器操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['browser', 'close', 'session', 'cleanup'] // 工具标签
-    },
-    
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        message: { type: 'string', description: '操作结果消息' },
-        tab_id: { type: 'string', description: '浏览器标签页ID' },
-        closed: { type: 'boolean', description: '是否成功关闭' },
-        delete_data: { type: 'boolean', description: '是否删除浏览器标签页数据' },
-        remaining_tabs: { type: 'integer', description: '剩余标签页数量' },
-        remaining_tab_ids: { 
-          type: 'array', 
-          items: { type: 'string' },
-          description: '剩余会话ID列表'
-        },
-        closed_sessions: { type: 'integer', description: '关闭的会话标签页数量（关闭所有时）' },
-        force_kill: { type: 'boolean', description: '是否强制杀死进程' }
-      },
-      required: ['success', 'message']
-    },
-    
     // 使用指南
     guidelines: [
       '可以关闭单个标签页或所有标签页',

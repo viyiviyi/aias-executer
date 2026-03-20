@@ -18,27 +18,6 @@ export const getToolsDocumentationTool: Tool = {
       properties: {},
       required: []
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: true,      // 只读操作
-      destructiveHint: false,  // 非破坏性操作
-      idempotentHint: false,   // 非幂等操作（时间信息会变化）
-      openWorldHint: false,    // 不是开放世界操作
-      category: 'system',      // 系统操作类别
-      version: '1.0.0',       // 工具版本
-      tags: ['system', 'documentation', 'info', 'help'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        result: { type: 'string', description: '工具文档内容' },
-      },
-      required: ['success', 'result']
-    },
-
     // 使用指南
     guidelines: [
       '获取tool运行状态和操作系统基本信息、当前时间、工作空间绝对路径',

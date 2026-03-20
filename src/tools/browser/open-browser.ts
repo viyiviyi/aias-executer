@@ -30,38 +30,6 @@ export const navigateToPageTool: Tool = {
       },
       required: ['url']
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（创建浏览器会话）
-      destructiveHint: false,   // 非破坏性操作
-      idempotentHint: false,    // 非幂等操作（多次调用可能创建多个会话）
-      openWorldHint: true,      // 开放世界操作（访问外部网页）
-      category: 'browser',      // 浏览器操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['browser', 'navigate', 'session'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        tab_id: { type: 'string', description: '浏览器标签页ID' },
-        page_info: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', description: '页面标题' },
-            url: { type: 'string', description: '页面URL' },
-            original_url: { type: 'string', description: '原始请求URL' }
-          },
-          required: ['title', 'url', 'original_url']
-        },
-        message: { type: 'string', description: '操作结果消息' },
-        sessions_count: { type: 'integer', description: '当前会话总数' }
-      },
-      required: ['success', 'tab_id', 'config', 'page_info', 'message', 'sessions_count']
-    },
-
     // 使用指南
     guidelines: [
       '导航到指定URL页面，如果浏览器会话不存在则自动创建',

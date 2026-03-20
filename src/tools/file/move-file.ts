@@ -34,26 +34,6 @@ export const moveFileTool: Tool = {
       },
       required: ['source', 'destination']
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（移动文件）
-      destructiveHint: true,    // 破坏性操作（移动文件）
-      idempotentHint: false,    // 非幂等操作（多次移动可能产生不同结果）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'file',         // 文件操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['file', 'move', 'rename', 'relocate'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        result: { type: 'string', description: '操作结果消息' },
-      },
-      required: ['success', 'result']
-    },
     // 使用指南
     guidelines: [
       '支持移动文件和目录',

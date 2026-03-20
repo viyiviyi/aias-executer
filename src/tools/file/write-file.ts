@@ -35,31 +35,6 @@ export const writeFileTool: Tool = {
       },
       required: ['path', 'content']
     },
-
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（写入操作）
-      destructiveHint: true,    // 破坏性操作（可能覆盖现有文件）
-      idempotentHint: false,    // 非幂等操作（多次写入可能产生不同结果）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'file',         // 文件操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['file', 'write', 'create', 'modify'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        result: { type: 'string', description: '操作结果消息' },
-        path: { type: 'string', description: '文件路径' },
-        char_count: { type: 'integer', description: '写入的字符数' },
-        line_count: { type: 'integer', description: '写入的行数' }
-      },
-      required: ['success', 'result', 'path', 'char_count', 'line_count']
-    },
-
     // 使用指南
     guidelines: [
       '如果文件已存在且append为false，则会覆盖原文件',

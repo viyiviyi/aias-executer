@@ -65,45 +65,6 @@ export const httpRequestTool: Tool = {
       },
       required: ['url']
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（发送HTTP请求）
-      destructiveHint: false,   // 非破坏性操作（只发送请求）
-      idempotentHint: false,    // 非幂等操作（某些HTTP方法非幂等）
-      openWorldHint: true,      // 开放世界操作（访问外部服务）
-      category: 'network',      // 网络操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['network', 'http', 'request', 'api', 'rest'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '请求是否成功' },
-        status: { type: 'integer', description: 'HTTP状态码' },
-        statusText: { type: 'string', description: 'HTTP状态文本' },
-        headers: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: '响应头'
-        },
-        download_result: {
-          type: 'object',
-          description: '下载结果（当启用下载时返回）',
-          properties: {
-            success: { type: 'boolean', description: '下载是否成功' },
-            file_path: { type: 'string', description: '文件保存路径' },
-            file_size: { type: 'integer', description: '文件大小（字节）' },
-            filename: { type: 'string', description: '文件名' },
-            error: { type: 'string', description: '错误信息（如果下载失败）' }
-          }
-        },
-        data: { type: 'string', description: '响应数据（文本格式）' },
-      },
-      required: ['success', 'status', 'statusText', 'headers', 'data',]
-    },
-
     // 使用指南
     guidelines: [
       '支持文件下载功能，通过download_info参数启用',

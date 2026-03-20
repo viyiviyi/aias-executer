@@ -50,31 +50,6 @@ export const deleteFilesTool: Tool = {
       },
       required: ['items']
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（删除文件）
-      destructiveHint: true,    // 破坏性操作（删除文件）
-      idempotentHint: false,    // 非幂等操作（多次删除可能产生不同结果）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'file',         // 文件操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['file', 'delete', 'remove', 'cleanup'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '整体操作是否成功' },
-        results: {
-          type: 'string',
-          description: '简单删除结果',
-        },
-        continue_on_error: { type: 'boolean', description: '是否在错误时继续' }
-      },
-      required: ['success', 'results']
-    },
-
     // 使用指南
     guidelines: [
       '支持批量删除文件和目录',

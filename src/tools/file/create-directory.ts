@@ -37,56 +37,6 @@ export const createDirectoryTool: Tool = {
       required: [] // paths或path至少需要一个
     },
 
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（创建操作）
-      destructiveHint: false,   // 非破坏性操作（创建目录不会破坏现有数据）
-      idempotentHint: true,     // 幂等操作（已存在目录不会报错）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'file',         // 文件操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['file', 'directory', 'create', 'mkdir'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        message: { type: 'string', description: '操作结果消息' },
-        created: {
-          type: 'array',
-          description: '成功创建的目录信息',
-          items: {
-            type: 'object',
-            properties: {
-              path: { type: 'string', description: '目录路径' },
-              absolutePath: { type: 'string', description: '绝对路径' },
-              existed: { type: 'boolean', description: '目录是否已存在' }
-            },
-            required: ['path', 'absolutePath', 'existed']
-          }
-        },
-        failed: {
-          type: 'array',
-          description: '创建失败的目录信息',
-          items: {
-            type: 'object',
-            properties: {
-              path: { type: 'string', description: '目录路径' },
-              error: { type: 'string', description: '错误信息' }
-            },
-            required: ['path', 'error']
-          }
-        },
-        total_requested: { type: 'integer', description: '请求创建的目录总数' },
-        total_created: { type: 'integer', description: '成功创建的目录数' },
-        total_existed: { type: 'integer', description: '已存在的目录数' },
-        total_failed: { type: 'integer', description: '创建失败的目录数' }
-      },
-      required: ['success', 'message', 'created', 'failed', 'total_requested', 'total_created', 'total_existed', 'total_failed']
-    },
-
     // 使用指南
     guidelines: [
       '支持批量创建多个目录，使用paths参数传入数组',

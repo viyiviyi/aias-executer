@@ -39,27 +39,6 @@ export const copyFileTool: Tool = {
       },
       required: ['source', 'destination']
     },
-    // MCP构建器建议的元数据
-    metadata: {
-      readOnlyHint: false,      // 非只读操作（复制文件）
-      destructiveHint: false,   // 非破坏性操作（不修改源文件）
-      idempotentHint: true,     // 幂等操作（相同输入产生相同输出）
-      openWorldHint: false,     // 不是开放世界操作
-      category: 'file',         // 文件操作类别
-      version: '1.0.0',        // 工具版本
-      tags: ['file', 'copy', 'duplicate', 'backup'] // 工具标签
-    },
-
-    // 结构化输出模式
-    outputSchema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', description: '操作是否成功' },
-        result: { type: 'string', description: '操作结果消息' },
-      },
-      required: ['success', 'result']
-    },
-
     // 使用指南
     guidelines: [
       '支持复制文件和目录',
