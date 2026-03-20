@@ -7,7 +7,7 @@ export const closeBrowserTool: Tool = {
   definition: {
     name: 'close_browser',
     groupName: 'browser',
-    description: 'playwright关闭浏览器',
+    description: '关闭浏览器标签页',
     parameters: {
       type: 'object',
       properties: {

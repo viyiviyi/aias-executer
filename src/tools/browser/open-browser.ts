@@ -7,7 +7,7 @@ export const navigateToPageTool: Tool = {
   definition: {
     name: 'navigate_to_page',
     groupName: 'browser',
-    description: '导航到指定URL页面，如果浏览器会话不存在则自动创建浏览器并导航，默认可联网',
+    description: '浏览器导航到指定URL页面',
     parameters: {
       type: 'object',
       properties: {
@@ -123,7 +123,7 @@ export const navigateToPageTool: Tool = {
             url: urlAfterNavigation,
             original_url: url
           },
-          message: `已成功导航到 ${url}`,
+          message: `已成功导航到 ${url} 可使用标签页id获取页面内容`,
           sessions_count: browserManager.listSessions().length
         };
       } catch (error: any) {

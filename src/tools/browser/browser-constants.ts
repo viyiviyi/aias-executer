@@ -10,7 +10,7 @@ export const INCLUDE_ATTRIBUTES = [
   'name',
   'value',
   'placeholder',
-  'alt',
+  // 'alt',
   'title',
   'role',
   'aria-label',

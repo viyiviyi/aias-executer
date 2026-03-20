@@ -60,13 +60,13 @@ export const getPageContentTool: Tool = {
   definition: {
     name: 'browser_get_page_content',
     groupName: 'browser',
-    description: 'playwright读取页面dom树，只展示一次结果，需要的信息需自行整理记录在上下文',
+    description: '读取浏览器页面内容，会自动等待页面加载再获取',
     parameters: {
       type: 'object',
       properties: {
         tab_id: {
           type: 'string',
-          description: '标签页ID（可选），用于管理多个标签页，默认为default',
+          description: '标签页ID',
           default: 'default',
         },
         show_no_visibility: {
@@ -81,18 +81,18 @@ export const getPageContentTool: Tool = {
           minimum: 5,
           maximum: 300,
         },
-        include_attributes: {
-          type: 'array',
-          items: { type: 'string' },
-          description: '需要包含的属性列表（可选）',
-          default: INCLUDE_ATTRIBUTES,
-        },
-        event_attributes: {
-          type: 'array',
-          items: { type: 'string' },
-          description: '事件属性列表（可选）',
-          default: EVENT_ATTRIBUTES,
-        },
+        // include_attributes: {
+        //   type: 'array',
+        //   items: { type: 'string' },
+        //   description: '需要包含的属性列表（可选）',
+        //   default: INCLUDE_ATTRIBUTES,
+        // },
+        // event_attributes: {
+        //   type: 'array',
+        //   items: { type: 'string' },
+        //   description: '事件属性列表（可选）',
+        //   default: EVENT_ATTRIBUTES,
+        // },
         root_selector: {
           type: 'string',
           description: 'CSS选择器，指定从哪个DOM元素开始获取内容（可选）。如果未指定，则从body元素开始。',
@@ -104,7 +104,7 @@ export const getPageContentTool: Tool = {
           default: false,
         },
       },
-      required: [],
+      required: ['tab_id'],
     },
 
     // MCP构建器建议的元数据
@@ -457,11 +457,11 @@ export const getPageContentTool: Tool = {
                 // 对于base64图片，只返回头信息
                 const match = value.match(/^data:image\/(\w+);base64,/);
                 if (match) {
-                  attrs.push(`src=data:image/${match[1]};base64,...`);
+                  attrs.push(`src="data:image/${match[1]};base64,..."`);
                 }
               }
               else if (attrName === 'href') {
-                attrs.push(`href=${decodeURIComponent(value)}`);
+                attrs.push(`href="${decodeURIComponent(value)}"`);
               }
               // 如果是class，清除一些特定格式的css
               else if (attrName == 'class') {
@@ -472,9 +472,9 @@ export const getPageContentTool: Tool = {
                   return true;
                 })
                 if (classNames.length)
-                  attrs.push(`${attrName}=${classNames.join(' ')}`);
+                  attrs.push(`${attrName}="${classNames.join(' ')}"`);
               } else {
-                attrs.push(`${attrName}=${value}`);
+                attrs.push(`${attrName}="${value}"`);
               }
             }
           }
@@ -698,7 +698,7 @@ export const getPageContentTool: Tool = {
         const toYaml = (dom: Dom[], dept = 0): string => {
           let res = '';
           dom.forEach(ele => {
-            res += `${' '.repeat(dept)}${ele.tag == 'text' ? '' : ele.tag.toLowerCase()}${ele.attr || ''}${ele.text || ''}`
+            res += `${' '.repeat(dept)}- ${ele.tag == 'text' ? '' : ele.tag.toLowerCase()}${ele.attr || ''}${ele.text || ''}`
             if (ele.child && ele.child.length) {
               if (!res.endsWith('\n'))
                 res += '\n'

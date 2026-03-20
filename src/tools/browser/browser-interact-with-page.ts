@@ -7,13 +7,13 @@ export const interactWithPageTool: Tool = {
   definition: {
     name: 'browser_interact_with_page',
     groupName: 'browser',
-    description: 'playwright操作浏览器，输入、点击、滚动等',
+    description: '操作浏览器，输入、点击、滚动等',
     parameters: {
       type: 'object',
       properties: {
         tab_id: {
           type: 'string',
-          description: '标签页ID（可选），用于管理多个标签页，默认为default',
+          description: '标签页ID',
           default: 'default',
         },
         action: {
