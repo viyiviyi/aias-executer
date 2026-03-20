@@ -876,14 +876,21 @@ export const getPageContentTool: Tool = {
           selector: screenshotSelector,
         });
 
-        result.screenshot = {
-          type: screenshotFormat as 'png' | 'jpeg',
-          size: screenshotResult.buffer.length,
-          width: screenshotResult.width,
-          height: screenshotResult.height,
-          // data: screenshotResult.buffer.toString('base64')
-          data: `![浏览器页面截图](data:image/${screenshotFormat};base64,${screenshotResult.buffer.toString('base64')})`,
-        };
+        // result.screenshot = {
+        //   type: screenshotFormat as 'png' | 'jpeg',
+        //   size: screenshotResult.buffer.length,
+        //   width: screenshotResult.width,
+        //   height: screenshotResult.height,
+        //   // data: screenshotResult.buffer.toString('base64')
+        //   data: `![浏览器页面截图](data:image/${screenshotFormat};base64,${screenshotResult.buffer.toString('base64')})`,
+        // };
+        return {
+          type: 'image_url',
+          image_url: {
+            url: `data:image/png;base64,${screenshotResult.buffer.toString('base64')}`,
+            detail: 'high',
+          },
+        } as any;
         // return `data:image/png;base64,${screenshotResult.buffer.toString('base64')}` as any
       } else {
         // 返回DOM树或无障碍元素列表
