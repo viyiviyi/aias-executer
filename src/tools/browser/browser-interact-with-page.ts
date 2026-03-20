@@ -21,6 +21,7 @@ export const interactWithPageTool: Tool = {
           description: '要执行的操作类型',
           enum: [
             'click',
+            'click_coordinate',
             'fill',
             'press',
             'hover',

@@ -20,14 +20,14 @@ interface ScreenshotOptions {
 }
 
 // 截图函数
-async function takeScreenshot(page: any, options: ScreenshotOptions): Promise<{buffer: Buffer, width: number, height: number}> {
+async function takeScreenshot(page: any, options: ScreenshotOptions): Promise<{ buffer: Buffer, width: number, height: number }> {
   const { type, quality, format, selector } = options;
-  
+
   let screenshotOptions: any = {
     type: format,
     quality: format === 'jpeg' ? quality : undefined,
   };
-  
+
   // 如果有选择器，截图指定元素
   if (selector && selector.trim() !== '') {
     const element = await page.$(selector);
@@ -44,14 +44,14 @@ async function takeScreenshot(page: any, options: ScreenshotOptions): Promise<{b
       console.warn(`未找到选择器 ${selector} 对应的元素，将截图整个页面`);
     }
   }
-  
+
   // 根据类型截图
   if (type === 'fullpage') {
     screenshotOptions.fullPage = true;
   }
-  
+
   const buffer = await page.screenshot(screenshotOptions);
-  
+
   // 获取页面或视口尺寸
   let width = 0, height = 0;
   if (type === 'fullpage') {
@@ -70,7 +70,7 @@ async function takeScreenshot(page: any, options: ScreenshotOptions): Promise<{b
     width = viewportSize.width;
     height = viewportSize.height;
   }
-  
+
   return { buffer, width, height };
 }
 
@@ -130,7 +130,6 @@ interface GetPageContentResult {
     width: number;
     height: number;
   };
-  accessibility_elements?: any[];
   content_type: 'dom' | 'accessibility' | 'screenshot';
 }
 
@@ -176,22 +175,22 @@ export const getPageContentTool: Tool = {
           description: 'CSS选择器，指定从哪个DOM元素开始获取内容（可选）。如果未指定，则从body元素开始。',
           default: '',
         },
-        accessibility_only: {
-          type: 'boolean',
-          description: '是否仅获取可访问性元素列表（交互式元素如按钮、链接、表单控件等），推荐使用',
-          default: false,
-        },
+        // accessibility_only: {
+        //   type: 'boolean',
+        //   description: '是否仅获取可访问性元素列表（交互式元素如按钮、链接、表单控件等），推荐使用',
+        //   default: false,
+        // },
         content_type: {
           type: 'string',
           description: '返回内容类型：dom（DOM树）、accessibility（无障碍元素列表）、screenshot（截图）',
           enum: ['dom', 'accessibility', 'screenshot'],
           default: 'dom',
         },
-        include_screenshot: {
-          type: 'boolean',
-          description: '是否包含页面截图（当content_type为dom或accessibility时有效）',
-          default: false,
-        },
+        // include_screenshot: {
+        //   type: 'boolean',
+        //   description: '是否包含页面截图（当content_type为dom或accessibility时有效）',
+        //   default: false,
+        // },
         screenshot_type: {
           type: 'string',
           description: '截图类型：fullpage（全页截图）或 viewport（视口截图）',
@@ -285,20 +284,20 @@ export const getPageContentTool: Tool = {
     const show_no_visibility = parameters.show_no_visibility || false;
     const includeAttributes = parameters.include_attributes || [...INCLUDE_ATTRIBUTES];
     const eventAttributes = parameters.event_attributes || [...EVENT_ATTRIBUTES];
-    const accessibilityOnly = parameters.accessibility_only || false;
+    // const accessibilityOnly = parameters.accessibility_only || false;
     const rootSelector = parameters.root_selector || '';
     const contentType = parameters.content_type || 'dom';
-    const includeScreenshot = parameters.include_screenshot || false;
+    // const includeScreenshot = parameters.include_screenshot || false;
     const screenshotType = parameters.screenshot_type || 'viewport';
     const screenshotQuality = parameters.screenshot_quality || 80;
     const screenshotFormat = parameters.screenshot_format || 'png';
     const screenshotSelector = parameters.screenshot_selector || '';
-    
+
     // 如果content_type是screenshot，则强制include_screenshot为true
-    const shouldTakeScreenshot = contentType === 'screenshot' || includeScreenshot;
-    
+    // const shouldTakeScreenshot = contentType === 'screenshot' || includeScreenshot;
+
     // 如果content_type是accessibility，则设置accessibilityOnly为true
-    const effectiveAccessibilityOnly = contentType === 'accessibility' || accessibilityOnly;
+    const effectiveAccessibilityOnly = contentType === 'accessibility';
 
     const session = browserManager.getSession(browserId);
     if (!session) {
@@ -465,12 +464,12 @@ export const getPageContentTool: Tool = {
         // 检查元素是否是交互式/可访问性元素
         const isInteractiveElement = (element: Element): boolean => {
           const tagName = element.tagName.toLowerCase();
-          
+
           // 检查是否是按钮
           if (tagName === 'button') {
             return true;
           }
-          
+
           // 检查是否是输入框或表单控件
           if (tagName === 'input') {
             const type = element.getAttribute('type') || 'text';
@@ -479,7 +478,7 @@ export const getPageContentTool: Tool = {
               return true;
             }
           }
-          
+
           // 检查其他表单控件
           if (
             tagName === 'textarea' ||
@@ -488,12 +487,12 @@ export const getPageContentTool: Tool = {
           ) {
             return true;
           }
-          
+
           // 检查是否是链接
           if (tagName === 'a' && element.hasAttribute('href')) {
             return true;
           }
-          
+
           // 检查是否是图片（特别是可点击的图片）
           if (tagName === 'img') {
             // 如果图片有onclick事件或者父元素是链接，则认为是交互式的
@@ -509,14 +508,14 @@ export const getPageContentTool: Tool = {
               parent = parent.parentElement;
             }
           }
-          
+
           // 检查是否有事件绑定
           for (const attr of eventAttributes) {
             if (element.hasAttribute(attr)) {
               return true;
             }
           }
-          
+
           // 检查是否有可操作属性
           if (
             element.hasAttribute('contenteditable') ||
@@ -534,24 +533,24 @@ export const getPageContentTool: Tool = {
           ) {
             return true;
           }
-          
+
           // 检查是否是标签元素（通常与表单控件关联）
           if (tagName === 'label') {
             return true;
           }
-          
+
           // 检查是否是详情/摘要元素（可展开/折叠）
           if (tagName === 'details' || tagName === 'summary') {
             return true;
           }
-          
+
           // 检查子元素是否有交互式元素
           for (const child of Array.from(element.children)) {
             if (isInteractiveElement(child)) {
               return true;
             }
           }
-          
+
           return false;
         };
 
@@ -871,45 +870,25 @@ export const getPageContentTool: Tool = {
       if (contentType === 'screenshot') {
         // 只返回截图
         const screenshotResult = await takeScreenshot(page, {
-          type: screenshotType,
+          type: screenshotType && "viewport",
           quality: screenshotQuality,
           format: screenshotFormat as 'png' | 'jpeg',
           selector: screenshotSelector,
         });
-        
+
         result.screenshot = {
-          data: screenshotResult.buffer.toString('base64'),
           type: screenshotFormat as 'png' | 'jpeg',
           size: screenshotResult.buffer.length,
           width: screenshotResult.width,
           height: screenshotResult.height,
+          // data: screenshotResult.buffer.toString('base64')
+          data: `![浏览器页面截图](data:image/${screenshotFormat};base64,${screenshotResult.buffer.toString('base64')})`,
         };
+        // return `data:image/png;base64,${screenshotResult.buffer.toString('base64')}` as any
       } else {
         // 返回DOM树或无障碍元素列表
-        if (contentType === 'accessibility') {
-          result.accessibility_elements = bodyDomTree.dom_tree;
-        } else {
-          result.dom_tree = bodyDomTree.dom_tree;
-          result.pageContennt = bodyDomTree.page;
-        }
-        
-        // 如果需要截图，添加截图
-        if (shouldTakeScreenshot) {
-          const screenshotResult = await takeScreenshot(page, {
-            type: screenshotType,
-            quality: screenshotQuality,
-            format: screenshotFormat as 'png' | 'jpeg',
-            selector: screenshotSelector,
-          });
-          
-          result.screenshot = {
-            data: screenshotResult.buffer.toString('base64'),
-            type: screenshotFormat as 'png' | 'jpeg',
-            size: screenshotResult.buffer.length,
-            width: screenshotResult.width,
-            height: screenshotResult.height,
-          };
-        }
+        // result.dom_tree = bodyDomTree.dom_tree;
+        result.pageContennt = bodyDomTree.page;
       }
 
       return result;
