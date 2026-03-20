@@ -46,62 +46,6 @@ export const createDirectoryTool: Tool = {
       '可以设置目录权限（mode参数）',
       '所有目录路径必须在工作空间内'
     ],
-
-    // 示例用法
-    examples: [
-      {
-        description: '创建单个目录',
-        parameters: { path: 'new-folder' },
-        expectedOutput: {
-          success: true,
-          message: '成功创建1个目录',
-          created: [
-            { path: 'new-folder', absolutePath: '/workspace/new-folder', existed: false }
-          ],
-          failed: [],
-          total_requested: 1,
-          total_created: 1,
-          total_existed: 0,
-          total_failed: 0
-        }
-      },
-      {
-        description: '批量创建多个目录',
-        parameters: {
-          paths: ['dir1', 'dir2/subdir', 'dir3/subdir/subsubdir']
-        },
-        expectedOutput: {
-          success: true,
-          message: '成功创建3个目录',
-          created: [
-            { path: 'dir1', absolutePath: '/workspace/dir1', existed: false },
-            { path: 'dir2/subdir', absolutePath: '/workspace/dir2/subdir', existed: false },
-            { path: 'dir3/subdir/subsubdir', absolutePath: '/workspace/dir3/subdir/subsubdir', existed: false }
-          ],
-          failed: [],
-          total_requested: 3,
-          total_created: 3,
-          total_existed: 0,
-          total_failed: 0
-        }
-      },
-      {
-        description: '创建已存在的目录',
-        parameters: { path: 'existing-folder' },
-        expectedOutput: {
-          success: true,
-          message: '成功创建0个目录，1个目录已存在',
-          created: [
-            { path: 'existing-folder', absolutePath: '/workspace/existing-folder', existed: true }
-          ],
-          failed: [],
-          total_requested: 1,
-          total_created: 0,
-          total_existed: 1,
-          total_failed: 0
-        }
-      }
-    ]
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
