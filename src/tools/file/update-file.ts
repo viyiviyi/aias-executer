@@ -59,7 +59,34 @@ export const updateFileTool: Tool = {
             required: ['operation', 'start_line_index'],
           },
           description:
-            '批量操作列表，如果需要对文件多处修改务必一次性传入所有修改操作而不是多次使用此工具；所有操作都基于read_code获取的行号。如果要替换内容，先使用delete操作删除行，再使用insert操作插入新内容。',
+            `批量操作列表，如果需要对文件多处修改务必一次性传入所有修改操作而不是多次使用此工具；
+所有操作都基于read_code获取的行号。如果要替换内容，先使用delete操作删除行，再使用insert操作插入新内容。
+比如有这样一个文件:test.txt
+1┆这是原来的第1行
+2┆这是原来的第2行
+3┆这是原来的第3行
+4┆这是原来的第4行
+5┆这是原来的第5行
+
+我们需要删除第1行、替换第3行、插入两行到第4行、在文档后追加3行，需要传入的操作是：
+[
+{"operation":"delete","start_line_index":"1","del_line_count":1},
+{"operation":"delete","start_line_index":"3","del_line_count":1},
+{"operation":"delete","start_line_index":"3","insert_content":"这是新的第3行"},
+{"operation":"delete","start_line_index":"4","insert_content":"这是新的第4行\\n这是新的第4.1行\\n这是新的第4.2行"},
+{"operation":"delete","start_line_index":"6","insert_content":"这是追加的新行"},
+]
+
+最终结果是：
+1┆这是原来的第2行
+2┆这是新的第3行
+3┆这是新的第4行
+4┆这是新的第4.1行
+5┆这是新的第4.2行
+6┆这是原来的第4行
+7┆这是原来的第5行
+8┆这是追加的新行
+`,
         },
       },
       required: ['path', 'updates'],
@@ -186,7 +213,7 @@ export const updateFileTool: Tool = {
         success: true,
         path: filePath,
         new_content: contextContent,
-        tips: '返回的内容是修改范围附近的代码，因为不是完整代码，在没有第1行的情况下,变更范围外的代码：不可用于判断格式不正确！不可用于判断括号数量异常！不可用于判断代码重复!',
+        tips: 'new_content是修改后的文件修改范围附近的代码，因为不是完整代码，在没有第1行的情况下：不可用于判断格式不正确！不可用于判断括号数量异常！不可用于判断代码重复!',
         changed_lines: uniqueChangedLines[0] + ' ~ ' + uniqueChangedLines[uniqueChangedLines.length - 1],
         context_start_line: contextStartLine,
       };
