@@ -74,7 +74,7 @@ export class BrowserConfigManager {
     userDataDir: path.join(process.cwd(), 'browser-data'),
     viewport: {
       width: 1920,
-      height: 1080
+      height: 1020
     },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36',
     args: [
@@ -93,7 +93,7 @@ export class BrowserConfigManager {
         renderer: 'Intel Iris OpenGL Engine',
         hardwareConcurrency: 8,
         deviceMemory: 8,
-        screenResolution: '1920x1080',
+        screenResolution: '1920x1020',
         languages: ['zh-CN', 'zh', 'en-US', 'en'],
         platform: 'Win32',
         plugins: [

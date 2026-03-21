@@ -94,7 +94,7 @@ export const listDirectoryTool: Tool = {
       const result = await listDirectoryRecursive(resolvedPath, originalPath, skipHidden, skipDirs, countStats);
       return {
         success: result.error ? false : true,
-        // result: result,
+        result: result,
         error: result.error
       };
     } else {
