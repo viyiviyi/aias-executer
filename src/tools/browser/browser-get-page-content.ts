@@ -849,7 +849,7 @@ export const getPageContentTool: Tool = {
           },
         }, {
           type: 'text',
-          text: '这是页面元素列表: \n'+JSON.stringify({ pageContennt: bodyDomTree.page })
+          text: JSON.stringify({ tips: '这是页面元素列表:', pageContennt: bodyDomTree.page })
         },] as any;
         // return `data:image/png;base64,${screenshotResult.buffer.toString('base64')}` as any
       } else {
