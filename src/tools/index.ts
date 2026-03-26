@@ -4,6 +4,7 @@ import { ToolRegistry } from '../core/tool-registry';
 import { browserConfigTool } from './browser/browser-config-tool';
 import { closeBrowserTool } from './browser/close-browser';
 import { getPageContentTool } from './browser/browser-get-page-content';
+import { getPageContentV2Tool } from './browser/browser-get-page-content-v2';
 import { interactWithPageTool } from './browser/browser-interact-with-page';
 import { navigateToPageTool } from './browser/open-browser';
 // 文件工具
@@ -71,6 +72,7 @@ const toolList: Tool[] = [
   // 浏览器工具（使用 Playwright MCP）
   navigateToPageTool,
   getPageContentTool,
+  getPageContentV2Tool,
   interactWithPageTool,
   closeBrowserTool,
   browserConfigTool,

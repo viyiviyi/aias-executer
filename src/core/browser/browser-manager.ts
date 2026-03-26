@@ -134,7 +134,7 @@ export class BrowserManager {
     // 监听disconnected事件
     browser.on('disconnected', () => {
       console.log('浏览器断开连接事件触发');
-      this.handleBrowserDisconnection();
+      // this.handleBrowserDisconnection();
     });
 
     // 启动定期健康检查（每30秒）
