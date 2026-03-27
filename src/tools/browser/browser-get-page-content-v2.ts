@@ -60,6 +60,58 @@ interface PageDomNode {
 /** 返回结果结构 - OpenAI API 内容块格式 */
 type PageContentResult = ContentBlock[];
 
+// ==================== 布局元素提取函数 ====================
+
+/**
+ * 提取页面主要布局分区（仅顶层结构化分区）
+ * 返回 YAML 格式的选择器列表
+ */
+async function extractLayoutSelectors(page: import('playwright').Page): Promise<string> {
+  const selectors = await page.evaluate(() => {
+    const layoutTags = ['HEADER', 'FOOTER', 'NAV', 'ASIDE', 'MAIN', 'SECTION', 'ARTICLE'];
+    const results: { tag: string; selector: string }[] = [];
+
+    for (const tag of layoutTags) {
+      const elements = document.querySelectorAll(tag.toLowerCase());
+      for (const el of Array.from(elements)) {
+        // 只取 body 直系子代的布局元素（顶层分区）
+        let parent = el.parentElement;
+        while (parent && parent !== document.body) {
+          parent = parent.parentElement;
+        }
+        if (parent !== document.body) continue;
+
+        let selector = '';
+        if (el.id) {
+          selector = `#${el.id}`;
+        } else {
+          const classes = Array.from(el.classList)
+            .filter(c => c.trim() !== '')
+            .slice(0, 2)
+            .join('.');
+          selector = classes
+            ? `${tag.toLowerCase()}.${classes}`
+            : tag.toLowerCase();
+        }
+
+        results.push({ tag, selector });
+      }
+    }
+
+    return results;
+  });
+
+  if (selectors.length === 0) {
+    return 'layout_selectors: []';
+  }
+
+  const yaml = selectors
+    .map(s => `  - ${s.selector}  # ${s.tag}`)
+    .join('\n');
+
+  return `layout_selectors:\n${yaml}`;
+}
+
 // 截图选项类型
 interface ScreenshotOptions {
   type: 'fullpage' | 'viewport';
@@ -71,7 +123,7 @@ interface ScreenshotOptions {
 // ==================== 截图函数 ====================
 
 async function takeScreenshot(
-  page: any,
+  page: import('playwright').Page,
   options: ScreenshotOptions
 ): Promise<{ buffer: Buffer; width: number; height: number }> {
   const { type, quality, format, selector } = options;
@@ -111,8 +163,8 @@ async function takeScreenshot(
     height = pageSize.height;
   } else {
     const viewportSize = page.viewportSize();
-    width = viewportSize.width;
-    height = viewportSize.height;
+    width = viewportSize?.width ?? 0;
+    height = viewportSize?.height ?? 0;
   }
 
   return { buffer, width, height };
@@ -428,6 +480,10 @@ export const getPageContentV2Tool: Tool = {
       const processedDom = domPipeline(fullDomTree as RawDomNode[], pipelineOptions);
 
       result.push(domToContentBlock(processedDom));
+
+      // 提取布局元素选择器并追加到结果末尾
+      const layoutSelectorsYaml = await extractLayoutSelectors(page);
+      result.push({ type: 'text', text: `\n${layoutSelectorsYaml}` });
 
       return result;
     } catch (error: unknown) {
