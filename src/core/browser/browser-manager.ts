@@ -34,7 +34,7 @@ export class BrowserManager {
   private mainContext: BrowserContext | null = null;
 
   // 重连相关属性
-  private isReconnecting: boolean = false;
+  // private isReconnecting: boolean = false;
   private healthCheckInterval: NodeJS.Timeout | null = null;
 
   private constructor() {
@@ -103,27 +103,6 @@ export class BrowserManager {
         clearInterval(this.healthCheckInterval);
         this.healthCheckInterval = null;
       }
-    }
-  }
-
-  /**
-   * 处理浏览器断开连接事件
-   */
-  private async handleBrowserDisconnection(): Promise<void> {
-    if (this.isReconnecting) return;
-
-    this.isReconnecting = true;
-
-    try {
-      await this.cleanupDisconnectedBrowser();
-
-      // 如果有活跃会话，通知它们浏览器已断开
-      if (this.sessions.size > 0) {
-        console.log(`浏览器断开，清理 ${this.sessions.size} 个会话`);
-        this.sessions.clear(); // 下次使用时会自动重新创建
-      }
-    } finally {
-      this.isReconnecting = false;
     }
   }
 

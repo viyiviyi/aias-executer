@@ -177,11 +177,7 @@ export function computeHasUsefulContent(
   // 有文本内容
   if (node.text?.trim()) return true;
 
-  // 特殊标签（a 标签的 href 长度超过 500 则视为无效的直接丢弃）
-  if (tag === 'a') {
-    const href = node.attrs?.['href'] || '';
-    if (href.length > 500) return false;
-  } else if (['img', 'button', 'input', 'textarea', 'select', 'video', 'audio'].includes(tag)) {
+  if (['img', 'button', 'input', 'textarea', 'a', 'select', 'video', 'audio', 'form'].includes(tag)) {
     return true;
   }
 
@@ -318,7 +314,7 @@ export function mergeTextNodes(dom: ProcessedDomNode[]): ProcessedDomNode[] {
     const shouldKeep = keepTags.has(tagLower) || hasSpecialAttr;
 
     // 递归处理子节点
-    let processedChild: ProcessedDomNode[] = [];
+    const processedChild: ProcessedDomNode[] = [];
     if (node.child) {
       for (const child of node.child) {
         const processed = processNode(child);
@@ -392,11 +388,8 @@ export function mergeTextNodes(dom: ProcessedDomNode[]): ProcessedDomNode[] {
  */
 export function reduceDomDepth(
   dom: ProcessedDomNode[],
-  maxDepth: number,
   currentDepth: number = 0
 ): ProcessedDomNode[] {
-  if (maxDepth <= 0 || currentDepth >= maxDepth) return dom;
-
   const result: ProcessedDomNode[] = [];
 
   for (const node of dom) {
@@ -404,10 +397,14 @@ export function reduceDomDepth(
       result.push(node);
       continue;
     }
-
+    // a 标签的 href 长度超过 500 大部分都是广告，整枝直接丢弃
+    if (node.tag.toLowerCase() === 'a') {
+      const href = node.attrs?.['href'] || '';
+      if (href.length > 500) continue;
+    }
     let newChild: ProcessedDomNode[] | undefined;
     if (node.child && node.child.length > 0) {
-      newChild = reduceDomDepth(node.child, maxDepth, currentDepth + 1);
+      newChild = reduceDomDepth(node.child, currentDepth + 1);
     }
 
     const newNode: ProcessedDomNode = {
@@ -421,29 +418,11 @@ export function reduceDomDepth(
       text: node.text,
     };
 
-    // img 标签永远保留位置信息
-    const isImg = node.tag.toLowerCase() === 'img';
-
     // 单子节点覆盖父节点，但 img 保留位置
-    if (newChild && newChild.length === 1 && newChild[0].tag !== 'text') {
+    if (!node.isInteractive && !node.hasUsefulContent && newChild && newChild.length === 1) {
       const onlyChild = newChild[0];
-      const childIsImg = onlyChild.tag.toLowerCase() === 'img';
-      if (isImg || childIsImg) {
-        // img 标签：合并子节点信息但保留自己的位置
-        result.push({
-          ...onlyChild,
-          x: onlyChild.x ?? node.x,
-          y: onlyChild.y ?? node.y,
-          w: onlyChild.w ?? node.w,
-          h: onlyChild.h ?? node.h,
-          tag: onlyChild.tag, // 保持子节点 tag
-          attrs: onlyChild.attrs,
-          child: onlyChild.child,
-          text: onlyChild.text,
-        });
-      } else {
-        result.push(onlyChild);
-      }
+      if (onlyChild.tag == 'text') result.push(newNode);
+      else result.push(onlyChild);
     } else {
       result.push(newNode);
     }
@@ -545,29 +524,34 @@ export function enrichImgTags(dom: ProcessedDomNode[]): ProcessedDomNode[] {
 export function enrichNarrowElements(
   dom: ProcessedDomNode[],
   depth: number = 0,
-  parentWidth?: number
+  parent?: ProcessedDomNode
 ): ProcessedDomNode[] {
-  if (depth > 2) return dom;
-
+  let lastX = 0;
+  let lastY = 0;
+  let lastW = 0;
+  let lastH = 0;
   return dom.map(node => {
     if (node.tag === 'text') return node;
 
     const hasWidth = node.w !== undefined && node.w > 0;
     const isNarrow =
-      parentWidth !== undefined && hasWidth && node.w! < parentWidth - 20;
-    const needsPosition = depth <= 2 && isNarrow;
+      parent?.w !== undefined && hasWidth && node.w! < parent.w - 20;
+    const needsPosition = depth <= 2 || isNarrow;
 
     // 窄元素显示位置，宽元素清除位置（避免信息冗余）
     const finalNode: ProcessedDomNode = {
       ...node,
-      x: needsPosition ? node.x : undefined,
-      y: needsPosition ? node.y : undefined,
-      w: needsPosition ? node.w : undefined,
-      h: needsPosition ? node.h : undefined,
+      x: needsPosition && lastX != node.x ? node.x : undefined,
+      y: needsPosition && lastY != node.y ? node.y : undefined,
+      w: needsPosition && lastW != node.w ? node.w : undefined,
+      h: needsPosition && lastH != node.h ? node.h : undefined,
     };
-
+    lastX = node.x || 0;
+    lastY = node.y || 0;
+    lastW = node.w || 0;
+    lastH = node.h || 0;
     finalNode.child = node.child
-      ? enrichNarrowElements(node.child, depth + 1, needsPosition ? node.w : parentWidth)
+      ? enrichNarrowElements(node.child, depth + 1, node)
       : undefined;
 
     return finalNode;
@@ -679,7 +663,7 @@ export function domToContentItem(
   dom.forEach(node => {
     if (node.tag === 'text') {
       if (node.text) {
-        blocks.push(`${' '.repeat(depth)}-${node.text}`);
+        blocks.push(`${' '.repeat(depth * 2)}-${node.text}`);
       }
       return;
     }
@@ -715,7 +699,7 @@ export function domToContentItem(
     const textStr = node.text ? ` "${node.text}"` : '';
 
     const desc = tag + attrStr + posStr + textStr;
-    blocks.push(`${' '.repeat(depth)}-${desc}`);
+    blocks.push(`${' '.repeat(depth * 2)}-${desc}`);
 
     // 递归处理子节点
     if (node.child && node.child.length > 0) {

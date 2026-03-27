@@ -124,7 +124,7 @@ export const getPageContentV2Tool: Tool = {
   definition: {
     name: 'browser_get_page_content_v2',
     groupName: 'browser',
-    description: '读取浏览器页面内容（v2版本）- 默认返回精简DOM，支持视口过滤、属性筛选、层数缩减',
+    description: '读取浏览器页面内容（v2版本）- 默认返回精简DOM、按视口过滤、层数缩减',
     parameters: {
       type: 'object',
       properties: {
@@ -140,7 +140,7 @@ export const getPageContentV2Tool: Tool = {
         },
         screenshot: {
           type: 'boolean',
-          description: '是否包含页面截图（默认false）。建议在需要识别图像内容、验证码或复杂样式时使用。',
+          description: '是否包含页面截图（默认false）。仅在需要识别图像内容、验证码或复杂样式时使用。',
           default: false,
         },
         scope: {
@@ -162,11 +162,6 @@ export const getPageContentV2Tool: Tool = {
           enum: ['png', 'jpeg'],
           default: 'png',
         },
-        screenshot_selector: {
-          type: 'string',
-          description: 'CSS选择器，指定要截图的元素（可选）',
-          default: '',
-        },
         timeout: {
           type: 'integer',
           description: '超时时间（秒）',
@@ -182,7 +177,7 @@ export const getPageContentV2Tool: Tool = {
         extra_attributes: {
           type: 'array',
           items: { type: 'string' },
-          description: '需要额外包含的属性列表（默认包含必要属性：id, href, src, alt）',
+          description: '需要额外包含的属性列表（默认已包含必要属性：id, href, src, alt）',
           default: [],
         },
       },
@@ -209,7 +204,6 @@ export const getPageContentV2Tool: Tool = {
     const scope = parameters.scope || 'viewport';
     const screenshotQuality = parameters.screenshot_quality || 80;
     const screenshotFormat = parameters.screenshot_format || 'png';
-    const screenshotSelector = parameters.screenshot_selector || '';
     const rootSelector = parameters.root_selector || '';
     const extraAttributes = parameters.extra_attributes || [];
     const excludeAttributes = parameters.exclude_attributes || [];
@@ -406,16 +400,18 @@ export const getPageContentV2Tool: Tool = {
           type: scope === 'fullpage' ? 'fullpage' : 'viewport',
           quality: screenshotQuality,
           format: screenshotFormat,
-          selector: screenshotSelector,
+          selector: rootSelector,
         });
 
-        result.push({ type: 'text', text: '页面截图: ' }, {
-          type: 'image_url',
-          image_url: {
-            url: `data:image/${screenshotFormat};base64,${screenshotResult.buffer.toString('base64')}`,
-            detail: 'high',
-          },
-        });
+        result.push(
+          { type: 'text', text: '页面截图: ' },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:image/${screenshotFormat};base64,${screenshotResult.buffer.toString('base64')}`,
+              detail: 'high',
+            },
+          });
       }
       result.push({ type: 'text', text: '页面dom树: ' });
 
