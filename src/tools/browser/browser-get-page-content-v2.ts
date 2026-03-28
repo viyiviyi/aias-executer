@@ -281,7 +281,7 @@ export const getPageContentV2Tool: Tool = {
         'src',
         'alt',
         'srcset',
-        'title',
+        'type',
       ];
       const baseAttributes: string[] = [...INCLUDE_ATTRIBUTES];
       const includeAttributes: string[] = [
@@ -443,7 +443,7 @@ export const getPageContentV2Tool: Tool = {
       // 页面信息
       result.push({
         type: 'text',
-        text: `[${browserId}] ${title}\n${url}`,
+        text: `[tab_id: ${browserId}]\n[title: ${title}]\n[url: ${url}]`,
       });
 
       // 截图
