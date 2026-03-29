@@ -577,7 +577,6 @@ export function domPipeline(
   rawDom: RawDomNode[],
   options: DomPipelineOptions
 ): ProcessedDomNode[] {
-  console.log(options)
   // 1. 计算节点属性
   let result = computeNodeProperties(rawDom, options);
   // console.log(result)

@@ -3,6 +3,43 @@ import { BrowserManager } from '../../core/browser/browser-manager';
 
 const browserManager = BrowserManager.getInstance();
 
+// ==================== 选择器验证函数 ====================
+
+const SELECTOR_HINTS = `
+可用 get_page_content_v2 工具获取页面上元素的定位字符串。`;
+
+/**
+ * 验证选择器是否能选到元素
+ * @returns 匹配的元素数量，0表示未匹配到
+ */
+async function validateSelector(page: import('playwright').Page, selector: string): Promise<number> {
+  try {
+    const count = await page.locator(selector).count();
+    return count;
+  } catch {
+    // 选择器语法错误
+    return -1;
+  }
+}
+
+/**
+ * 验证选择器并抛出友好的错误信息
+ */
+async function ensureSelectorValid(page: import('playwright').Page, selector: string): Promise<number> {
+  const count = await validateSelector(page, selector);
+  if (count === -1) {
+    throw new Error(
+      `定位器 "${selector}" 无法被识别。\n${SELECTOR_HINTS}`
+    );
+  }
+  if (count === 0) {
+    throw new Error(
+      `定位器 "${selector}" 未匹配到任何元素。\n请确保：\n1. 元素存在于当前页面\n2. 元素在视口内可见\n${SELECTOR_HINTS}`
+    );
+  }
+  return count;
+}
+
 export const interactWithPageTool: Tool = {
   definition: {
     name: 'browser_interact_with_page',
@@ -14,7 +51,6 @@ export const interactWithPageTool: Tool = {
         tab_id: {
           type: 'string',
           description: '标签页ID',
-          default: 'default',
         },
         action: {
           type: 'string',
@@ -35,7 +71,7 @@ export const interactWithPageTool: Tool = {
         },
         selector: {
           type: 'string',
-          description: 'CSS选择器（对于click、fill、hover、press、select、check、uncheck操作需要）',
+          description: 'querySelecto()选择器（对于click、fill、hover、press、select、check、uncheck操作需要）',
         },
         text: {
           type: 'string',
@@ -70,7 +106,7 @@ export const interactWithPageTool: Tool = {
           description: 'Y坐标（对于click_coordinate操作需要）',
         },
       },
-      required: ['action'],
+      required: ['tab_id', 'action'],
     },
     // 使用指南
     guidelines: [
@@ -120,7 +156,7 @@ export const interactWithPageTool: Tool = {
           if (!selector) {
             throw new Error('click操作需要selector参数');
           }
-
+          await ensureSelectorValid(page, selector);
           // 执行点击
           await page.click(selector, { timeout: timeout * 1000 });
 
@@ -142,7 +178,7 @@ export const interactWithPageTool: Tool = {
           if (!selector || !text) {
             throw new Error('fill操作需要selector和text参数');
           }
-
+          await ensureSelectorValid(page, selector);
           await page.locator(selector).focus();
           await page.fill(selector, text, { timeout: timeout * 1000 });
 
@@ -155,6 +191,7 @@ export const interactWithPageTool: Tool = {
           }
 
           if (selector) {
+            await ensureSelectorValid(page, selector);
             await page.press(selector, key, { timeout: timeout * 1000 });
             result = { message: `已在 ${selector} 按下键: ${key}` };
           } else {
@@ -168,7 +205,7 @@ export const interactWithPageTool: Tool = {
           if (!selector) {
             throw new Error('hover操作需要selector参数');
           }
-
+          await ensureSelectorValid(page, selector);
           await page.hover(selector, { timeout: timeout * 1000 });
 
           result = { message: `已悬停在元素: ${selector}` };
@@ -178,7 +215,7 @@ export const interactWithPageTool: Tool = {
           if (!selector || !value) {
             throw new Error('select操作需要selector和value参数');
           }
-
+          await ensureSelectorValid(page, selector);
           await page.selectOption(selector, value, { timeout: timeout * 1000 });
 
           result = { message: `已在 ${selector} 选择值: ${value}` };
@@ -188,7 +225,7 @@ export const interactWithPageTool: Tool = {
           if (!selector) {
             throw new Error('check操作需要selector参数');
           }
-
+          await ensureSelectorValid(page, selector);
           await page.check(selector, { timeout: timeout * 1000 });
 
           result = { message: `已勾选元素: ${selector}` };
@@ -198,7 +235,7 @@ export const interactWithPageTool: Tool = {
           if (!selector) {
             throw new Error('uncheck操作需要selector参数');
           }
-
+          await ensureSelectorValid(page, selector);
           await page.uncheck(selector, { timeout: timeout * 1000 });
 
           result = { message: `已取消勾选元素: ${selector}` };
@@ -238,24 +275,21 @@ export const interactWithPageTool: Tool = {
 
       // 如果需要等待页面加载
       if (waitForNavigation) {
-        await page.waitForLoadState('load', { timeout: timeout * 1000 });
+        await (newPage || page).waitForLoadState('load', { timeout: timeout * 1000 });
       }
 
       // 获取操作后的页面状态
       // const currentUrl = page.url();
-      const currentTitle = await page.title();
-      console.log(newTabUrl);
+      const currentTitle = await (newPage || page).title()
       return {
         success: true,
         // session_id: browserId,
         action: action,
         result: result,
-        page_state: {
-          title: currentTitle,
-        },
-        new_tab_id: newTabId || null,
-        new_tab_url: newTabUrl || null,
-        tips: newTabId ? `新标签页已打开，id是[${newTabId}]，需要使用新标签页id获取页面内容或操作标签页` : undefined,
+        title: currentTitle,
+        tab_id: newTabId || null,
+        url: newTabUrl || null,
+        msg: newTabId ? `新标签页已打开，id是[${newTabId}]` : undefined,
         time: new Date().toLocaleString(),
       };
     } catch (error: any) {

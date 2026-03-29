@@ -567,13 +567,34 @@ export class BrowserManager {
   }
 
   public async navigateTo(browserId: string, url: string, timeout?: number): Promise<void> {
-    const session = this.getSession(browserId);
+    let session = this.getSession(browserId);
     if (!session) {
       throw new Error(`浏览器会话 ${browserId} 不存在`);
     }
 
     const config = this.configManager.getConfig();
     const finalTimeout = timeout || config.timeout * 1000;
+
+    // 检查页面是否仍然有效，如果浏览器被手动关闭则需要重新创建会话
+    try {
+      // 通过尝试获取页面标题来检查页面是否有效
+      await session.page.title();
+    } catch (error: any) {
+      // 页面已失效（浏览器可能被手动关闭），需要重新创建会话
+      console.warn(`浏览器会话 ${browserId} 的页面已失效，将重新创建会话...`);
+
+      // 先清理失效的会话
+      await this.closeSession(browserId).catch(() => {});
+
+      // 重新创建会话
+      session = await this.createSession(
+        browserId,
+        session.config.browserType,
+        session.config.headless,
+        session.config.antiDetection,
+        session.config.userDataDir
+      );
+    }
 
     await session.page.goto(url, {
       timeout: finalTimeout,
