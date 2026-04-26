@@ -187,12 +187,12 @@ export const getPageContentV2Tool: Tool = {
         },
         full_dom: {
           type: 'boolean',
-          description: '是否查看完整DOM（默认false，返回精简DOM）。建议仅在需要分析复杂页面结构或调试时使用。',
+          description: '是否查看完整DOM（默认false，返回精简DOM）。非开发调试任务无需启用。',
           default: false,
         },
         screenshot: {
           type: 'boolean',
-          description: '是否包含页面截图（默认false）。仅在需要识别图像内容、验证码或复杂样式时使用。',
+          description: '是否包含页面截图（默认false）。仅在支持多模态且需要识别图像内容时使用启用。',
           default: false,
         },
         scope: {
@@ -201,19 +201,19 @@ export const getPageContentV2Tool: Tool = {
           enum: ['viewport', 'fullpage'],
           default: 'viewport',
         },
-        screenshot_quality: {
-          type: 'integer',
-          description: '截图质量（1-100），仅对jpeg格式有效',
-          default: 80,
-          minimum: 1,
-          maximum: 100,
-        },
-        screenshot_format: {
-          type: 'string',
-          description: '截图格式',
-          enum: ['png', 'jpeg'],
-          default: 'png',
-        },
+        // screenshot_quality: {
+        //   type: 'integer',
+        //   description: '截图质量（1-100），仅对jpeg格式有效',
+        //   default: 80,
+        //   minimum: 1,
+        //   maximum: 100,
+        // },
+        // screenshot_format: {
+        //   type: 'string',
+        //   description: '截图格式',
+        //   enum: ['png', 'jpeg'],
+        //   default: 'png',
+        // },
         timeout: {
           type: 'integer',
           description: '超时时间（秒）',

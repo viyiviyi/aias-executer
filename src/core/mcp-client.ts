@@ -17,6 +17,7 @@ export interface MCPServerConfig {
   description?: string;
   disabled?: boolean;
   toolConf?: Record<string, Record<string, any>>;
+  cwd?: string;
 }
 
 export interface MCPConfig {
@@ -155,6 +156,7 @@ export class MCPClientManager {
           command,
           args,
           env,
+          ...(serverConfig.cwd && { cwd: serverConfig.cwd }),
         });
       } else {
         throw new Error(`不支持的MCP服务器类型: ${serverConfig.type || 'stdio'}`);
