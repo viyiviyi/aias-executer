@@ -109,7 +109,7 @@ async function extractLayoutSelectors(page: import('playwright').Page): Promise<
     .map(s => `  - ${s.selector}  # ${s.tag}`)
     .join('\n');
 
-  return `layout_selectors:\n${yaml}`;
+  return `layout_selectors:\n${yaml}\n\n这些是自动识别出的layout元素，当页面主要内容仅在某个layuot块时，可以将这一块作为获取页面的根节点获取更干净的上下文。`;
 }
 
 // 截图选项类型
@@ -480,6 +480,7 @@ export const getPageContentV2Tool: Tool = {
       const processedDom = domPipeline(fullDomTree as RawDomNode[], pipelineOptions);
 
       result.push(domToContentBlock(processedDom));
+      result.push({ type: 'text', text: '说明: dom层级有缩减，元素属性里x/y/w/h分别对应元素在页面上的位坐标和宽高，如果与前一个元素相同时会省略。' });
 
       // 提取布局元素选择器并追加到结果末尾
       const layoutSelectorsYaml = await extractLayoutSelectors(page);
