@@ -81,15 +81,15 @@ export const navigateToPageTool: Tool = {
         // 获取页面基本信息
         const page = session.page;
         const title = await page.title();
-        const urlAfterNavigation = page.url();
+        // const urlAfterNavigation = page.url();
 
         return {
           success: true,
           tab_id: tabId,
           page_info: {
             title: title,
-            url: urlAfterNavigation,
-            original_url: url
+            // url: urlAfterNavigation,
+            // original_url: url
           },
           message: `已成功导航到 ${url} 可使用标签页id获取页面内容`,
           sessions_count: browserManager.listSessions().length

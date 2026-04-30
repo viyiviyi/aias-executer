@@ -66,51 +66,51 @@ type PageContentResult = ContentBlock[];
  * 提取页面主要布局分区（仅顶层结构化分区）
  * 返回 YAML 格式的选择器列表
  */
-async function extractLayoutSelectors(page: import('playwright').Page): Promise<string> {
-  const selectors = await page.evaluate(() => {
-    const layoutTags = ['HEADER', 'FOOTER', 'NAV', 'ASIDE', 'MAIN', 'SECTION', 'ARTICLE'];
-    const results: { tag: string; selector: string }[] = [];
+// async function extractLayoutSelectors(page: import('playwright').Page): Promise<string> {
+//   const selectors = await page.evaluate(() => {
+//     const layoutTags = ['HEADER', 'FOOTER', 'NAV', 'ASIDE', 'MAIN', 'SECTION', 'ARTICLE',"ROOT"];
+//     const results: { tag: string; selector: string }[] = [];
 
-    for (const tag of layoutTags) {
-      const elements = document.querySelectorAll(tag.toLowerCase());
-      for (const el of Array.from(elements)) {
-        // 只取 body 直系子代的布局元素（顶层分区）
-        let parent = el.parentElement;
-        while (parent && parent !== document.body) {
-          parent = parent.parentElement;
-        }
-        if (parent !== document.body) continue;
+//     for (const tag of layoutTags) {
+//       const elements = document.querySelectorAll(tag.toLowerCase());
+//       for (const el of Array.from(elements)) {
+//         // 只取 body 直系子代的布局元素（顶层分区）
+//         let parent = el.parentElement;
+//         while (parent && parent !== document.body) {
+//           parent = parent.parentElement;
+//         }
+//         if (parent !== document.body) continue;
 
-        let selector = '';
-        if (el.id) {
-          selector = `#${el.id}`;
-        } else {
-          const classes = Array.from(el.classList)
-            .filter(c => c.trim() !== '')
-            .slice(0, 2)
-            .join('.');
-          selector = classes
-            ? `${tag.toLowerCase()}.${classes}`
-            : tag.toLowerCase();
-        }
+//         let selector = '';
+//         if (el.id) {
+//           selector = `#${el.id}`;
+//         } else {
+//           const classes = Array.from(el.classList)
+//             .filter(c => c.trim() !== '')
+//             .slice(0, 2)
+//             .join('.');
+//           selector = classes
+//             ? `${tag.toLowerCase()}.${classes}`
+//             : tag.toLowerCase();
+//         }
 
-        results.push({ tag, selector });
-      }
-    }
+//         results.push({ tag, selector });
+//       }
+//     }
 
-    return results;
-  });
+//     return results;
+//   });
 
-  if (selectors.length === 0) {
-    return 'layout_selectors: []';
-  }
+//   if (selectors.length === 0) {
+//     return 'layout_selectors: []';
+//   }
 
-  const yaml = selectors
-    .map(s => `  - ${s.selector}  # ${s.tag}`)
-    .join('\n');
+//   const yaml = selectors
+//     .map(s => `  - ${s.selector}  # ${s.tag}`)
+//     .join('\n');
 
-  return `layout_selectors:\n${yaml}\n\n这些是自动识别出的layout元素，当页面主要内容仅在某个layuot块时，可以将这一块作为获取页面的根节点获取更干净的上下文。`;
-}
+//   return `layout_selectors:\n${yaml}\n\n这些是自动识别出的layout元素，当页面主要内容仅在某个layuot块时，可以将这一块作为获取页面的根节点获取更干净的上下文。`;
+// }
 
 // 截图选项类型
 interface ScreenshotOptions {
@@ -483,8 +483,8 @@ export const getPageContentV2Tool: Tool = {
       result.push({ type: 'text', text: '说明: dom层级有缩减，元素属性里x/y/w/h分别对应元素在页面上的位坐标和宽高，如果与前一个元素相同时会省略。' });
 
       // 提取布局元素选择器并追加到结果末尾
-      const layoutSelectorsYaml = await extractLayoutSelectors(page);
-      result.push({ type: 'text', text: `\n${layoutSelectorsYaml}` });
+      // const layoutSelectorsYaml = await extractLayoutSelectors(page);
+      // result.push({ type: 'text', text: `\n${layoutSelectorsYaml}` });
 
       return result;
     } catch (error: unknown) {
