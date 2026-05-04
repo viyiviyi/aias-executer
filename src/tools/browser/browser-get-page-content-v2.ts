@@ -441,6 +441,18 @@ export const getPageContentV2Tool: Tool = {
         }
 
         return [{
+          tag: 'window',
+          w: window.innerWidth,
+          h: window.innerHeight,
+        }, {
+          tag: 'document',
+          w: document.documentElement.clientWidth,
+          h: document.documentElement.clientHeight,
+          scrollWidth: document.documentElement.scrollWidth,
+          scrollHeight: document.documentElement.scrollHeight,
+          scrollLeft: document.documentElement.scrollLeft,
+          scrollTop: document.documentElement.scrollTop,
+        }, {
           tag: 'body',
           x: document.body.offsetLeft,
           y: document.body.offsetTop,
@@ -498,7 +510,7 @@ export const getPageContentV2Tool: Tool = {
       const processedDom = domPipeline(fullDomTree as RawDomNode[], pipelineOptions);
 
       result.push(domToContentBlock(processedDom));
-      result.push({ type: 'text', text: '说明: dom层级有缩减，元素属性里x/y/w/h分别对应元素在页面上的位坐标和宽高，如果与前一个元素相同时会省略。' });
+      result.push({ type: 'text', text: '说明: dom层级有缩减，元素属性里x/y/w/h分别对应元素在页面上的位坐标和宽高，如果x/y/w/h与前一个元素或父元素相同时会省略。 scroll*属性反应了元素是否有滚动条，没有该属性的一律无滚动条。' });
 
       // 提取布局元素选择器并追加到结果末尾
       // const layoutSelectorsYaml = await extractLayoutSelectors(page);

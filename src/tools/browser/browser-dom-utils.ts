@@ -263,7 +263,7 @@ export function filterByContent(
   options: DomPipelineOptions
 ): ProcessedDomNode[] {
   const nodePasses = (node: ProcessedDomNode): boolean => {
-    if (node.tag == 'body') return true;
+    if (node.tag == 'body' || node.tag == 'window' || node.tag == 'document') return true;
     if (node.tag === 'text') return true;
     if (options.accessibilityOnly) !!node.hasUsefulContent && !!node.isInteractive;
     return !!node.hasUsefulContent;
@@ -548,10 +548,10 @@ export function enrichNarrowElements(
       y: lastY != node.y ? node.y : undefined,
       w: lastW != node.w ? node.w : undefined,
       h: lastH != node.h ? node.h : undefined,
-      scrollHeight: node.scrollHeight != node.h ? node.scrollHeight : undefined,
-      scrollTop: node.scrollHeight != node.h ? node.scrollHeight : undefined,
-      scrollWidth: node.scrollWidth != node.w ? node.scrollWidth : undefined,
-      scrollLeft: node.scrollWidth != node.w ? node.scrollWidth : undefined
+      scrollHeight: node.scrollHeight && node.h && node.scrollHeight > node.h + 20 ? node.scrollHeight : undefined,
+      scrollTop: node.scrollHeight && node.h && node.scrollHeight > node.h + 20 ? node.scrollTop : undefined,
+      scrollWidth: node.scrollWidth && node.w && node.scrollWidth > node.w + 20 ? node.scrollWidth : undefined,
+      scrollLeft: node.scrollWidth && node.w && node.scrollWidth > node.w + 20 ? node.scrollLeft : undefined
     };
     lastX = node.x || 0;
     lastY = node.y || 0;
@@ -662,8 +662,7 @@ export function domToContentBlock(
 
 export function domToContentItem(
   dom: ProcessedDomNode[],
-  depth: number = 0,
-  parentWidth = 0
+  depth: number = 0
 ): string[] {
   const blocks: string[] = [];
 
@@ -694,12 +693,14 @@ export function domToContentItem(
 
     // 位置信息
     const posParts: string[] = [];
-    if (node.w && node.w < parentWidth - 5 || parentWidth == 0) {
-      if (node.x !== undefined) posParts.push(`x=${node.x}`);
-      if (node.y !== undefined) posParts.push(`y=${node.y}`);
-      if (node.w !== undefined) posParts.push(`w=${node.w}`);
-      if (node.h !== undefined) posParts.push(`h=${node.h}`);
-    }
+    if (node.x !== undefined) posParts.push(`x=${node.x}`);
+    if (node.y !== undefined) posParts.push(`y=${node.y}`);
+    if (node.w !== undefined) posParts.push(`w=${node.w}`);
+    if (node.h !== undefined) posParts.push(`h=${node.h}`);
+    if (node.scrollHeight !== undefined) posParts.push(`scrollHeight=${node.scrollHeight}`);
+    if (node.scrollTop !== undefined) posParts.push(`scrollTop=${node.scrollTop}`);
+    if (node.scrollWidth !== undefined) posParts.push(`scrollWidth=${node.scrollWidth}`);
+    if (node.scrollLeft !== undefined) posParts.push(`scrollLeft=${node.scrollLeft}`);
 
     const attrStr = attrParts.length > 0 ? ` [${attrParts.join('] [')}]` : '';
     const posStr = posParts.length > 0 ? ` [${posParts.join('] [')}]` : '';
@@ -710,7 +711,7 @@ export function domToContentItem(
 
     // 递归处理子节点
     if (node.child && node.child.length > 0) {
-      blocks.push(...domToContentItem(node.child, depth + 1, node.w));
+      blocks.push(...domToContentItem(node.child, depth + 1));
     }
   });
 
