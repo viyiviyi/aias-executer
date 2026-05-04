@@ -207,25 +207,21 @@ export class MCPClientManager {
             arguments: parameters,
           });
 
-          let resultText: string;
-          if (
-            result.content &&
-            Array.isArray(result.content) &&
-            result.content[0] &&
-            result.content[0].text
-          ) {
-            resultText = result.content[0].text;
-          } else if (result.content) {
-            resultText = JSON.stringify(result.content);
-          } else {
-            resultText = JSON.stringify(result) || '执行成功';
-          }
+          // let resultText: string;
+          // if (
+          //   result.content &&
+          //   Array.isArray(result.content) &&
+          //   result.content[0] &&
+          //   result.content[0].text
+          // ) {
+          //   resultText = result.content[0].text;
+          // } else if (result.content) {
+          //   resultText = JSON.stringify(result.content);
+          // } else {
+          //   resultText = JSON.stringify(result) || '执行成功';
+          // }
 
-          return {
-            success: true,
-            result: resultText,
-            tool: toolName,
-          };
+          return result.content ? result.content : result;
         } catch (error) {
           console.error(`❌ 执行MCP工具 ${toolName} 失败:`, error);
           return {

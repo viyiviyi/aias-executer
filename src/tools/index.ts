@@ -5,6 +5,7 @@ import { browserConfigTool } from './browser/browser-config-tool';
 import { closeBrowserTool } from './browser/close-browser';
 import { getPageContentTool } from './browser/browser-get-page-content';
 import { getPageContentV2Tool } from './browser/browser-get-page-content-v2';
+import { interactWithPageV2Tool } from './browser/browser-interact-with-page-v2';
 import { interactWithPageTool } from './browser/browser-interact-with-page';
 import { navigateToPageTool } from './browser/open-browser';
 // 文件工具
@@ -74,6 +75,7 @@ const toolList: Tool[] = [
   getPageContentTool,
   getPageContentV2Tool,
   interactWithPageTool,
+  interactWithPageV2Tool,
   closeBrowserTool,
   browserConfigTool,
   // 网络工具

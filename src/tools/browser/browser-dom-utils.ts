@@ -687,7 +687,7 @@ export function domToContentItem(
 
     // 位置信息
     const posParts: string[] = [];
-    if (node.w && node.w < parentWidth - 20 || parentWidth == 0) {
+    if (node.w && node.w < parentWidth - 5 || parentWidth == 0) {
       if (node.x !== undefined) posParts.push(`x=${node.x}`);
       if (node.y !== undefined) posParts.push(`y=${node.y}`);
       if (node.w !== undefined) posParts.push(`w=${node.w}`);
