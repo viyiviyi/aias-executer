@@ -20,6 +20,11 @@ export interface RawDomNode {
   /** 宽高 */
   w?: number;
   h?: number;
+  /** 滚动条信息 */
+  scrollWidth?: number,
+  scrollHeight?: number,
+  scrollTop?: number,
+  scrollLeft?: number,
 }
 
 /**
@@ -258,6 +263,7 @@ export function filterByContent(
   options: DomPipelineOptions
 ): ProcessedDomNode[] {
   const nodePasses = (node: ProcessedDomNode): boolean => {
+    if (node.tag == 'body') return true;
     if (node.tag === 'text') return true;
     if (options.accessibilityOnly) !!node.hasUsefulContent && !!node.isInteractive;
     return !!node.hasUsefulContent;
@@ -345,6 +351,10 @@ export function mergeTextNodes(dom: ProcessedDomNode[]): ProcessedDomNode[] {
       y: node.y,
       w: node.w,
       h: node.h,
+      scrollHeight: node.scrollHeight,
+      scrollLeft: node.scrollLeft,
+      scrollTop: node.scrollTop,
+      scrollWidth: node.scrollWidth,
     };
 
     if (processedChild.length > 0) result.child = processedChild;
@@ -408,14 +418,8 @@ export function reduceDomDepth(
     }
 
     const newNode: ProcessedDomNode = {
-      tag: node.tag,
-      attrs: node.attrs,
-      x: node.x,
-      y: node.y,
-      w: node.w,
-      h: node.h,
+      ...node,
       child: newChild,
-      text: node.text,
     };
 
     // 单子节点覆盖父节点，但 img 保留位置
@@ -519,32 +523,35 @@ export function enrichImgTags(dom: ProcessedDomNode[]): ProcessedDomNode[] {
 
 /**
  * 8. 丰富窄元素信息（前3层）
- * 规则：宽度 < 父元素宽度 - 20 时，显示宽高位置；否则清除位置信息
  */
 export function enrichNarrowElements(
   dom: ProcessedDomNode[],
   depth: number = 0,
   parent?: ProcessedDomNode
 ): ProcessedDomNode[] {
-  let lastX = 0;
-  let lastY = 0;
-  let lastW = 0;
-  let lastH = 0;
+  let lastX = parent?.x;
+  let lastY = parent?.y;
+  let lastW = parent?.w;
+  let lastH = parent?.h;
   return dom.map(node => {
     if (node.tag === 'text') return node;
 
-    const hasWidth = node.w !== undefined && node.w > 0;
-    const isNarrow =
-      parent?.w !== undefined && hasWidth && node.w! < parent.w - 20;
-    const needsPosition = depth <= 2 || isNarrow;
+    // const hasWidth = node.w !== undefined && node.w > 0;
+    // const isNarrow =
+    //   parent?.w !== undefined && hasWidth && node.w! < parent.w - 20;
+    // const needsPosition = depth <= 2 || isNarrow;
 
     // 窄元素显示位置，宽元素清除位置（避免信息冗余）
     const finalNode: ProcessedDomNode = {
       ...node,
-      x: needsPosition && lastX != node.x ? node.x : undefined,
-      y: needsPosition && lastY != node.y ? node.y : undefined,
-      w: needsPosition && lastW != node.w ? node.w : undefined,
-      h: needsPosition && lastH != node.h ? node.h : undefined,
+      x: lastX != node.x ? node.x : undefined,
+      y: lastY != node.y ? node.y : undefined,
+      w: lastW != node.w ? node.w : undefined,
+      h: lastH != node.h ? node.h : undefined,
+      scrollHeight: node.scrollHeight != node.h ? node.scrollHeight : undefined,
+      scrollTop: node.scrollHeight != node.h ? node.scrollHeight : undefined,
+      scrollWidth: node.scrollWidth != node.w ? node.scrollWidth : undefined,
+      scrollLeft: node.scrollWidth != node.w ? node.scrollWidth : undefined
     };
     lastX = node.x || 0;
     lastY = node.y || 0;

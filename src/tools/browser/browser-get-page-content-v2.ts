@@ -54,6 +54,10 @@ interface PageDomNode {
   y?: number;
   w?: number;
   h?: number;
+  scrollWidth?: number,
+  scrollHeight?: number,
+  scrollTop?: number,
+  scrollLeft?: number,
   inViewport?: boolean;
 }
 
@@ -402,6 +406,10 @@ export const getPageContentV2Tool: Tool = {
                 y: Math.round(rect.top + window.scrollY),
                 w: Math.round(rect.width),
                 h: Math.round(rect.height),
+                scrollWidth: element.scrollWidth,
+                scrollHeight: element.scrollHeight,
+                scrollTop: element.scrollTop,
+                scrollLeft: element.scrollLeft,
                 inViewport: isInViewport(element),
               };
 
@@ -432,7 +440,17 @@ export const getPageContentV2Tool: Tool = {
           }
         }
 
-        return buildDomTree(rootElement);
+        return [{
+          tag: 'body',
+          x: document.body.offsetLeft,
+          y: document.body.offsetTop,
+          w: document.body.offsetWidth,
+          h: document.body.offsetHeight,
+          scrollWidth: document.body.scrollWidth,
+          scrollHeight: document.body.scrollHeight,
+          scrollTop: document.body.scrollTo,
+          scrollLeft: document.body.scrollLeft,
+        }, ...buildDomTree(rootElement)];
       }, {
         rootSelector, viewportOnly: scope == 'viewport'
       });
