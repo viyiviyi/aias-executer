@@ -5,7 +5,7 @@ const browserManager = BrowserManager.getInstance();
 
 export const closeBrowserTool: Tool = {
   definition: {
-    name: 'close_browser',
+    name: 'browser_close_browser',
     groupName: 'browser',
     description: '关闭浏览器标签页',
     parameters: {

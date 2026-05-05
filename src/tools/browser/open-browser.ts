@@ -5,7 +5,7 @@ const browserManager = BrowserManager.getInstance();
 
 export const navigateToPageTool: Tool = {
   definition: {
-    name: 'navigate_to_page',
+    name: 'browser_navigate_to_page',
     groupName: 'browser',
     description: '浏览器导航到指定URL页面',
     parameters: {
