@@ -130,6 +130,9 @@ export const interactWithPageV2Tool: Tool = {
 请先使用 navigate_to_page 工具打开浏览器并导航到页面，或检查浏览器是否正常运行。`);
     }
 
+    // 切换到目标标签页
+    await browserManager.switchToTab(browserId);
+
     const page = session.page;
     let result: any = {};
     let newTabId: string | undefined = undefined;
@@ -266,8 +269,7 @@ export const interactWithPageV2Tool: Tool = {
       const allSessions = browserManager.listSessions();
       const tabsInfo = allSessions.map((s) => ({
         tab_id: s.id,
-        url: s.page.url(),
-        is_active: s.id === browserId || s.id === newTabId,
+        url: s.page.url()
       }));
 
       const currentTitle = await (newPage || page).title();

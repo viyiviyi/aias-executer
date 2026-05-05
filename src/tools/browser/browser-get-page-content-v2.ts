@@ -269,6 +269,10 @@ export const getPageContentV2Tool: Tool = {
     if (!session) {
       throw new Error(`浏览器会话 ${browserId} 不存在。请先使用 navigate_to_page 工具打开浏览器并导航到页面。`);
     }
+
+    // 切换到目标标签页
+    await browserManager.switchToTab(browserId);
+
     try {
       const page = session.page;
       await page.waitForLoadState('domcontentloaded', { timeout: timeout * 1000 });
@@ -520,12 +524,11 @@ export const getPageContentV2Tool: Tool = {
       const allSessions = browserManager.listSessions();
       const tabsInfo = allSessions.map((s) => ({
         tab_id: s.id,
-        url: s.page.url(),
-        is_active: s.id === browserId,
+        url: s.page.url()
       }));
 
       // 标签页信息
-      const tabsText = tabsInfo.map(t => `tab_id: ${t.tab_id} url:${t.url} [${t.is_active ? 'active' : ''}] `).join('\n');
+      const tabsText = tabsInfo.map(t => `tab_id: ${t.tab_id} url:${t.url}`).join('\n');
       result.push({
         type: 'text',
         text: `[tabs]\n${tabsText}`,

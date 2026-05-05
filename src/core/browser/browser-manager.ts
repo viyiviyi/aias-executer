@@ -615,4 +615,15 @@ export class BrowserManager {
   public reloadConfig() {
     return this.configManager.reloadConfig();
   }
+
+  /**
+   * 切换到指定标签页（将标签页带到前台）
+   */
+  public async switchToTab(browserId: string): Promise<void> {
+    const session = this.getSession(browserId);
+    if (!session) {
+      throw new Error(`浏览器会话 ${browserId} 不存在`);
+    }
+    await session.page.bringToFront();
+  }
 }

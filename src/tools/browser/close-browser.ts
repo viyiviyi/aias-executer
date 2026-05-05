@@ -112,8 +112,7 @@ export const closeBrowserTool: Tool = {
         const allSessions = browserManager.listSessions();
         const tabsInfo = allSessions.map((s) => ({
           tab_id: s.id,
-          url: s.page.url(),
-          // is_active: s.id === tabId,
+          url: s.page.url()
         }));
         if (closed) {
           return {
