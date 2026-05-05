@@ -397,13 +397,13 @@ export const getPageContentV2Tool: Tool = {
                 attrs['style'] = styleStr;
               }
 
-              // 获取位置信息和视口判断
+              // 获取位置信息（相对于视口的坐标，页面滚动后仍然有效）
               const rect = element.getBoundingClientRect();
               const dom: PageDomNode = {
                 tag: tagName,
                 attrs: Object.keys(attrs).length > 0 ? attrs : undefined,
-                x: Math.round(rect.left + window.scrollX),
-                y: Math.round(rect.top + window.scrollY),
+                x: Math.round(rect.left),
+                y: Math.round(rect.top),
                 w: Math.round(rect.width),
                 h: Math.round(rect.height),
                 scrollWidth: element.scrollWidth,
