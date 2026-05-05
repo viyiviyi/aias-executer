@@ -19,7 +19,7 @@ export const interactWithPageV2Tool: Tool = {
   definition: {
     name: 'browser_interact_with_page_v2',
     groupName: 'browser',
-    description: '操作浏览器，通过坐标点击和直接文本输入（v2版本，不再使用选择器）',
+    description: '通过坐标操作浏览器，输入、点击、滚动等',
     parameters: {
       type: 'object',
       properties: {
