@@ -83,6 +83,14 @@ export const navigateToPageTool: Tool = {
         const title = await page.title();
         // const urlAfterNavigation = page.url();
 
+        // 获取所有标签页信息（使用浏览器管理器中注册的真实标签页ID）
+        const allSessions = browserManager.listSessions();
+        const tabsInfo = allSessions.map((s) => ({
+          tab_id: s.id,
+          url: s.page.url(),
+          is_active: s.id === tabId,
+        }));
+
         return {
           success: true,
           tab_id: tabId,
@@ -92,7 +100,8 @@ export const navigateToPageTool: Tool = {
             // original_url: url
           },
           message: `已成功导航到 ${url} 可使用标签页id获取页面内容`,
-          sessions_count: browserManager.listSessions().length
+          sessions_count: browserManager.listSessions().length,
+          tabs: tabsInfo,
         };
       } catch (error: any) {
         retryCount++;

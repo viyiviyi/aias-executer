@@ -44,7 +44,7 @@ export const closeBrowserTool: Tool = {
       '如果标签页不存在，返回成功但closed为false',
       '返回剩余标签页信息以便管理'
     ],
-    
+
   },
 
   async execute(parameters: Record<string, any>): Promise<any> {
@@ -56,7 +56,7 @@ export const closeBrowserTool: Tool = {
         // 关闭所有浏览器会话
         const sessionsBefore = browserManager.listSessions();
         const sessionCount = sessionsBefore.length;
-        
+
         if (sessionCount === 0) {
           return {
             success: true,
@@ -67,9 +67,9 @@ export const closeBrowserTool: Tool = {
         }
 
         await browserManager.closeAllSessions();
-        
+
         const sessionsAfter = browserManager.listSessions();
-        
+
         return {
           success: true,
           message: `已关闭所有浏览器会话（共 ${sessionCount} 个）`,
@@ -99,7 +99,7 @@ export const closeBrowserTool: Tool = {
               await page.evaluate(() => {
                 localStorage.clear();
                 sessionStorage.clear();
-              }).catch(() => {}); // 忽略错误
+              }).catch(() => { }); // 忽略错误
             }
           } catch (error) {
             console.warn(`清理浏览器数据时出错: ${error}`);
@@ -107,24 +107,29 @@ export const closeBrowserTool: Tool = {
         }
 
         const closed = await browserManager.closeSession(browserId);
-        
+
+        // 获取所有标签页信息（使用浏览器管理器中注册的真实标签页ID）
+        const allSessions = browserManager.listSessions();
+        const tabsInfo = allSessions.map((s) => ({
+          tab_id: s.id,
+          url: s.page.url(),
+          // is_active: s.id === tabId,
+        }));
         if (closed) {
-          const remainingSessions = browserManager.listSessions();
-          
           return {
             success: true,
             message: `已关闭浏览器会话: ${browserId}`,
             tab_id: browserId,
             closed: true,
             delete_data: deleteData,
-            remaining_tabs: remainingSessions.length,
-            remaining_tab_ids: remainingSessions.map(s => s.id)
+            remaining_tabsInfo: tabsInfo
           };
         } else {
           return {
             success: false,
             message: `关闭浏览器会话 ${browserId} 失败`,
-            closed: false
+            closed: false,
+            remaining_tabsInfo: tabsInfo
           };
         }
       }

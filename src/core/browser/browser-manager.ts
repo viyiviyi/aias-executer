@@ -523,6 +523,7 @@ export class BrowserManager {
     id: string;
     createdAt: Date;
     lastUsed: Date;
+    page: Page;
     config: BrowserSession['config'];
   }> {
     const result = [];
@@ -531,6 +532,7 @@ export class BrowserManager {
         id,
         createdAt: session.createdAt,
         lastUsed: session.lastUsed,
+        page: session.page,
         config: session.config,
       });
     }

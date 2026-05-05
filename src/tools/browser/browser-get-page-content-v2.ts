@@ -516,6 +516,21 @@ export const getPageContentV2Tool: Tool = {
       // const layoutSelectorsYaml = await extractLayoutSelectors(page);
       // result.push({ type: 'text', text: `\n${layoutSelectorsYaml}` });
 
+      // 获取所有标签页信息
+      const allSessions = browserManager.listSessions();
+      const tabsInfo = allSessions.map((s) => ({
+        tab_id: s.id,
+        url: s.page.url(),
+        is_active: s.id === browserId,
+      }));
+
+      // 标签页信息
+      const tabsText = tabsInfo.map(t => `tab_id: ${t.tab_id} url:${t.url} [${t.is_active ? 'active' : ''}] `).join('\n');
+      result.push({
+        type: 'text',
+        text: `[tabs]\n${tabsText}`,
+      });
+      
       return result;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';

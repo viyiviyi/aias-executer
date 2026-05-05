@@ -278,6 +278,14 @@ export const interactWithPageTool: Tool = {
         await (newPage || page).waitForLoadState('load', { timeout: timeout * 1000 });
       }
 
+      // 获取所有标签页信息（使用浏览器管理器中注册的真实标签页ID）
+      const allSessions = browserManager.listSessions();
+      const tabsInfo = allSessions.map((s) => ({
+        tab_id: s.id,
+        url: s.page.url(),
+        is_active: s.id === browserId || s.id === newTabId,
+      }));
+
       // 获取操作后的页面状态
       // const currentUrl = page.url();
       const currentTitle = await (newPage || page).title()
@@ -291,6 +299,7 @@ export const interactWithPageTool: Tool = {
         url: newTabUrl || null,
         msg: newTabId ? `新标签页已打开，id是[${newTabId}]` : undefined,
         time: new Date().toLocaleString(),
+        tabs: tabsInfo,
       };
     } catch (error: any) {
       const errorMessage = error.message.toLowerCase();

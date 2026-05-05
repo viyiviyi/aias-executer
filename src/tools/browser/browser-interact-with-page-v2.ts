@@ -215,7 +215,7 @@ export const interactWithPageV2Tool: Tool = {
           result = { message: `已移动鼠标到坐标: (${x}, ${y})` };
           break;
 
-        case 'scroll':
+        case 'scroll': {
           if (scrollX === undefined && scrollY === undefined) {
             throw new Error('scroll操作需要scroll_x或scroll_y参数');
           }
@@ -227,6 +227,7 @@ export const interactWithPageV2Tool: Tool = {
             message: `已滚动页面: 横轴${scrollX || 0}px, 纵轴${scrollY || 0}px`,
           };
           break;
+        }
 
         case 'go_back':
           await page.goBack({ timeout: timeout * 1000 });
@@ -261,6 +262,14 @@ export const interactWithPageV2Tool: Tool = {
         await (newPage || page).waitForLoadState('load', { timeout: timeout * 1000 });
       }
 
+      // 获取所有标签页信息（使用浏览器管理器中注册的真实标签页ID）
+      const allSessions = browserManager.listSessions();
+      const tabsInfo = allSessions.map((s) => ({
+        tab_id: s.id,
+        url: s.page.url(),
+        is_active: s.id === browserId || s.id === newTabId,
+      }));
+
       const currentTitle = await (newPage || page).title();
       return {
         success: true,
@@ -271,6 +280,7 @@ export const interactWithPageV2Tool: Tool = {
         url: newTabUrl || null,
         msg: newTabId ? `新标签页已打开，id是[${newTabId}]` : undefined,
         time: new Date().toLocaleString(),
+        tabs: tabsInfo,
       };
     } catch (error: any) {
       const errorMessage = error.message.toLowerCase();
