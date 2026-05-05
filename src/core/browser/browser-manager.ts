@@ -11,6 +11,7 @@ import { BrowserConfigManager } from './browser-config';
 import { StealthUtils } from '../utils/stealth-utils';
 import * as path from 'path';
 import * as fs from 'fs';
+import { logger } from '../../utils/logger';
 
 export interface BrowserSession {
   browser: Browser;
@@ -199,7 +200,7 @@ export class BrowserManager {
     const launchOptions: LaunchOptions = {
       headless,
       args: config.args,
-      executablePath: path.join(process.cwd(), 'playwright-browsers', 'chromium-1208', 'chrome-win64', 'chrome.exe')
+      executablePath: this.findChromiumExecutable()
     };
 
     if (!userDataDir) userDataDir = './browser-data';
@@ -402,7 +403,7 @@ export class BrowserManager {
     // 获取反检测状态
     const stealthStatus = StealthUtils.getStealthStatus(config);
 
-    console.log(`浏览器会话已创建: ${browserId}`, {
+    logger.debug(`浏览器会话已创建: ${browserId}`, {
       browserType: finalBrowserType,
       headless: finalHeadless,
       antiDetection: finalAntiDetection,
@@ -467,7 +468,7 @@ export class BrowserManager {
       await StealthUtils.applyStealthToPage(newPage, config);
     }
 
-    console.log(`新标签页已注册: ${finalNewBrowserId}`, {
+    logger.debug(`新标签页已注册: ${finalNewBrowserId}`, {
       originalSession: originalBrowserId,
       totalSessions: this.sessions.size,
     });
@@ -625,5 +626,56 @@ export class BrowserManager {
       throw new Error(`浏览器会话 ${browserId} 不存在`);
     }
     await session.page.bringToFront();
+  }
+
+  /**
+   * Smart search for Chromium executable
+   * Search order:
+   * 1. PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH env var
+   * 2. PLAYWRIGHT_BROWSERS_PATH + chromium-version + chrome-win64 + chrome.exe
+   * 3. process.cwd() + playwright-browsers + chromium-version + chrome-win64 + chrome.exe
+   */
+  private findChromiumExecutable(): string | undefined {
+    const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(process.cwd(), 'playwright-browsers');
+
+    // 如果有直接指定的可执行文件路径，使用它
+    if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH) {
+      const customPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+      if (fs.existsSync(customPath)) {
+        console.log(`使用自定义 Chromium: ${customPath}`);
+        return customPath;
+      }
+      console.warn(`自定义 Chromium 路径不存在: ${customPath}`);
+    }
+
+    // 查找版本目录
+    try {
+      if (fs.existsSync(browsersPath)) {
+        const entries = fs.readdirSync(browsersPath, { withFileTypes: true });
+        // 优先查找最新版本的 chromium
+        const chromiumDirs = entries
+          .filter(e => e.isDirectory() && e.name.startsWith('chromium'))
+          .map(e => e.name)
+          .sort()
+          .reverse(); // 降序排列，最新版本在前
+
+        for (const dir of chromiumDirs) {
+          const exePath = path.join(browsersPath, dir, 'chrome-win64', 'chrome.exe');
+          if (fs.existsSync(exePath)) {
+            // console.log(`自动检测到 Chromium: ${exePath}`);
+            return exePath;
+          }
+        }
+
+        console.warn(`未在 ${browsersPath} 中找到 chromium 可执行文件`);
+      } else {
+        console.warn(`Playwright browsers 目录不存在: ${browsersPath}`);
+      }
+    } catch (error) {
+      console.warn(`查找 Chromium 时出错: ${error}`);
+    }
+
+    // 返回 undefined，让 Playwright 使用默认方式查找
+    return undefined;
   }
 }
