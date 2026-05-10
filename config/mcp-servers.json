@@ -1,23 +1,5 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-filesystem",
-        "./"
-      ],
-      "description": "工作区文件系统操作"
-    },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest",
-        "--isolated",
-        "--browser=chrome",
-        "--user-data-dir=./browser-data"
-      ],
-      "description": "工作区文件系统操作"
-    }
   },
   "_comments": {
     "usage": "MCP服务器配置，启动时自动加载并注册工具",

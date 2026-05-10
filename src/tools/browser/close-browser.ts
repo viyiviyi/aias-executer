@@ -68,15 +68,20 @@ export const closeBrowserTool: Tool = {
 
         await browserManager.closeAllSessions();
 
-        const sessionsAfter = browserManager.listSessions();
+        // const sessionsAfter = browserManager.listSessions();
 
+        // 获取所有标签页信息（使用浏览器管理器中注册的真实标签页ID）
+        const allSessions = browserManager.listSessions();
+        const tabsInfo = allSessions.map((s) => ({
+          tab_id: s.id,
+          url: s.page.url()
+        }));
         return {
           success: true,
           message: `已关闭所有浏览器会话（共 ${sessionCount} 个）`,
-          closed_sessions: sessionCount,
-          remaining_sessions: sessionsAfter.length,
           force_kill: forceKill,
-          delete_data: deleteData
+          delete_data: deleteData,
+          tabs: tabsInfo,
         };
       } else {
         // 关闭指定浏览器会话
