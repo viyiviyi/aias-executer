@@ -48,7 +48,7 @@ export class ToolExecutor {
         try {
           parameters = JSON.parse(functionData.arguments);
         } catch {
-          parameters = {};
+          throw new Error("错误的参数："+functionData.arguments);
         }
       } else {
         parameters = functionData.arguments;
