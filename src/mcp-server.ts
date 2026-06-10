@@ -140,35 +140,32 @@ export function createMCPServer(options: MCPServerOptions = {}): Server {
       const result = await executor.executeTool(name, args || {});
 
       if (result.success) {
+        // 工具返回什么，content 就返回什么
+        // 如果是数组（ContentBlock[]），直接返回
+        if (Array.isArray(result.result)) {
+          return {
+            content: result.result,
+          };
+        }
+        // 如果是字符串，放入 text content
+        if (typeof result.result === 'string') {
+          return {
+            content: [{ type: 'text' as const, text: result.result }],
+          };
+        }
+        // 如果是对象，JSON.stringify 后放入 text content
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: typeof result.result === 'string'
-                ? result.result
-                : JSON.stringify(result.result, null, 2),
-            },
-          ],
+          content: [{ type: 'text' as const, text: JSON.stringify(result.result, null, 2) }],
         };
       } else {
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: result.error || '执行工具时出错',
-            },
-          ],
+          content: [{ type: 'text' as const, text: result.error || '执行工具时出错' }],
           isError: true,
         };
       }
     } catch (error: any) {
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: error.message || '执行工具时出现未知错误',
-          },
-        ],
+        content: [{ type: 'text' as const, text: error.message || '执行工具时出现未知错误' }],
         isError: true,
       };
     }

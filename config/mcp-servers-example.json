@@ -1,0 +1,92 @@
+{
+  "mcpServers": {
+    "Tongxiao": {
+      "type": "sse",
+      "description": "阿里云信息查询服务（使用 Bearer Token）",
+      "url": "https://dashscope.aliyuncs.com/api/v1/mcps/Tongxiao/sse",
+      "auth": {
+        "type": "bearer",
+        "bearerToken": "YOUR_API_KEY_HERE"
+      },
+      "timeout": 30000,
+      "maxRetries": 3
+    },
+    
+    "Example-API-Key": {
+      "type": "http",
+      "description": "使用 API Key 认证的示例",
+      "url": "https://api.example.com/mcp",
+      "auth": {
+        "type": "apikey",
+        "apiKey": {
+          "key": "my-api-key",
+          "value": "your-api-key-value",
+          "headerName": "X-API-Key"
+        }
+      }
+    },
+    
+    "Example-Basic-Auth": {
+      "type": "http",
+      "description": "使用 Basic Auth 认证的示例",
+      "url": "https://api.example.com/mcp",
+      "auth": {
+        "type": "basic",
+        "basic": {
+          "username": "user@example.com",
+          "password": "your-password"
+        }
+      }
+    },
+    
+    "Example-OAuth2": {
+      "type": "http",
+      "description": "使用 OAuth2 认证的示例（支持自动刷新）",
+      "url": "https://api.example.com/mcp",
+      "auth": {
+        "type": "oauth2",
+        "oauth2": {
+          "tokenUrl": "https://auth.example.com/oauth/token",
+          "clientId": "your-client-id",
+          "clientSecret": "your-client-secret",
+          "scopes": ["read", "write"],
+          "accessToken": "initial-access-token",
+          "refreshToken": "your-refresh-token",
+          "expiresAt": 1700000000000
+        }
+      }
+    },
+    
+    "Example-Custom-Headers": {
+      "type": "sse",
+      "description": "使用自定义头的示例",
+      "url": "https://api.example.com/mcp/sse",
+      "auth": {
+        "type": "custom",
+        "customHeaders": {
+          "X-Custom-Header": "custom-value",
+          "X-Tenant-ID": "tenant-123"
+        }
+      }
+    },
+    
+    "Example-Mixed": {
+      "type": "http",
+      "description": "混合使用 auth 和 headers 的示例",
+      "url": "https://api.example.com/mcp",
+      "headers": {
+        "X-Request-ID": "unique-id"
+      },
+      "auth": {
+        "type": "bearer",
+        "bearerToken": "your-bearer-token",
+        "customHeaders": {
+          "X-Custom-Header": "custom-value"
+        }
+      },
+      "timeout": 60000,
+      "autoReconnect": true,
+      "maxRetries": 5
+    }
+  }
+}
