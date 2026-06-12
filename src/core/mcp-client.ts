@@ -445,11 +445,20 @@ export class MCPClientManager {
     serverConfig: MCPServerConfig
   ): Promise<void> {
     const toolName = `${serverName}_${mcpTool.name}`;
+    
+    // 将MCP的inputSchema转换为标准的parameters格式
+    const parameters: { type: 'object'; properties: Record<string, any>; required?: string[] } = mcpTool.inputSchema ? {
+      type: 'object',
+      properties: mcpTool.inputSchema.properties || {},
+      required: mcpTool.inputSchema.required || [],
+    } : { type: 'object', properties: {}, required: [] };
+    
     const tool: Tool = {
       definition: {
-        ...mcpTool,
         name: toolName,
+        description: mcpTool.description || '',
         groupName: serverName,
+        parameters: parameters,
         ...(serverConfig.toolConf && serverConfig.toolConf[toolName || mcpTool.name]),
       },
       execute: async (parameters: Record<string, any>) => {
