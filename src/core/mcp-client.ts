@@ -8,6 +8,44 @@ import { ConfigManager } from './config';
 import path from 'path';
 import { Tool } from '@/types';
 
+/**
+ * MCP 服务器认证配置
+ */
+export interface MCPAuthConfig {
+  /** 认证类型 */
+  type?: 'bearer' | 'apikey' | 'basic' | 'oauth2' | 'custom';
+  
+  /** Bearer Token (用于 bearer 类型) */
+  bearerToken?: string;
+  
+  /** API Key 配置 (用于 apikey 类型) */
+  apiKey?: {
+    key: string;
+    value: string;
+    headerName?: string; // 默认 'X-API-Key'
+  };
+  
+  /** Basic Auth 配置 (用于 basic 类型) */
+  basic?: {
+    username: string;
+    password: string;
+  };
+  
+  /** OAuth2 配置 (用于 oauth2 类型) */
+  oauth2?: {
+    tokenUrl: string;
+    clientId: string;
+    clientSecret: string;
+    scopes?: string[];
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number; // Unix timestamp
+  };
+  
+  /** 自定义认证头 (用于 custom 类型或额外头) */
+  customHeaders?: Record<string, string>;
+}
+
 export interface MCPServerConfig {
   command?: string;
   args?: string[];
@@ -17,12 +55,163 @@ export interface MCPServerConfig {
   description?: string;
   disabled?: boolean;
   toolConf?: Record<string, Record<string, any>>;
+  headers?: Record<string, string>;
   cwd?: string;
+  
+  /** 认证配置 */
+  auth?: MCPAuthConfig;
+  
+  /** 请求超时时间（毫秒） */
+  timeout?: number;
+  
+  /** 是否启用自动重连 */
+  autoReconnect?: boolean;
+  
+  /** 最大重试次数 */
+  maxRetries?: number;
 }
 
 export interface MCPConfig {
   mcpServers: Record<string, MCPServerConfig>;
 }
+/**
+ * MCP 认证管理器 - 处理各种认证方式
+ */
+class MCPAuthManager {
+  /**
+   * 根据配置构建请求头
+   */
+  public static buildHeaders(config: MCPServerConfig): Record<string, string> {
+    const headers: Record<string, string> = { ...config.headers };
+
+    if (!config.auth) {
+      return headers;
+    }
+
+    const auth = config.auth;
+
+    // Bearer Token 认证
+    if (auth.type === 'bearer' && auth.bearerToken) {
+      headers['Authorization'] = `Bearer ${auth.bearerToken}`;
+    }
+
+    // API Key 认证
+    if (auth.type === 'apikey' && auth.apiKey) {
+      const headerName = auth.apiKey.headerName || 'X-API-Key';
+      headers[headerName] = auth.apiKey.value;
+    }
+
+    // Basic Auth 认证
+    if (auth.type === 'basic' && auth.basic) {
+      const credentials = Buffer.from(
+        `${auth.basic.username}:${auth.basic.password}`
+      ).toString('base64');
+      headers['Authorization'] = `Basic ${credentials}`;
+    }
+
+    // OAuth2 认证
+    if (auth.type === 'oauth2' && auth.oauth2) {
+      const token = this.getOAuth2Token(auth.oauth2);
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    // 自定义认证头
+    if (auth.customHeaders) {
+      Object.assign(headers, auth.customHeaders);
+    }
+
+    return headers;
+  }
+
+  /**
+   * 获取 OAuth2 Token（带自动刷新）
+   */
+  private static async getOAuth2Token(oauth2: NonNullable<MCPAuthConfig['oauth2']>): Promise<string | null> {
+    // 检查 token 是否过期
+    if (oauth2.accessToken && oauth2.expiresAt) {
+      const now = Date.now();
+      const expiresIn = oauth2.expiresAt - now;
+      
+      // 如果 token 还有超过 5 分钟有效期，直接使用
+      if (expiresIn > 5 * 60 * 1000) {
+        return oauth2.accessToken;
+      }
+    }
+
+    // Token 已过期或即将过期，需要刷新
+    try {
+      const newToken = await this.refreshOAuth2Token(oauth2);
+      return newToken;
+    } catch (error) {
+      console.error('❌ OAuth2 Token 刷新失败:', error);
+      return oauth2.accessToken || null;
+    }
+  }
+
+  /**
+   * 刷新 OAuth2 Token
+   */
+  private static async refreshOAuth2Token(oauth2: NonNullable<MCPAuthConfig['oauth2']>): Promise<string> {
+    const axios = await import('axios');
+    
+    const params = new URLSearchParams();
+    params.append('grant_type', oauth2.refreshToken ? 'refresh_token' : 'client_credentials');
+    params.append('client_id', oauth2.clientId);
+    params.append('client_secret', oauth2.clientSecret);
+    
+    if (oauth2.refreshToken) {
+      params.append('refresh_token', oauth2.refreshToken);
+    }
+    
+    if (oauth2.scopes && oauth2.scopes.length > 0) {
+      params.append('scope', oauth2.scopes.join(' '));
+    }
+
+    const response = await axios.default.post(oauth2.tokenUrl, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    const data = response.data;
+    
+    // 更新 OAuth2 配置
+    oauth2.accessToken = data.access_token;
+    oauth2.refreshToken = data.refresh_token || oauth2.refreshToken;
+    
+    if (data.expires_in) {
+      oauth2.expiresAt = Date.now() + (data.expires_in * 1000);
+    }
+
+    console.log('✅ OAuth2 Token 刷新成功');
+    return data.access_token;
+  }
+
+  /**
+   * 验证认证配置是否有效
+   */
+  public static validateAuthConfig(auth?: MCPAuthConfig): boolean {
+    if (!auth) return true;
+
+    switch (auth.type) {
+      case 'bearer':
+        return !!auth.bearerToken;
+      case 'apikey':
+        return !!(auth.apiKey && auth.apiKey.key && auth.apiKey.value);
+      case 'basic':
+        return !!(auth.basic && auth.basic.username && auth.basic.password);
+      case 'oauth2':
+        return !!(auth.oauth2 && auth.oauth2.clientId && auth.oauth2.clientSecret && auth.oauth2.tokenUrl);
+      case 'custom':
+        return !!auth.customHeaders;
+      default:
+        return true;
+    }
+  }
+}
+
 /**
  * MCP客户端 - 管理外部MCP服务连接
  */
@@ -120,6 +309,14 @@ export class MCPClientManager {
     try {
       console.log(`🔗 正在连接MCP服务器: ${serverName}`);
 
+      // 验证认证配置
+      if (serverConfig.auth && !MCPAuthManager.validateAuthConfig(serverConfig.auth)) {
+        console.warn(`⚠️  MCP服务器 ${serverName} 的认证配置无效，将跳过认证`);
+      }
+
+      // 构建请求头（包含认证信息）
+      const headers = MCPAuthManager.buildHeaders(serverConfig);
+
       const client = new Client({
         name: 'aias-executor',
         version: '1.0.0',
@@ -128,20 +325,33 @@ export class MCPClientManager {
       let transport;
 
       if (serverConfig.type === 'ws' && serverConfig.url) {
-        // HTTP传输
-        transport = new WebSocketClientTransport(new URL(serverConfig.url));
+        // WebSocket传输
+        const wsUrl = new URL(serverConfig.url);
+        // WebSocket 需要通过 URL 查询参数传递认证信息
+        // 将headers中的认证信息添加到URL查询参数
+        if (headers['Authorization']) {
+          const authValue = headers['Authorization'];
+          if (authValue.startsWith('Bearer ')) {
+            wsUrl.searchParams.set('token', authValue.substring(7));
+          } else if (authValue.startsWith('Basic ')) {
+            wsUrl.searchParams.set('auth', authValue.substring(6));
+          }
+        }
+        // 也支持自定义的token参数
+        if (headers['X-API-Key']) {
+          wsUrl.searchParams.set('api_key', headers['X-API-Key']);
+        }
+        transport = new WebSocketClientTransport(wsUrl);
       } else if (serverConfig.type === 'http' && serverConfig.url) {
         // HTTP传输
-        transport = new StreamableHTTPClientTransport(new URL(serverConfig.url));
+        transport = new StreamableHTTPClientTransport(new URL(serverConfig.url), { 
+          requestInit: { headers } 
+        });
       } else if (serverConfig.type === 'sse' && serverConfig.url) {
-        // SSE传输
-        try {
-          // Try modern Streamable HTTP transport first
-          transport = new StreamableHTTPClientTransport(new URL(serverConfig.url));
-        } catch {
-          // Fall back to legacy SSE transport
-          transport = new SSEClientTransport(new URL(serverConfig.url));
-        }
+        // SSE传输 - 使用传统SSE协议
+        transport = new SSEClientTransport(new URL(serverConfig.url), { 
+          requestInit: { headers } 
+        });
       } else if (serverConfig.command) {
         // Stdio传输（命令行）
         const env: Record<string, string> = { ...process.env, ...serverConfig.env } as Record<
@@ -162,7 +372,37 @@ export class MCPClientManager {
         throw new Error(`不支持的MCP服务器类型: ${serverConfig.type || 'stdio'}`);
       }
 
-      await client.connect(transport);
+      // 设置超时
+      const timeout = serverConfig.timeout || 30000;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`连接超时 (${timeout}ms)`)), timeout);
+      });
+
+      // 带重试的连接逻辑
+      const maxRetries = serverConfig.maxRetries || 3;
+      let lastError: Error | undefined;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          await Promise.race([client.connect(transport), timeoutPromise]);
+          console.log(`✅ 成功连接到MCP服务器: ${serverName}${attempt > 1 ? ` (第${attempt}次尝试)` : ''}`);
+          lastError = undefined;
+          break;
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+          
+          if (attempt < maxRetries) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // 指数退避
+            console.warn(`⚠️  连接尝试 ${attempt}/${maxRetries} 失败: ${lastError.message}`);
+            console.log(`🔄 ${delay}ms 后重试...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      if (lastError) {
+        throw lastError;
+      }
 
       // 获取服务器工具
       const toolsResult = await client.listTools();
@@ -179,6 +419,18 @@ export class MCPClientManager {
       this.clients.set(serverName, client);
     } catch (error) {
       console.error(`❌ 连接MCP服务器 ${serverName} 失败:`, error);
+      
+      // 提供更详细的错误信息
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          console.error(`🔐 认证失败: 请检查 ${serverName} 的认证配置`);
+        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+          console.error(`🚫 访问被拒绝: 请检查 ${serverName} 的权限配置`);
+        } else if (error.message.includes('ECONNREFUSED') || error.message.includes('connect ECONNREFUSED')) {
+          console.error(`🌐 连接被拒绝: 请检查 ${serverName} 的URL和网络连接`);
+        }
+      }
+      
       throw error;
     }
   }
@@ -193,11 +445,20 @@ export class MCPClientManager {
     serverConfig: MCPServerConfig
   ): Promise<void> {
     const toolName = `${serverName}_${mcpTool.name}`;
+    
+    // 将MCP的inputSchema转换为标准的parameters格式
+    const parameters: { type: 'object'; properties: Record<string, any>; required?: string[] } = mcpTool.inputSchema ? {
+      type: 'object',
+      properties: mcpTool.inputSchema.properties || {},
+      required: mcpTool.inputSchema.required || [],
+    } : { type: 'object', properties: {}, required: [] };
+    
     const tool: Tool = {
       definition: {
-        ...mcpTool,
         name: toolName,
+        description: mcpTool.description || '',
         groupName: serverName,
+        parameters: parameters,
         ...(serverConfig.toolConf && serverConfig.toolConf[toolName || mcpTool.name]),
       },
       execute: async (parameters: Record<string, any>) => {
@@ -206,20 +467,6 @@ export class MCPClientManager {
             name: mcpTool.name,
             arguments: parameters,
           });
-
-          // let resultText: string;
-          // if (
-          //   result.content &&
-          //   Array.isArray(result.content) &&
-          //   result.content[0] &&
-          //   result.content[0].text
-          // ) {
-          //   resultText = result.content[0].text;
-          // } else if (result.content) {
-          //   resultText = JSON.stringify(result.content);
-          // } else {
-          //   resultText = JSON.stringify(result) || '执行成功';
-          // }
 
           return result.content ? result.content : result;
         } catch (error) {

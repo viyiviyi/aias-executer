@@ -60,6 +60,60 @@ app.get('/api/autostart/status', (_req, res) => {
   }
 });
 
+// MCP服务器状态端点
+app.get('/api/mcp/status', (_req, res) => {
+  try {
+    const mcpClient = MCPClientManager.getInstance();
+    const servers = mcpClient.getServerStatus();
+    
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      servers,
+      total: servers.length,
+      connected: servers.filter(s => s.connected).length,
+      totalTools: servers.reduce((sum, s) => sum + s.tools, 0),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : '未知错误',
+    });
+  }
+});
+
+// MCP服务器重连端点
+app.post('/api/mcp/reconnect', async (_req, res) => {
+  try {
+    const mcpClient = MCPClientManager.getInstance();
+    
+    // 断开所有连接
+    await mcpClient.disconnectAllServers();
+    
+    // 重新加载配置
+    await mcpClient.loadConfig();
+    
+    // 重新连接所有服务器
+    await mcpClient.connectAllServers();
+    
+    const servers = mcpClient.getServerStatus();
+    
+    res.json({
+      success: true,
+      message: 'MCP服务器重连成功',
+      timestamp: new Date().toISOString(),
+      servers,
+      total: servers.length,
+      connected: servers.filter(s => s.connected).length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : '未知错误',
+    });
+  }
+});
+
 // 健康检查
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -86,6 +140,8 @@ app.get('/', (_req, res) => {
       execute: '/api/execute',
       health: '/api/health',
       autostartStatus: '/api/autostart/status',
+      mcpStatus: '/api/mcp/status',
+      mcpReconnect: '/api/mcp/reconnect',
       staticFiles: '/api/static/files/*',
     },
   });

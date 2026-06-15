@@ -249,7 +249,7 @@ export const getPageContentV2Tool: Tool = {
       '前三层窄元素（宽度小于父元素-20）会显示宽高位置'
     ],
 
-    result_use_type: 'last',
+    //result_use_type: 'last',
   },
 
   async execute(parameters: GetPageContentV2Parameters): Promise<PageContentResult> {
