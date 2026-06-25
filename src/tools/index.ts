@@ -18,6 +18,8 @@ import { moveFileTool } from './file/move-file';
 import { deleteFilesTool } from './file/delete-files';
 import { copyFileTool } from './file/copy-file';
 import { createDirectoryTool } from './file/create-directory';
+import { searchFilesTool } from './file/search-files';
+import { patchFileTool } from './file/patch-file';
 
 // 系统工具
 // 系统工具
@@ -59,6 +61,10 @@ const toolList: Tool[] = [
   copyFileTool,
   // readCodeObjectTreeTool, // 已升级为getDocumentOutlineTool
   deleteFilesTool,
+  // 搜索文件
+  searchFilesTool,
+  // 补丁编辑
+  patchFileTool,
   // 命令行
   executeCommandTool,
   // 终端
