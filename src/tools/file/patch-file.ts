@@ -13,20 +13,42 @@ interface PatchOptions {
   new_string?: string;
   /** 如果为 true，替换所有匹配项而不是要求唯一匹配（默认 false） */
   replace_all?: boolean;
+  /** 返回代码块时包含的上下文行数（默认 30） */
+  context_lines?: number;
 }
 
 interface PatchResult {
   success: boolean;
-  diff: string;
   message: string;
   match_count: number;
+  /** 修改前该区域代码块（带行号，包含上下文） */
+  before: string;
+  /** 修改后该区域代码块（带行号，包含上下文） */
+  after: string;
+  /** 修改的行范围（新文件中的行号） */
+  changed_lines: string;
+  /** before 代码块的起始行号 */
+  context_start_line: number;
+  /** 修改前文件总行数 */
+  original_line_count: number;
+  /** 修改后文件总行数 */
+  new_line_count: number;
+  path: string;
+}
+
+interface Match {
+  /** 在文件内容中的起始索引（0-based） */
+  index: number;
+  /** 匹配到的原文（与文件内容完全一致的片段） */
+  text: string;
 }
 
 export const patchFileTool: Tool = {
   definition: {
     name: 'utils_patch_file',
     groupName: '基础工具',
-    description: '在代码文件中执行精确的查找-替换编辑。支持模糊匹配（忽略空白差异），适合对已有代码进行局部修改',
+    description:
+      '在代码文件中执行查找-替换编辑。先精确定位 old_string，再替换为新内容。支持忽略空白差异的模糊匹配，但只匹配连续行块，绝不跨越无关代码',
     parameters: {
       type: 'object',
       properties: {
@@ -36,7 +58,8 @@ export const patchFileTool: Tool = {
         },
         old_string: {
           type: 'string',
-          description: '要查找替换的原始文本。使用 find-and-replace 模式：先定位到要修改的位置（提供足以上下文保证唯一性），再替换为新内容。',
+          description:
+            '要查找替换的原始文本。必须提供足以上下文保证唯一性，建议包含前后文各一行。支持多行（\\n）。',
         },
         new_string: {
           type: 'string',
@@ -45,31 +68,51 @@ export const patchFileTool: Tool = {
         },
         replace_all: {
           type: 'boolean',
-          description: '是否替换所有匹配项（默认 false）。当为 true 时，不要求 old_string 唯一。当为 false 时，必须唯一匹配否则报错',
+          description:
+            '是否替换所有匹配项（默认 false）。为 true 时不要求 old_string 唯一；为 false 时必须唯一匹配否则报错',
           default: false,
+        },
+        context_lines: {
+          type: 'integer',
+          description: '返回的 before/after 代码块中，修改点上下各包含多少行上下文（默认 30）',
+          default: 30,
         },
       },
       required: ['path', 'old_string'],
     },
     guidelines: [
       'old_string 需要提供足够上下文以保证唯一性，建议包含前后文各一行',
-      '支持多行替换（old_string 和 new_string 可包含 \\n）',
-      '返回统一的 diff 格式对比修改前后的变化',
-      '编辑后自动进行语法检查（如果支持）',
+      '模糊匹配仅忽略空白差异（缩进、空格），且只在连续行块内匹配，不会跨越无关代码',
+      '返回 before（修改前代码块）和 after（修改后代码块），均带行号和上下文',
       'replace_all=true 时谨慎使用，可能修改多处',
     ],
   },
 
   async execute(parameters: Record<string, any>): Promise<PatchResult> {
-    const { path: filePath, old_string, new_string = '', replace_all = false } = parameters as PatchOptions;
+    const {
+      path: filePath,
+      old_string,
+      new_string = '',
+      replace_all = false,
+      context_lines = 30,
+    } = parameters as PatchOptions;
+
+    const fail = (message: string, partial?: Partial<PatchResult>): PatchResult => ({
+      success: false,
+      message,
+      match_count: 0,
+      before: '',
+      after: '',
+      changed_lines: '',
+      context_start_line: 0,
+      original_line_count: 0,
+      new_line_count: 0,
+      path: filePath,
+      ...partial,
+    });
 
     if (!old_string) {
-      return {
-        success: false,
-        diff: '',
-        message: 'old_string 不能为空',
-        match_count: 0,
-      };
+      return fail('old_string 不能为空');
     }
 
     const resolvedPath = configManager.validatePath(filePath, true);
@@ -79,172 +122,136 @@ export const patchFileTool: Tool = {
     try {
       content = await fs.readFile(resolvedPath, 'utf-8');
     } catch (error: any) {
-      return {
-        success: false,
-        diff: '',
-        message: `无法读取文件: ${error.message}`,
-        match_count: 0,
-      };
+      return fail(`无法读取文件: ${error.message}`);
     }
 
-    // 尝试精确匹配
-    const exactMatches = countOccurrences(content, old_string);
-    let newContent: string;
-    let matchCount: number;
+    // 查找匹配（精确优先，其次连续行块模糊匹配）
+    const matches = findMatches(content, old_string);
 
-    if (exactMatches > 0) {
-      if (!replace_all && exactMatches > 1) {
-        return {
-          success: false,
-          diff: '',
-          message: `找到 ${exactMatches} 处匹配。old_string 不够唯一，请添加更多上下文或设置 replace_all=true`,
-          match_count: exactMatches,
-        };
-      }
-      if (replace_all) {
-        newContent = replaceAll(content, old_string, new_string);
-        matchCount = exactMatches;
-      } else {
-        newContent = content.replace(old_string, new_string);
-        matchCount = 1;
-      }
-    } else {
-      // 精确匹配失败，尝试模糊匹配（忽略空白差异）
-      const fuzzyResult = tryFuzzyMatch(content, old_string);
-      if (!fuzzyResult) {
-        return {
-          success: false,
-          diff: '',
-          message: `未在文件中找到匹配的文本。请检查 old_string 是否准确，注意全角半角字符差异`,
-          match_count: 0,
-        };
-      }
-
-      if (!replace_all && fuzzyResult.matches > 1) {
-        return {
-          success: false,
-          diff: '',
-          message: `模糊匹配发现 ${fuzzyResult.matches} 处。old_string 不够唯一，请添加更多上下文`,
-          match_count: fuzzyResult.matches,
-        };
-      }
-
-      if (replace_all) {
-        newContent = content.replace(fuzzyResult.pattern, new_string);
-        matchCount = fuzzyResult.matches;
-      } else {
-        newContent = content.replace(fuzzyResult.pattern, new_string);
-        matchCount = 1;
-      }
+    if (matches.length === 0) {
+      return fail(
+        '未在文件中找到匹配的文本。请检查 old_string 是否准确（注意全角半角、大小写差异）'
+      );
     }
 
-    // 生成 diff
-    const diff = generateDiff(content, newContent, filePath);
+    if (!replace_all && matches.length > 1) {
+      return fail(
+        `找到 ${matches.length} 处匹配。old_string 不够唯一，请添加更多上下文，或设置 replace_all=true`,
+        { match_count: matches.length }
+      );
+    }
+
+    const selected = replace_all ? matches : [matches[0]];
+
+    // 执行替换（从后往前，避免位置偏移）
+    let newContent = content;
+    for (let i = selected.length - 1; i >= 0; i--) {
+      const m = selected[i];
+      newContent =
+        newContent.slice(0, m.index) +
+        new_string +
+        newContent.slice(m.index + m.text.length);
+    }
 
     // 写入文件
     try {
       await fs.writeFile(resolvedPath, newContent, 'utf-8');
     } catch (error: any) {
-      return {
-        success: false,
-        diff,
-        message: `写入文件失败: ${error.message}`,
-        match_count: matchCount,
-      };
+      return fail(`写入文件失败: ${error.message}`, { match_count: selected.length });
     }
+
+    // 计算修改位置的行号（基于第一个匹配）
+    const first = selected[0];
+    const startLine = content.slice(0, first.index).split('\n').length; // 1-based
+    const oldTextLines = first.text.split('\n').length;
+    const endLine = startLine + oldTextLines - 1;
+
+    // 构建修改前代码块
+    const oldLines = content.split('\n');
+    const oldStart = Math.max(1, startLine - context_lines);
+    const oldEnd = Math.min(oldLines.length, endLine + context_lines);
+    const before = oldLines
+      .slice(oldStart - 1, oldEnd)
+      .map((line, idx) => `${oldStart + idx}┆${line}`)
+      .join('\n');
+
+    // 构建修改后代码块（新文件中的对应区域）
+    const newLines = newContent.split('\n');
+    const newTextLines = new_string.split('\n').length;
+    const newEndLine = startLine + newTextLines - 1;
+    const newStart = Math.max(1, startLine - context_lines);
+    const newEnd = Math.min(newLines.length, newEndLine + context_lines);
+    const after = newLines
+      .slice(newStart - 1, newEnd)
+      .map((line, idx) => `${newStart + idx}┆${line}`)
+      .join('\n');
 
     return {
       success: true,
-      diff,
-      message: replace_all
-        ? `已替换 ${matchCount} 处匹配`
-        : '替换成功',
-      match_count: matchCount,
+      message: replace_all ? `已替换 ${selected.length} 处匹配` : '替换成功',
+      match_count: selected.length,
+      before,
+      after,
+      changed_lines: `${startLine} ~ ${newEndLine}`,
+      context_start_line: oldStart,
+      original_line_count: oldLines.length,
+      new_line_count: newLines.length,
+      path: filePath,
     };
   },
 };
 
 /**
- * 计算子串出现次数
+ * 查找所有匹配：
+ * 1. 精确匹配（indexOf）
+ * 2. 行级模糊匹配：old_string 按行拆分，每行 trim + 压缩空白后，
+ *    在文件中找连续的行块（仅允许空白差异，文本必须一致）
  */
-function countOccurrences(content: string, search: string): number {
-  let count = 0;
-  let pos = 0;
-  while (true) {
-    pos = content.indexOf(search, pos);
-    if (pos === -1) break;
-    count++;
-    pos += search.length;
+function findMatches(content: string, oldString: string): Match[] {
+  const matches: Match[] = [];
+
+  // 策略1：精确匹配
+  let pos = content.indexOf(oldString);
+  while (pos !== -1) {
+    matches.push({ index: pos, text: oldString });
+    pos = content.indexOf(oldString, pos + oldString.length);
   }
-  return count;
-}
+  if (matches.length > 0) return matches;
 
-/**
- * 替换所有匹配（原生 replaceAll 更安全）
- */
-function replaceAll(content: string, search: string, replacement: string): string {
-  // 使用 split-join 方式（比正则更安全，不用考虑特殊字符转义）
-  return content.split(search).join(replacement);
-}
-
-/**
- * 尝试模糊匹配（忽略空白差异）
- * 将 old_string 和内容的空白区域标准化后匹配
- */
-function tryFuzzyMatch(content: string, oldString: string): { pattern: RegExp; matches: number } | null {
-  // 将 old_string 中的空白字符转为可匹配任意空白（\s+）
-  const escaped = escapeRegExp(oldString);
-  const fuzzyPattern = escaped.replace(/\\\s+/g, '\\s+');
-  const pattern = new RegExp(fuzzyPattern, 'g');
-  const matches = content.match(pattern);
-  if (matches && matches.length > 0) {
-    return { pattern, matches: matches.length };
+  // 策略2：行级模糊匹配（连续行块，每行忽略空白差异）
+  // 按行严格对齐：行数、行边界必须一致，仅允许行内空白（缩进/空格）差异
+  const needleLines = oldString.split('\n').map(normalizeLine);
+  const contentLines = content.split('\n');
+  const contentStartOffsets: number[] = [0];
+  for (const line of contentLines) {
+    contentStartOffsets.push(contentStartOffsets[contentStartOffsets.length - 1] + line.length + 1);
   }
 
-  // 进一步尝试：将 old_string 按行拆分，每行trim后匹配
-  const lines = oldString.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  if (lines.length === 0) return null;
+  const fileLinesNorm = contentLines.map(normalizeLine);
 
-  // 用第一行和最后一行定位
-  const firstLineEscaped = escapeRegExp(lines[0]);
-  const lastLineEscaped = lines.length > 1 ? escapeRegExp(lines[lines.length - 1]) : firstLineEscaped;
-
-  // 构建允许中间任意内容的模式
-  const fuzzyBlock = new RegExp(
-    `${firstLineEscaped}[\\s\\S]*?${lastLineEscaped}`,
-    'g'
-  );
-  const blockMatches = content.match(fuzzyBlock);
-  if (blockMatches && blockMatches.length > 0) {
-    return { pattern: fuzzyBlock, matches: blockMatches.length };
-  }
-
-  return null;
-}
-
-/**
- * 转义正则表达式特殊字符
- */
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/**
- * 生成统一的 diff 格式
- */
-function generateDiff(oldContent: string, newContent: string, filePath: string): string {
-  const oldLines = oldContent.split('\n');
-  const newLines = newContent.split('\n');
-
-  // 简单的行级 diff
-  let diff = `--- ${filePath}\n+++ ${filePath}\n`;
-  let i = 0;
-  while (i < Math.max(oldLines.length, newLines.length)) {
-    if (oldLines[i] !== newLines[i]) {
-      if (i < oldLines.length) diff += `-${oldLines[i]}\n`;
-      if (i < newLines.length) diff += `+${newLines[i]}\n`;
+  for (let i = 0; i + needleLines.length <= fileLinesNorm.length; i++) {
+    let ok = true;
+    for (let j = 0; j < needleLines.length; j++) {
+      if (fileLinesNorm[i + j] !== needleLines[j]) {
+        ok = false;
+        break;
+      }
     }
-    i++;
+    if (ok) {
+      const startIdx = contentStartOffsets[i];
+      const text = contentLines.slice(i, i + needleLines.length).join('\n');
+      matches.push({ index: startIdx, text });
+      // 跳过已匹配的行，避免重叠匹配
+      i += needleLines.length - 1;
+    }
   }
-  return diff;
+
+  return matches;
+}
+
+/**
+ * 行归一化：trim 并将连续空白压缩为单个空格
+ */
+function normalizeLine(line: string): string {
+  return line.trim().replace(/\s+/g, ' ');
 }
